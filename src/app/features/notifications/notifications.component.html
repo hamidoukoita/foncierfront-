@@ -1,0 +1,181 @@
+<div class="space-y-6">
+  <!-- En-tête -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-gray-900">Centre de notifications</h1>
+      <p class="text-xs sm:text-sm text-gray-500 mt-1">
+        Alertes sur les réservations, demandes de visite entrantes et demandes de construction.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      (click)="markAllAsRead()"
+      class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-gray-800 transition-colors cursor-pointer self-start sm:self-auto shadow-card"
+    >
+      <mat-icon>done_all</mat-icon>
+      <span>Tout marquer comme lu</span>
+    </button>
+  </div>
+
+  <!-- Barre de filtres (Figma) -->
+  <div class="flex flex-wrap items-center gap-2">
+    <button
+      type="button"
+      (click)="setFilter('TOUTES')"
+      [class]="
+        currentFilter() === 'TOUTES'
+          ? 'bg-[#1E293B] text-white'
+          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+      "
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+    >
+      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
+      <span>Toutes ({{ countToutes() }})</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="setFilter('NON_LUES')"
+      [class]="
+        currentFilter() === 'NON_LUES'
+          ? 'bg-[#1E293B] text-white'
+          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+      "
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+    >
+      <mat-icon style="color: var(--foncier-primary)"  >mark_email_unread</mat-icon>
+      <span>Non lues ({{ countNonLues() }})</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="setFilter('RESERVATIONS')"
+      [class]="
+        currentFilter() === 'RESERVATIONS'
+          ? 'bg-[#1E293B] text-white'
+          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+      "
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+    >
+      <mat-icon style="color: var(--foncier-primary)"  >book_online</mat-icon>
+      <span>Réservations ({{ countReservations() }})</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="setFilter('VISITES')"
+      [class]="
+        currentFilter() === 'VISITES'
+          ? 'bg-[#1E293B] text-white'
+          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+      "
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+    >
+      <mat-icon style="color: var(--foncier-primary)"  >emoji_transportation</mat-icon>
+      <span>Visites terrain ({{ countVisites() }})</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="setFilter('CONSTRUCTION')"
+      [class]="
+        currentFilter() === 'CONSTRUCTION'
+          ? 'bg-[#1E293B] text-white'
+          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+      "
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+    >
+      <mat-icon style="color: var(--foncier-primary)"  >construction</mat-icon>
+      <span>Construction ({{ countConstruction() }})</span>
+    </button>
+  </div>
+
+  <!-- Liste des alertes et cartes de notification (Figma) -->
+  <div class="space-y-3">
+    @for (item of filteredNotifications(); track item.id) {
+      <div
+        [class.border-[#E07A22]]="item.nonLu"
+        [class.border-gray-100]="!item.nonLu"
+        class="bg-white rounded-2xl p-4 sm:p-5 border-2 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover: shadow-card"
+      >
+        <!-- Puce + Icône + Contenu -->
+        <div class="flex items-start gap-3.5">
+          <!-- Puce orange/grise -->
+          <span
+            [class.bg-[#E07A22]]="item.nonLu"
+            [class.bg-gray-300]="!item.nonLu"
+            class="w-2.5 h-2.5 rounded-full mt-2 shrink-0"
+          >
+          </span>
+
+          <!-- Rond d'icône -->
+          <div
+            class="w-10 h-10 rounded-xl bg-orange-50/70 border border-orange-100 flex items-center justify-center text-lg shrink-0"
+          >
+            {{ item.iconEmoji }}
+          </div>
+
+          <!-- Texte -->
+          <div>
+            <div class="flex flex-wrap items-baseline gap-2">
+              <h3 class="text-xs sm:text-sm font-bold text-gray-900">
+                {{ item.titre }}
+              </h3>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
+              {{ item.message }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Date relative + Bouton contextuel -->
+        <div class="flex items-center justify-between md:justify-end gap-4 shrink-0 pl-6 md:pl-0">
+          <span class="text-xs text-gray-400 font-mono">
+            {{ item.dateRelative }}
+          </span>
+
+          <!-- Boutons selon la capture Figma -->
+          @if (item.actionLabel === 'Assigner agent') {
+            <button
+              type="button"
+              (click)="handleAction(item)"
+              class="px-5 py-2.5 rounded-xl bg-[#E07A22] hover:bg-[#c9691b] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+            >
+              {{ item.actionLabel }}
+            </button>
+          } @else if (
+            item.actionLabel === 'Déléguer RDV' || item.actionLabel === 'Étudier dossier'
+          ) {
+            <button
+              type="button"
+              (click)="handleAction(item)"
+              class="px-5 py-2.5 rounded-xl bg-[#1E293B] hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+            >
+              {{ item.actionLabel }}
+            </button>
+          } @else {
+            <button
+              type="button"
+              (click)="handleAction(item)"
+              class="px-5 py-2.5 rounded-xl border border-gray-200 bg-[#F8F9FA] hover:bg-gray-100 text-gray-800 text-xs font-bold transition-colors cursor-pointer"
+            >
+              {{ item.actionLabel }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Pagination (Figma) -->
+  <div class="pt-2">
+    <app-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="5"
+      [totalItems]="countToutes()"
+      (pageChange)="currentPage.set($event)"
+    >
+    </app-pagination>
+  </div>
+</div>

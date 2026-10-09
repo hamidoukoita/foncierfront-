@@ -1,0 +1,4 @@
+/* Styles spécifiques pour ProfilSocieteComponent */
+:host {
+  display: block;
+}

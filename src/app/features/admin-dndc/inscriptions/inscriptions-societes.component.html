@@ -1,0 +1,430 @@
+<div class="d-flex flex-column gap-4 font-sans">
+
+  <!-- En-tête -->
+  <div>
+    <h1 class="h4 fw-bold tracking-tight text-dark mb-1">
+      Validation des Inscriptions Promoteurs
+    </h1>
+    <p class="text-secondary small mb-0">
+      Audit de conformité légale (RCCM, NIF, Agrément Officiel) avant activation des droits de gestion foncière.
+    </p>
+  </div>
+
+  <!-- Barre de filtres et Recherche -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    
+    <!-- Filtres Tabs -->
+    <div class="d-flex align-items-center gap-2">
+      <button 
+        type="button" 
+        (click)="setFilter('EN_ATTENTE')" 
+        matRipple
+        [class]="currentFilter() === 'EN_ATTENTE' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'group bg-white text-gray-700 hover:bg-brand-primary hover:text-white hover:border-brand-primary focus:bg-brand-primary focus:text-white focus:border-brand-primary border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon  class="text-brand-primary group-hover:text-white group-focus:text-white transition-colors">hourglass_empty</mat-icon>
+      <span>En attente ({{ countEnAttente() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('VALIDEES')" 
+        matRipple
+        [class]="currentFilter() === 'VALIDEES' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'group bg-white text-gray-700 hover:bg-brand-primary hover:text-white hover:border-brand-primary focus:bg-brand-primary focus:text-white focus:border-brand-primary border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon  class="text-brand-primary group-hover:text-white group-focus:text-white transition-colors">verified</mat-icon>
+      <span>Validées ({{ countValidees() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('REFUSEES')" 
+        matRipple
+        [class]="currentFilter() === 'REFUSEES' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'group bg-white text-gray-700 hover:bg-brand-primary hover:text-white hover:border-brand-primary focus:bg-brand-primary focus:text-white focus:border-brand-primary border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon  class="text-brand-primary group-hover:text-white group-focus:text-white transition-colors">cancel</mat-icon>
+      <span>Refusées ({{ countRefusees() }})</span>
+    </button>
+    </div>
+
+    <!-- Recherche rapide -->
+    <div class="position-relative" style="min-width: 250px;">
+      <input 
+        type="text" 
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        placeholder="Filtrer par nom, NIF, tél..."
+        class="form-control form-control-sm ps-4 pe-3 py-1.5 bg-white border text-xs"
+        style=" border-radius: 10px;"
+      />
+      <mat-icon class="position-absolute text-muted" style="font-size: 16px; width: 16px; height: 16px; left: 8px; top: 7px;">search</mat-icon>
+    </div>
+
+  </div>
+
+  <!-- Layout Deux Panneaux (Grille Bootstrap 5 : 5 cols / 7 cols) -->
+  <div class="row g-4 align-items-start">
+    
+    <!-- PANNEAU GAUCHE (5 cols) : Liste des Sociétés avec Pagination -->
+    <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+      @for (soc of paginatedSocietes(); track soc.id) {
+        
+        <div 
+          (click)="selectSociete(soc)"
+          [class.border-warning]="selectedSociete()?.id === soc.id"
+          [style.border-color]="selectedSociete()?.id === soc.id ? 'var(--foncier-primary)' : '#F3F4F6'"
+          [style.box-shadow]="selectedSociete()?.id === soc.id ? '0 0 0 2px rgba(229,128,26,0.3), var(--foncier-shadow-card)' : 'var(--foncier-shadow-card)'"
+          class="bg-white rounded-4 p-3 border border-gray-100 cursor-pointer transition-all d-flex align-items-start justify-content-between gap-3 shadow-card">
+          
+          <div class="d-flex align-items-start gap-3 min-w-0">
+            <div class="rounded-3 d-flex align-items-center justify-content-center shrink-0 shadow-2xs border"
+                 style="width: 44px; height: 44px; background: linear-gradient(180deg, var(--foncier-bg) 0%, #ECE7DE 100%); ">
+              <mat-icon style="font-size: 22px; width: 22px; height: 22px; color: var(--foncier-secondary);">domain</mat-icon>
+            </div>
+            <div class="min-w-0">
+              <h3 class="fw-bold text-dark text-truncate mb-0" style="font-size: 14px;">
+                {{ soc.nom }}
+              </h3>
+              <p class="text-muted font-monospace text-truncate mb-0 mt-0.5" style="font-size: 11px;">
+                Agrément : {{ soc.numeroAgrement || 'En cours d’attribution' }}
+              </p>
+              <p class="text-secondary font-monospace text-truncate mb-0" style="font-size: 11px;">
+                Tél : {{ soc.telephone }}
+              </p>
+            </div>
+          </div>
+
+          <div class="text-end shrink-0">
+            @if (soc.statutAgrement === 'VERIFIER') {
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold d-inline-flex align-items-center gap-1.5">
+                <span class="pulse-point-green d-inline-block rounded-circle bg-success" style="width: 6px; height: 6px;"></span>
+                <span>Validée</span>
+              </span>
+            } @else if (soc.statutAgrement === 'REFUSER') {
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 small fw-semibold d-inline-flex align-items-center gap-1.5">
+                <span class="d-inline-block rounded-circle bg-danger" style="width: 6px; height: 6px;"></span>
+                <span>Refusée</span>
+              </span>
+            } @else {
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 small fw-semibold d-inline-flex align-items-center gap-1.5">
+                <span class="d-inline-block rounded-circle bg-warning animate-pulse" style="width: 6px; height: 6px;"></span>
+                <span>En attente</span>
+              </span>
+            }
+          </div>
+
+        </div>
+
+      } @empty {
+        <div class="p-4 bg-white rounded-4 border border-gray-100 text-center text-muted small shadow-card" style="">
+          Aucune société dans cette sélection.
+        </div>
+      }
+
+      <!-- Pagination de la liste gauche -->
+      @if (filteredSocietes().length > pageSize) {
+        <div class="p-2 bg-white rounded-3 border border-gray-100 shadow-card" style="">
+          <app-pagination 
+            [currentPage]="currentPage()" 
+            [pageSize]="pageSize" 
+            [totalItems]="filteredSocietes().length"
+            (pageChange)="currentPage.set($event)">
+          </app-pagination>
+        </div>
+      }
+    </div>
+
+    <!-- PANNEAU DROIT (7 cols) : Fiche Détaillée d'Instruction -->
+    <div class="col-12 col-lg-7">
+      @if (selectedSociete(); as s) {
+        
+        <div class="bg-white rounded-4 p-4 p-sm-5 border border-gray-100 d-flex flex-column gap-4 shadow-card" 
+             style=" box-shadow: var(--foncier-shadow-card);">
+          
+          <!-- En-tête de la fiche -->
+          <div class="d-flex align-items-center justify-content-between pb-3 border-bottom" style="border-color: #F1ECE1 !important;">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-3 d-flex align-items-center justify-content-center shrink-0 shadow-sm border"
+                   style="width: 52px; height: 52px; background: linear-gradient(180deg, var(--foncier-bg) 0%, #ECE7DE 100%); ">
+                <mat-icon style="font-size: 28px; width: 28px; height: 28px; color: var(--foncier-secondary);">domain</mat-icon>
+              </div>
+              <div>
+                <h2 class="h5 fw-bold text-dark mb-0">{{ s.nom }}</h2>
+                <p class="text-muted small mb-0">
+                  Dossier promoteur #{{ s.id }} • {{ s.dateRelative }}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              @if (s.statutAgrement === 'VERIFIER') {
+                <span class="badge bg-success text-white px-3 py-1.5 rounded-pill fw-semibold">
+                  Agréée
+                </span>
+              } @else if (s.statutAgrement === 'REFUSER') {
+                <span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fw-semibold">
+                  Rejetée
+                </span>
+              } @else {
+                <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fw-bold">
+                  À instruire
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Métadonnées 4 blocs -->
+          <div class="row g-3">
+            
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded-3 border" style="background-color: #FAF8F5; border-color: #F1ECE1 !important;">
+                <span class="text-uppercase fw-bold text-muted small" style="font-size: 10px; letter-spacing: 0.5px;">Forme Juridique</span>
+                <p class="fw-bold text-dark small mb-0 mt-0.5">{{ s.formeJuridique || 'Entreprise Promotrice' }}</p>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded-3 border" style="background-color: #FAF8F5; border-color: #F1ECE1 !important;">
+                <span class="text-uppercase fw-bold text-muted small" style="font-size: 10px; letter-spacing: 0.5px;">Numéro d’Agrément</span>
+                <p class="fw-bold font-monospace small mb-0 mt-0.5" style="color: var(--foncier-primary);">{{ s.numeroAgrement || 'Non renseigné' }}</p>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded-3 border" style="background-color: #FAF8F5; border-color: #F1ECE1 !important;">
+                <span class="text-uppercase fw-bold text-muted small" style="font-size: 10px; letter-spacing: 0.5px;">Numéro Fiscal (NIF)</span>
+                <p class="fw-bold text-dark font-monospace small mb-0 mt-0.5">{{ s.nif || 'En cours' }}</p>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded-3 border" style="background-color: #FAF8F5; border-color: #F1ECE1 !important;">
+                <span class="text-uppercase fw-bold text-muted small" style="font-size: 10px; letter-spacing: 0.5px;">Email Officiel</span>
+                <p class="fw-bold text-dark font-monospace small mb-0 mt-0.5 text-truncate">{{ s.email || 'Non renseigné' }}</p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Représentant Légal & Contact -->
+          <div class="p-3 rounded-3 border d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2"
+               style="background-color: #FAF8F5; border-color: #F1ECE1 !important;">
+            <div>
+              <span class="text-uppercase fw-bold text-muted small" style="font-size: 10px; letter-spacing: 0.5px;">Représentant Légal / Direction</span>
+              <p class="fw-bold text-dark small mb-0 mt-0.5">{{ s.representantLegal || 'Direction Société' }}</p>
+            </div>
+            <div class="small text-secondary font-monospace d-flex align-items-center gap-1.5">
+              <mat-icon style="font-size: 16px; width: 16px; height: 16px;">phone</mat-icon>
+              <span>{{ s.telephone }} • {{ s.adresse || 'Bamako' }}</span>
+            </div>
+          </div>
+
+          <!-- Document de conformité / Pièces téléversées -->
+          <div>
+            <label class="d-block text-uppercase fw-bold text-muted small mb-2" style="font-size: 11px; letter-spacing: 0.5px;">
+              Dossier de conformité téléversé
+            </label>
+            <div class="p-3 rounded-3 border d-flex align-items-center justify-content-between" 
+                 style="background-color: #FAF8F5; border-color: #F1ECE1 !important;">
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-2 d-flex align-items-center justify-content-center text-danger fw-bold border border-danger-subtle bg-danger-subtle shrink-0 shadow-2xs"
+                     style="width: 38px; height: 38px; font-size: 11px;">
+                  PDF
+                </div>
+                <div>
+                  <p class="fw-bold text-dark small mb-0">{{ s.documentKycNom || 'Dossier_Legal_Agrement.pdf' }}</p>
+                  <p class="text-muted small mb-0" style="font-size: 11px;">Pièces justificatives d’agrément officiel</p>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                (click)="consulterDocumentKyc(s)"
+                matRipple
+                class="btn btn-sm btn-white bg-white border text-dark small fw-semibold px-3 py-1.5 shadow-2xs d-inline-flex align-items-center gap-1"
+                style=" font-size: 12px; border-radius: 8px;">
+                <span>Consulter</span>
+                <mat-icon style="font-size: 15px; width: 15px; height: 15px;">visibility</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Boutons d'Action Admin -->
+          <div class="d-flex align-items-center gap-3 pt-2">
+            @if (s.statutAgrement === 'EN_ATTENTE') {
+              <button 
+                type="button" 
+                (click)="ouvrirModalRefus()"
+                [disabled]="isSubmitting()"
+                matRipple
+                class="btn btn-outline-danger flex-fill py-2.5 rounded-3 text-xs fw-bold shadow-2xs d-inline-flex align-items-center justify-content-center gap-1.5"
+                style="font-size: 13px;">
+                <mat-icon style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                <span>Rejeter le dossier</span>
+              </button>
+
+              <button 
+                type="button" 
+                (click)="ouvrirConfirmationValidation()"
+                [disabled]="isSubmitting()"
+                matRipple
+                class="btn btn-foncier-primary flex-fill py-2.5 rounded-3 text-xs fw-bold shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5"
+                style="font-size: 13px;">
+                <mat-icon style="font-size: 18px; width: 18px; height: 18px;">verified</mat-icon>
+                <span>Homologuer l'agrément</span>
+              </button>
+            } @else if (s.statutAgrement === 'REFUSER') {
+              <button 
+                type="button" 
+                (click)="ouvrirConfirmationValidation()"
+                [disabled]="isSubmitting()"
+                matRipple
+                class="btn btn-outline-success flex-fill py-2.5 rounded-3 text-xs fw-bold shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5"
+                style="font-size: 13px;">
+                <mat-icon style="font-size: 18px; width: 18px; height: 18px;">refresh</mat-icon>
+                <span>Réexaminer et valider la société</span>
+              </button>
+            } @else {
+              <div class="p-3 bg-emerald-50 text-emerald-800 rounded-3 border border-emerald-200 w-100 text-xs font-semibold d-flex align-items-center gap-2">
+                <mat-icon class="text-success" style="font-size: 20px; width: 20px; height: 20px;">check_circle</mat-icon>
+                <span>Cette société est agréée et ses programmes sont actifs.</span>
+              </div>
+            }
+          </div>
+
+        </div>
+
+      } @else {
+        <div class="p-5 bg-white rounded-4 border border-gray-100 text-center text-muted shadow-card" style="">
+          Sélectionnez une société dans la colonne de gauche pour examiner son dossier.
+        </div>
+      }
+    </div>
+
+  </div>
+
+  <!-- MODALE DE CONFIRMATION DE VALIDATION -->
+  <app-confirm-dialog
+    [isOpen]="isConfirmValiderOpen()"
+    title="Valider la société promotrice ?"
+    [message]="'Confirmez-vous l’agrément officiel de &quot;' + (selectedSociete()?.nom || '') + '&quot; ? Ses gestionnaires auront accès complet à la publication cadastrale.'"
+    confirmText="Valider l'agrément"
+    cancelText="Annuler"
+    variant="primary"
+    (confirmed)="confirmerValidation()"
+    (cancelled)="isConfirmValiderOpen.set(false)">
+  </app-confirm-dialog>
+
+  <!-- MODALE DE REFUS AVEC MOTIF -->
+  @if (isRefusModalOpen()) {
+    <div 
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      (click)="isRefusModalOpen.set(false)">
+      
+      <div 
+        class="bg-white rounded-2xl w-full max-w-lg overflow-hidden border border-gray-100 p-6 space-y-4 shadow-card"
+        (click)="$event.stopPropagation()">
+        
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-lg font-bold shrink-0">
+            ✕
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-gray-900 leading-tight">
+              Rejeter la demande d'agrément
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">
+              Société : <strong>{{ selectedSociete()?.nom }}</strong>
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+            Motif de rejet officiel *
+          </label>
+          <textarea 
+            rows="3"
+            [ngModel]="motifRefusModal()"
+            (ngModelChange)="motifRefusModal.set($event)"
+            class="w-full p-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary bg-gray-50/50"
+            placeholder="Précisez la non-conformité constatée..."></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+          <button 
+            type="button" 
+            (click)="isRefusModalOpen.set(false)"
+            [disabled]="isSubmitting()"
+            class="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
+            Annuler
+          </button>
+          <button 
+            type="button" 
+            (click)="confirmerRefus()"
+            [disabled]="isSubmitting() || !motifRefusModal().trim()"
+            class="px-4 py-2 text-xs font-bold text-white bg-brand-danger hover:bg-red-700 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50">
+            @if (isSubmitting()) {
+              <span>Traitement...</span>
+            } @else {
+              <span>Rejeter le dossier</span>
+            }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- MODALE D'EXAMEN KYC -->
+  @if (isKycModalOpen()) {
+    <div 
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      (click)="fermerKycModal()">
+      
+      <div 
+        class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 shadow-card"
+        (click)="$event.stopPropagation()">
+        
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+          <h2 class="text-lg font-bold text-gray-800">Dossier KYC - {{ selectedSociete()?.nom }}</h2>
+          <button (click)="fermerKycModal()" class="text-gray-500 hover:text-gray-800">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto flex-1">
+          <div *ngIf="kycDocuments().length === 0" class="text-center py-8 text-gray-500">
+            Aucun document KYC soumis par cette société.
+          </div>
+          
+          <div *ngIf="kycDocuments().length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div *ngFor="let doc of kycDocuments()" class="border rounded-lg p-4 bg-gray-50">
+              <h3 class="font-bold text-sm mb-2">{{ doc.typeDocument }}</h3>
+              <p class="text-xs text-gray-500 mb-3">{{ doc.nomOriginal }} - {{ (doc.tailleFichier / 1024 / 1024) | number:'1.2-2' }} Mo</p>
+              
+              <!-- Optionnel: si c'est un PDF, on pourrait l'afficher avec iframe ou object, sinon un bouton de téléchargement -->
+              <a [href]="doc.urlPreview" target="_blank" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700">
+                Ouvrir le document
+                <mat-icon class="ml-2" style="font-size: 16px; width: 16px; height: 16px;">open_in_new</mat-icon>
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end">
+          <button (click)="fermerKycModal()" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-card">
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

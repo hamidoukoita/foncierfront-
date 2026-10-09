@@ -1,0 +1,475 @@
+<div class="space-y-5 font-sans pb-6">
+  <!-- En-tête -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">Tableau de bord</h1>
+      <p class="text-xs sm:text-sm text-gray-600 mt-1">
+        @if (nomSociete()) {
+          <strong class="text-brand-secondary">{{ nomSociete() }}</strong> ·
+        }
+        Vue d'ensemble de votre portefeuille foncier et de votre activité commerciale.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+      @if (agrement(); as ag) {
+        <span
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold shadow-xs"
+          [class]="ag.classes"
+        >
+          <span class="w-2 h-2 rounded-full" [class]="ag.dot"></span>{{ ag.label }}
+        </span>
+      }
+      <a
+        routerLink="/societe/programmes"
+        class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white text-xs font-bold shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+      >
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px">add_2</mat-icon>
+        <span>Nouveau programme</span>
+      </a>
+    </div>
+  </div>
+
+  @if (loadError() && !isLoading()) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800"
+    >
+      <span class="flex items-center gap-2">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px">error_outline</mat-icon>
+        <span>{{ loadError() }} Certains chiffres peuvent être incomplets.</span>
+      </span>
+      <button
+        type="button"
+        (click)="reload()"
+        class="px-3 py-1.5 rounded-lg bg-white border border-rose-200 font-bold hover:bg-rose-100 cursor-pointer shadow-card"
+      >
+        Réessayer
+      </button>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="p-4 bg-white rounded-2xl border border-gray-100/90 shadow-card">
+      <app-loading-skeleton [rows]="6"></app-loading-skeleton>
+    </div>
+  } @else {
+    <!-- Ligne 1 : stock (anneau) + notifications -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
+      <div
+        class="xl:col-span-7 relative overflow-hidden rounded-2xl p-6 sm:p-7 flex flex-col justify-center text-[#FBF1EA] border border-[#2B3B59] shadow-lg"
+        style="
+          background-color: var(--foncier-secondary);
+          background-image: radial-gradient(
+            520px circle at 92% -15%,
+            rgba(229, 128, 26, 0.3),
+            transparent 70%
+          );
+        "
+      >
+        <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6 items-center">
+          <div class="flex justify-center">
+            <div
+              class="relative w-40 h-40 rounded-full shadow-2xl flex items-center justify-center p-2.5"
+              [style.background]="distribution().ring"
+              role="img"
+              [attr.aria-label]="
+                'Répartition de ' + distribution().total + ' lots et parcelles par statut'
+              "
+            >
+              <div
+                class="w-full h-full rounded-full bg-brand-secondary flex flex-col items-center justify-center text-center border border-white/10"
+              >
+                <span class="text-[11px] font-semibold text-[#CDB6A6] uppercase tracking-wider"
+                  >Lots & parcelles</span
+                >
+                <span class="text-3xl font-extrabold text-white tracking-tight">{{
+                  distribution().total
+                }}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-[#F2B27A]">
+              Valeur du stock disponible
+            </div>
+            <div class="text-3xl sm:text-4xl font-black text-brand-primary tracking-tight mt-1 mb-4">
+              {{ formatCompact(stockDisponibleValeur()) }}
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <span
+                class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 border border-white/10 shadow-card"
+              >
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-success"></span>Disponibles
+                <strong class="ml-auto text-emerald-300">{{ distribution().dispo }}</strong>
+              </span>
+              <span
+                class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 border border-white/10 shadow-card"
+              >
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-primary"></span>Réservés
+                <strong class="ml-auto text-amber-300">{{ distribution().reserve }}</strong>
+              </span>
+              <span
+                class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 border border-white/10 shadow-card"
+              >
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-danger"></span>Vendus
+                <strong class="ml-auto text-rose-300">{{ distribution().vendu }}</strong>
+              </span>
+              <span
+                class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 border border-white/10 shadow-card"
+              >
+                <span class="w-2.5 h-2.5 rounded-full bg-[#94A3B8]"></span>Indisponibles
+                <strong class="ml-auto text-slate-300">{{ distribution().indispo }}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section
+        class="xl:col-span-5 bg-white rounded-2xl p-5 border border-gray-100/90 flex flex-col shadow-card"
+      >
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+          <h2 class="text-sm font-bold text-brand-secondary flex items-center gap-2">
+            <mat-icon style="font-size: 18px; width: 18px; height: 18px; color: var(--foncier-primary)"
+              >notifications</mat-icon
+            >
+            Notifications récentes
+            @if (notificationsNonLues() > 0) {
+              <span
+                class="px-2 py-0.5 rounded-full bg-brand-primary text-white text-[11px] font-bold"
+                >{{ notificationsNonLues() }}</span
+              >
+            }
+          </h2>
+          <a
+            routerLink="/societe/notifications"
+            class="text-xs font-bold text-brand-primary hover:underline"
+            >Tout voir ›</a
+          >
+        </div>
+        <div class="mt-2 flex-1 space-y-1">
+          @for (n of notificationsRecentes(); track n.id) {
+            <a
+              [routerLink]="n.actionRoute"
+              class="flex items-start gap-3 p-2.5 rounded-xl hover:bg-brand-bg transition-colors"
+            >
+              <span
+                class="mt-1.5 w-2 h-2 rounded-full shrink-0"
+                [class]="n.nonLu ? 'bg-brand-primary' : 'bg-gray-300'"
+              ></span>
+              <div class="min-w-0">
+                <p class="text-xs text-brand-secondary truncate" [class.font-bold]="n.nonLu">
+                  {{ n.titre }}
+                </p>
+                <p class="text-[11px] text-gray-500 line-clamp-2">{{ n.message }}</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">{{ n.dateRelative }}</p>
+              </div>
+            </a>
+          } @empty {
+            <div
+              class="h-full min-h-[120px] flex items-center justify-center text-xs text-gray-500 border border-dashed border-gray-200 rounded-xl"
+            >
+              Aucune notification pour le moment.
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+
+    <!-- Ligne 2 : indicateurs clés -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <app-stats-card
+        [label]="'Programmes'"
+        [value]="programmes().length"
+        [subtext]="kpis().programmesActifsCount + ' publié(s)'"
+        [accent]="'blue'"
+      >
+        <mat-icon icon style="color: var(--foncier-secondary); font-size: 28px; width: 28px; height: 28px"
+          >holiday_village</mat-icon
+        >
+      </app-stats-card>
+      <app-stats-card
+        [label]="'Lots & parcelles'"
+        [value]="kpis().parcellesTotalCount"
+        [subtext]="kpis().parcellesDisponiblesCount + ' disponible(s)'"
+        [accent]="'green'"
+      >
+        <mat-icon icon style="color: var(--foncier-success); font-size: 28px; width: 28px; height: 28px"
+          >grid_view</mat-icon
+        >
+      </app-stats-card>
+      <app-stats-card
+        [label]="'Réservations en attente'"
+        [value]="kpis().reservationsEnCoursCount"
+        [subtext]="kpis().reservationsSubtext"
+        [accent]="'orange'"
+      >
+        <mat-icon icon style="color: var(--foncier-primary); font-size: 28px; width: 28px; height: 28px"
+          >pending_actions</mat-icon
+        >
+      </app-stats-card>
+      <app-stats-card
+        [label]="'Rendez-vous à venir'"
+        [value]="visitesAVenir().length"
+        [subtext]="kpis().visitesSubtext"
+        [accent]="'gray'"
+      >
+        <mat-icon icon style="color: #64748b; font-size: 28px; width: 28px; height: 28px"
+          >calendar_month</mat-icon
+        >
+      </app-stats-card>
+    </div>
+
+    <!-- Ligne 3 : programmes + rendez-vous -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+      <section class="xl:col-span-7 bg-white rounded-2xl p-5 border border-gray-100/90 shadow-card">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+          <h2 class="text-sm font-bold text-brand-secondary flex items-center gap-2">
+            <mat-icon style="font-size: 18px; width: 18px; height: 18px; color: var(--foncier-primary)"
+              >holiday_village</mat-icon
+            >
+            Vos programmes
+          </h2>
+          <a
+            routerLink="/societe/programmes"
+            class="text-xs font-bold text-brand-primary hover:underline"
+            >Voir tout ({{ programmes().length }}) ›</a
+          >
+        </div>
+        <div class="mt-3 space-y-3">
+          @for (row of parProgramme(); track row.programme.id) {
+            <div
+              class="p-3.5 rounded-xl border border-gray-100 hover:border-brand-primary/40 hover:bg-[#FAF8F5] transition-colors"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="text-sm font-bold text-brand-secondary truncate">{{ row.programme.nom }}</h3>
+                  <p class="text-xs text-gray-500 truncate">
+                    {{ row.programme.localisation || 'Localisation non renseignée' }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <app-status-badge [status]="row.programme.statut"></app-status-badge>
+                  <a
+                    [routerLink]="['/societe/programmes', row.programme.id, 'plan-masse']"
+                    class="px-3 py-1.5 rounded-lg border border-gray-200 text-[11px] font-bold text-brand-secondary hover:text-brand-primary hover:border-brand-primary/50 transition-colors"
+                    >Plan de masse</a
+                  >
+                </div>
+              </div>
+              <div
+                class="mt-3 flex h-2 rounded-full overflow-hidden bg-gray-100"
+                role="img"
+                [attr.aria-label]="
+                  row.dispo +
+                  ' disponibles, ' +
+                  row.reserve +
+                  ' réservés, ' +
+                  row.vendu +
+                  ' vendus sur ' +
+                  row.total +
+                  ' lots'
+                "
+              >
+                <div class="bg-brand-success" [style.width.%]="row.wDispo"></div>
+                <div class="bg-brand-primary" [style.width.%]="row.wReserve"></div>
+                <div class="bg-brand-danger" [style.width.%]="row.wVendu"></div>
+                <div class="bg-[#94A3B8]" [style.width.%]="row.wIndispo"></div>
+              </div>
+              <div
+                class="flex flex-wrap items-center justify-between gap-2 mt-1.5 text-[11px] text-gray-500"
+              >
+                @if (row.total) {
+                  <span
+                    ><strong class="text-brand-success">{{ row.dispo }}</strong> dispo ·
+                    <strong class="text-brand-primary">{{ row.reserve }}</strong> réservés ·
+                    <strong class="text-brand-danger">{{ row.vendu }}</strong> vendus
+                    <span class="text-gray-400">/ {{ row.total }} lots</span></span
+                  >
+                } @else {
+                  <span>Aucun lot enregistré pour ce programme</span>
+                }
+                <span
+                  >Travaux :
+                  <strong class="text-brand-secondary"
+                    >{{ row.programme.avancement ?? 0 }} %</strong
+                  ></span
+                >
+              </div>
+            </div>
+          } @empty {
+            <div
+              class="p-8 text-center text-xs text-gray-500 border border-dashed border-gray-200 rounded-xl bg-[#FAF8F5]"
+            >
+              Aucun programme foncier enregistré pour le moment.
+              <a
+                routerLink="/societe/programmes"
+                class="block mt-2 font-bold text-brand-primary hover:underline"
+                >Créer votre premier programme</a
+              >
+            </div>
+          }
+        </div>
+      </section>
+
+      <div class="xl:col-span-5 space-y-5">
+        <section class="bg-white rounded-2xl p-5 border border-gray-100/90 shadow-card">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
+            <h2 class="text-sm font-bold text-brand-secondary flex items-center gap-2">
+              <mat-icon style="font-size: 18px; width: 18px; height: 18px; color: var(--foncier-primary)"
+                >event</mat-icon
+              >
+              Rendez-vous à venir ({{ visitesAVenir().length }})
+            </h2>
+            <a
+              routerLink="/societe/visites"
+              class="text-xs font-bold text-brand-primary hover:underline"
+              >Planning ›</a
+            >
+          </div>
+          <div class="space-y-2.5">
+            @for (visite of visitesAVenir().slice(0, 4); track visite.id) {
+              <div class="p-3 rounded-xl bg-brand-bg flex items-center gap-3">
+                <div
+                  class="w-11 h-11 rounded-xl bg-white border border-gray-200 flex flex-col items-center justify-center shrink-0 text-brand-secondary shadow-card"
+                >
+                  <span class="text-[10px] font-bold uppercase text-brand-primary">{{
+                    visite.jourSemaine
+                  }}</span>
+                  <span class="text-sm font-black leading-none">{{ visite.jourMois }}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-brand-secondary truncate">{{ visite.prospectNom }}</p>
+                  <p class="text-[11px] text-gray-500 truncate">
+                    {{ visite.bienCible }} · {{ visite.heureDebut }}
+                  </p>
+                </div>
+                <app-status-badge [status]="visite.statut"></app-status-badge>
+              </div>
+            } @empty {
+              <div
+                class="p-6 text-center text-xs text-gray-500 border border-dashed border-gray-200 rounded-xl"
+              >
+                Aucun rendez-vous à venir.
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-5 border border-gray-100/90 shadow-card">
+          <h2 class="text-sm font-bold text-brand-secondary pb-3 border-b border-gray-100 mb-3">
+            Activité de la société
+          </h2>
+          <div class="grid grid-cols-2 gap-3">
+            <a
+              routerLink="/societe/agents"
+              class="p-3 rounded-xl bg-brand-bg hover:bg-[#F1ECE1] transition-colors"
+            >
+              <div class="text-xl font-bold text-brand-secondary leading-tight">
+                {{ agentsActifs()
+                }}<span class="text-xs font-medium text-gray-400"> / {{ agents().length }}</span>
+              </div>
+              <div class="text-[11px] text-gray-500">Agents actifs</div>
+            </a>
+            <a
+              routerLink="/societe/projets-construction"
+              class="p-3 rounded-xl bg-brand-bg hover:bg-[#F1ECE1] transition-colors"
+            >
+              <div class="text-xl font-bold text-brand-secondary leading-tight">
+                {{ projetsEnEtude() }}
+              </div>
+              <div class="text-[11px] text-gray-500">Projets de construction en étude</div>
+            </a>
+            <a
+              routerLink="/societe/programmes"
+              class="p-3 rounded-xl bg-brand-bg hover:bg-[#F1ECE1] transition-colors"
+            >
+              <div class="text-xl font-bold text-brand-secondary leading-tight">
+                {{ avancementMoyen() === null ? '—' : avancementMoyen() + ' %' }}
+              </div>
+              <div class="text-[11px] text-gray-500">Avancement moyen des travaux</div>
+            </a>
+            <a
+              routerLink="/societe/notifications"
+              class="p-3 rounded-xl bg-brand-bg hover:bg-[#F1ECE1] transition-colors"
+            >
+              <div class="text-xl font-bold text-brand-secondary leading-tight">
+                {{ notificationsNonLues() }}
+              </div>
+              <div class="text-[11px] text-gray-500">Notifications non lues</div>
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Ligne 4 : dernières réservations -->
+    <section class="bg-white rounded-2xl p-5 border border-gray-100/90 shadow-card">
+      <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+        <h2 class="text-sm font-bold text-brand-secondary flex items-center gap-2">
+          <mat-icon style="font-size: 18px; width: 18px; height: 18px; color: var(--foncier-success)"
+            >receipt_long</mat-icon
+          >
+          Dernières réservations
+        </h2>
+        <a
+          routerLink="/societe/reservations"
+          class="text-xs font-bold text-brand-primary hover:underline"
+          >Historique ({{ reservations().length }}) ›</a
+        >
+      </div>
+      <div class="overflow-x-auto mt-2">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr
+              class="border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[11px] font-bold bg-brand-bg"
+            >
+              <th class="py-2.5 px-3">Lot & programme</th>
+              <th class="py-2.5 px-3">Acquéreur</th>
+              <th class="py-2.5 px-3">Délai</th>
+              <th class="py-2.5 px-3 text-right">Prix</th>
+              <th class="py-2.5 px-3 text-center">Statut</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            @for (res of derniersReservations(); track res.id) {
+              <tr class="hover:bg-[#FAF8F5] transition-colors">
+                <td class="py-3 px-3">
+                  <div class="font-bold text-brand-secondary">{{ res.lotDesignation }}</div>
+                  <div class="text-[11px] text-gray-500">{{ res.programmeNom }}</div>
+                </td>
+                <td class="py-3 px-3">
+                  <div class="font-semibold text-gray-900">{{ res.prospectNom }}</div>
+                  <div class="text-[11px] text-gray-500 font-mono">{{ res.prospectTelephone }}</div>
+                </td>
+                <td class="py-3 px-3">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                    [class]="
+                      res.delaiExpire
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                    "
+                    >{{ res.delaiGel72h }}</span
+                  >
+                </td>
+                <td class="py-3 px-3 text-right font-mono font-bold text-brand-secondary">
+                  {{ formatFcfa(res.montantFcfa) }}
+                </td>
+                <td class="py-3 px-3 text-center">
+                  <app-status-badge [status]="res.statut"></app-status-badge>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="py-8 text-center text-gray-500">
+                  Aucune réservation pour le moment.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

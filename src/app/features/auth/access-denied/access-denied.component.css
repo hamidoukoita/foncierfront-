@@ -1,0 +1,4 @@
+/* Styles spécifiques pour AccessDeniedComponent */
+:host {
+  display: block;
+}

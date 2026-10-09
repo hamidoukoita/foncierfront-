@@ -1,0 +1,56 @@
+/* Styles spécifiques pour SidebarComponent */
+:host {
+  display: block;
+  height: 100%;
+}
+
+.sidebar-wrapper {
+  width: 280px !important;
+  transition: all 0.25s ease;
+}
+
+.sidebar-nav-link {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #ffffff;
+  border-left: 3px solid transparent;
+  min-height: 46px;
+}
+
+.sidebar-nav-link .sidebar-icon {
+  color: #ffffff;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Hover : Légère translation vers la droite (4px), fond doux et changement de couleur d'icône */
+.sidebar-nav-link:hover:not(.active-nav),
+.sidebar-nav-link:focus:not(.active-nav) {
+  transform: translateX(4px);
+  background-color: var(--foncier-primary);
+  color: #ffffff !important;
+}
+
+.sidebar-nav-link:hover:not(.active-nav) .sidebar-icon,
+.sidebar-nav-link:focus:not(.active-nav) .sidebar-icon {
+  color: #ffffff !important;
+  transform: scale(1.1);
+}
+
+/* Onglet actif : Fond Ocre Banco avec bordure latérale accentuée et ombre portée douce */
+.sidebar-nav-link.active-nav {
+  background-color: var(--foncier-primary) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  border-left: 4px solid var(--foncier-secondary);
+  box-shadow: var(--foncier-primary);
+}
+
+.sidebar-nav-link.active-nav .sidebar-icon {
+  color: #ffffff !important;
+}
+
+.sidebar-nav-link.active-nav .badge {
+  background-color: #ffffff !important;
+  color: var(--foncier-primary) !important;
+}

@@ -1,0 +1,429 @@
+<div class="programmes-page space-y-6">
+  <div class="programmes-header">
+    <div>
+      <h1 class="page-title">Programmes fonciers</h1>
+      <p class="page-subtitle">
+        Créez et modifiez vos programmes, puis construisez leurs lots et leur Plan de masse dans le
+        Studio.
+      </p>
+    </div>
+    <button type="button" class="create-program-btn" (click)="openCreateModal()">
+      <span class="plus">＋</span>
+      <span>Nouveau programme</span>
+    </button>
+  </div>
+
+  <div class="programme-filter-row">
+
+    <button type="button" (click)="setFilter('TOUS')" [class.active]="currentFilter() === 'TOUS'">
+
+      
+      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
+      <span
+        >Tous <b>{{ countTous() }}</b></span
+      >
+    </button>
+    <button
+      type="button"
+      (click)="setFilter('PUBLIES')"
+      [class.active]="currentFilter() === 'PUBLIES'"
+    >
+      <mat-icon style="color: var(--foncier-primary)"  >filter_list</mat-icon>
+      <span
+        >Publiés <b>{{ countPublies() }}</b></span
+      >
+    </button>
+    <button
+      type="button"
+      (click)="setFilter('BROUILLONS')"
+      [class.active]="currentFilter() === 'BROUILLONS'"
+    >
+      <mat-icon style="color: var(--foncier-primary)"  >filter_list</mat-icon>
+      <span
+        >Brouillons <b>{{ countBrouillons() }}</b></span
+      >
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <app-loading-skeleton [rows]="3"></app-loading-skeleton>
+  } @else if (filteredProgrammes().length === 0) {
+    <app-empty-state
+      title="Aucun programme"
+      message="Créez votre premier programme foncier pour commencer la conception du lotissement."
+    >
+      <button action type="button" (click)="openCreateModal()" class="create-empty-btn">
+        ＋ Créer un programme
+      </button>
+    </app-empty-state>
+  } @else {
+    @if (selectedProgrammeForPlan()) {
+      <section class="quick-plan-preview">
+        <div class="quick-plan-header">
+          <div>
+            <span class="page-kicker">APERÇU</span>
+            <h2>{{ selectedProgrammeForPlan()?.nom }}</h2>
+            <p>{{ selectedProgrammeLots().length }} lot(s) chargé(s) depuis le backend.</p>
+          </div>
+          <button
+            type="button"
+            class="close-preview"
+            (click)="selectedProgrammeForPlan.set(null); selectedProgrammeLots.set([])"
+          >
+            Fermer ×
+          </button>
+        </div>
+        <app-plan-masse
+          [lots]="lotsForSelectedProgramme()"
+          (actionLot)="handleLotAction($event)"
+        ></app-plan-masse>
+      </section>
+    }
+
+    <div class="programme-grid">
+      @for (prog of filteredProgrammes(); track prog.id) {
+        <article class="programme-card">
+          <div class="programme-hero">
+            <div class="programme-status">
+              <app-status-badge [status]="prog.statut"></app-status-badge>
+            </div>
+            <div class="programme-visual-icon">{{ prog.iconEmoji || '⌂' }}</div>
+            <div class="programme-hero-caption">
+              <span>Programme foncier</span>
+              <strong>{{ prog.titreFoncierRef }}</strong>
+            </div>
+          </div>
+
+          <div class="programme-body">
+            <div class="programme-title-row">
+              <div>
+                <h2>{{ prog.nom }}</h2>
+                <p>📍 {{ prog.localisation }}</p>
+              </div>
+              <button
+                type="button"
+                class="edit-circle"
+                (click)="openEditModal(prog)"
+                title="Modifier le programme"
+              >
+                ✎
+              </button>
+            </div>
+
+            <div class="programme-metrics">
+              <div>
+                <span>Surface</span
+                ><strong>{{ prog.superficieTotale || 0 | number: '1.0-0' }} m²</strong>
+              </div>
+              <div>
+                <span>Lots</span><strong>{{ prog.lotsTotal }}</strong>
+              </div>
+              <div>
+                <span>Avancement</span><strong>{{ getProgressionPercent(prog) }}%</strong>
+              </div>
+            </div>
+
+            <div class="programme-progress">
+              <div [style.width.%]="getProgressionPercent(prog)"></div>
+            </div>
+
+            <div class="programme-vrd">
+              <span [class.on]="prog.eauSomapep">Eau</span>
+              <span [class.on]="prog.electriciteEdm">Électricité</span>
+              <span [class.on]="prog.voirieBitumee">Voirie</span>
+            </div>
+
+            @if (prog.description) {
+              <p class="programme-description">{{ prog.description }}</p>
+            }
+          </div>
+
+          <div class="programme-actions">
+            <a [routerLink]="['/societe/programmes', prog.id, 'plan-masse']" class="studio-btn">
+              <span>⌁</span>
+              <span>Studio Plan de masse</span>
+            </a>
+            <button
+              type="button"
+              class="secondary-card-btn"
+              (click)="togglePlanMasse(prog)"
+              title="Aperçu rapide"
+            >
+              👁
+            </button>
+            <button
+              type="button"
+              class="secondary-card-btn media-btn"
+              (click)="openMedias(prog)"
+              title="Photos et visite 360°"
+              aria-label="Photos et visite 360°"
+            >
+              360°
+            </button>
+            <button
+              type="button"
+              class="danger-card-btn"
+              (click)="requestDeleteProgramme(prog)"
+              [disabled]="isCheckingDelete()"
+              title="Supprimer le programme"
+              aria-label="Supprimer le programme"
+            >
+              🗑
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <app-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="6"
+      [totalItems]="filteredProgrammes().length"
+      (pageChange)="currentPage.set($event)"
+    >
+    </app-pagination>
+  }
+</div>
+
+@if (isCreateModalOpen()) {
+  <div class="modal-layer" role="dialog" aria-modal="true" (click)="closeCreateModal()">
+    <div class="program-modal" (click)="$event.stopPropagation()">
+      <div class="program-modal-header">
+        <div>
+          <p class="page-kicker">NOUVEAU PROGRAMME</p>
+          <h2>Créer un programme foncier</h2>
+          <p>
+            Le programme est créé d’abord. Les lots seront ensuite créés et positionnés dans le
+            Studio Plan de masse.
+          </p>
+        </div>
+        <button class="modal-close" type="button" (click)="closeCreateModal()">×</button>
+      </div>
+
+      @if (submitError()) {
+        <div class="form-error">⚠ {{ submitError() }}</div>
+      }
+
+      <form [formGroup]="programmeForm" (ngSubmit)="publierProgramme()" class="program-form">
+        <section class="form-section">
+          <div class="form-section-heading">
+            <span>01</span>
+            <div>
+              <strong>Informations générales</strong
+              ><small>Identité et localisation du programme</small>
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <label
+              >Nom du programme *<input formControlName="nom" placeholder="Ex. Cité Les Palmiers"
+            /></label>
+            <label
+              >Localisation *<input formControlName="localisation" placeholder="Ex. Kati, Bamako"
+            /></label>
+            <label
+              >Superficie totale (m²) *<input
+                type="number"
+                min="100"
+                formControlName="superficieTotale"
+            /></label>
+            <label
+              >Titre foncier mère *<input
+                formControlName="titreFoncierRef"
+                placeholder="Ex. TF 10842 / Kati"
+            /></label>
+          </div>
+          <label
+            >Description<textarea
+              rows="3"
+              formControlName="description"
+              placeholder="Décrivez le programme, son environnement ou ses particularités…"
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-heading">
+            <span>02</span>
+            <div>
+              <strong>Viabilisation</strong><small>Équipements déjà disponibles sur le site</small>
+            </div>
+          </div>
+          <div class="check-grid">
+            <label class="check-card" [class.checked]="programmeForm.controls.eauSomapep.value"
+              ><input type="checkbox" formControlName="eauSomapep" /><span class="check-icon"
+                >✓</span
+              ><span><strong>Eau SOMAPEP</strong><small>Réseau d’eau prévu</small></span></label
+            >
+            <label class="check-card" [class.checked]="programmeForm.controls.electriciteEdm.value"
+              ><input type="checkbox" formControlName="electriciteEdm" /><span class="check-icon"
+                >✓</span
+              ><span
+                ><strong>Électricité EDM</strong><small>Réseau électrique prévu</small></span
+              ></label
+            >
+            <label class="check-card" [class.checked]="programmeForm.controls.voirieBitumee.value"
+              ><input type="checkbox" formControlName="voirieBitumee" /><span class="check-icon"
+                >✓</span
+              ><span><strong>Voirie bitumée</strong><small>Accès routier prévu</small></span></label
+            >
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-heading">
+            <span>03</span>
+            <div><strong>Avancement</strong><small>État actuel du programme</small></div>
+          </div>
+          <div class="progress-editor">
+            <div>
+              <strong>{{ programmeForm.controls.avancement.value }}%</strong
+              ><span>Avancement déclaré</span>
+            </div>
+            <input type="range" min="0" max="100" step="5" formControlName="avancement" />
+          </div>
+        </section>
+
+        <section class="studio-next-step">
+          <div class="studio-next-icon">⌁</div>
+          <div>
+            <strong>Étape suivante : Studio Plan de masse</strong>
+            <p>
+              Après création, ouvrez le Studio pour créer chaque lot, choisir une forme prédéfinie,
+              la déposer sur le plan et modifier son contour.
+            </p>
+          </div>
+        </section>
+
+        <section class="visuel3d-card">
+          <div>
+            <strong>Visuel 3D</strong
+            ><small>{{
+              attachedVisuel3D() || 'Optionnel : image ou modèle 3D de présentation'
+            }}</small>
+          </div>
+          <div class="visuel-actions">
+            <button type="button" class="outline-action" (click)="attacherVisuel3D()">
+              📎 Attacher
+            </button>
+            @if (attachedVisuel3D()) {
+              <button type="button" class="clear-action" (click)="attachedVisuel3D.set(null)">
+                Retirer
+              </button>
+            }
+          </div>
+        </section>
+
+        <div class="program-modal-footer">
+          <button
+            type="button"
+            class="footer-secondary"
+            (click)="suspendreBrouillon()"
+            [disabled]="isSubmitting()"
+          >
+            Enregistrer le brouillon
+          </button>
+          <div class="footer-primary-group">
+            <button type="button" class="footer-link" (click)="attacherVisuel3D()">
+              Attacher un visuel 3D</button
+            ><button
+              type="submit"
+              class="footer-primary"
+              [disabled]="isSubmitting() || programmeForm.invalid"
+            >
+              {{ isSubmitting() ? 'Enregistrement…' : 'Créer et publier' }} <span>→</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (isEditModalOpen()) {
+  <div class="modal-layer" role="dialog" aria-modal="true" (click)="closeEditModal()">
+    <div class="program-modal edit-modal" (click)="$event.stopPropagation()">
+      <div class="program-modal-header">
+        <div>
+          <p class="page-kicker">PROGRAMME FONCIER</p>
+          <h2>Modifier le programme</h2>
+          <p>Les modifications sont envoyées directement au backend Spring Boot.</p>
+        </div>
+        <button class="modal-close" type="button" (click)="closeEditModal()">×</button>
+      </div>
+      @if (submitError()) {
+        <div class="form-error">⚠ {{ submitError() }}</div>
+      }
+      <form [formGroup]="programmeForm" (ngSubmit)="saveEditedProgramme()" class="program-form">
+        <div class="form-grid-2">
+          <label>Nom du programme *<input formControlName="nom" /></label>
+          <label>Localisation *<input formControlName="localisation" /></label>
+          <label
+            >Superficie totale (m²) *<input
+              type="number"
+              min="100"
+              formControlName="superficieTotale"
+          /></label>
+          <label>Titre foncier mère *<input formControlName="titreFoncierRef" /></label>
+        </div>
+        <label>Description<textarea rows="4" formControlName="description"></textarea></label>
+        <div class="check-grid compact">
+          <label class="check-card" [class.checked]="programmeForm.controls.eauSomapep.value"
+            ><input type="checkbox" formControlName="eauSomapep" /><span class="check-icon">✓</span
+            ><span><strong>Eau SOMAPEP</strong></span></label
+          >
+          <label class="check-card" [class.checked]="programmeForm.controls.electriciteEdm.value"
+            ><input type="checkbox" formControlName="electriciteEdm" /><span class="check-icon"
+              >✓</span
+            ><span><strong>Électricité EDM</strong></span></label
+          >
+          <label class="check-card" [class.checked]="programmeForm.controls.voirieBitumee.value"
+            ><input type="checkbox" formControlName="voirieBitumee" /><span class="check-icon"
+              >✓</span
+            ><span><strong>Voirie bitumée</strong></span></label
+          >
+        </div>
+        <div class="edit-bottom-grid">
+          <label
+            >Statut<select formControlName="statut">
+              <option value="PUBLIE">Publié</option>
+              <option value="BROUILLON">Brouillon</option>
+              <option value="ARCHIVE">Archivé</option>
+            </select></label
+          >
+          <div class="progress-editor">
+            <div>
+              <strong>{{ programmeForm.controls.avancement.value }}%</strong><span>Avancement</span>
+            </div>
+            <input type="range" min="0" max="100" step="5" formControlName="avancement" />
+          </div>
+        </div>
+        <div class="program-modal-footer">
+          <button type="button" class="footer-secondary" (click)="closeEditModal()">Annuler</button
+          ><button
+            type="submit"
+            class="footer-primary"
+            [disabled]="isSubmitting() || programmeForm.invalid"
+          >
+            {{ isSubmitting() ? 'Enregistrement…' : 'Enregistrer les modifications' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<app-confirm-dialog
+  [isOpen]="programmeToDeleteId() !== null"
+  title="Supprimer ce programme ?"
+  [message]="deleteMessage()"
+  confirmText="Supprimer"
+  cancelText="Annuler"
+  variant="danger"
+  (confirmed)="confirmDeleteProgramme()"
+  (cancelled)="cancelDeleteProgramme()"
+>
+</app-confirm-dialog>
+
+@if (mediaCible(); as cible) {
+  <app-media-manager [cible]="cible" (closed)="mediaCible.set(null)" />
+}

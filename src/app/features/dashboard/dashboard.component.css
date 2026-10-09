@@ -1,0 +1,29 @@
+/* Styles spécifiques pour DashboardComponent */
+:host {
+  display: block;
+}
+
+/* Effets visuels immersifs pour le Hero Card */
+.hero-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.hero-card:hover {
+  box-shadow: 0 20px 40px -12px rgba(26, 40, 64, 0.25);
+}
+
+/* Animation douce de l'anneau Donut */
+@keyframes ringPop {
+  from {
+    transform: scale(0.92);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.hero-card .relative {
+  animation: ringPop 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

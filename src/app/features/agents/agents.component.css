@@ -1,0 +1,4 @@
+/* Styles spécifiques pour AgentsComponent */
+:host {
+  display: block;
+}

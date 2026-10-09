@@ -1,0 +1,410 @@
+<div class="d-flex flex-column gap-4 font-sans pb-5">
+
+  <!-- ========================================================================= -->
+  <!-- BANDEAU PRINCIPAL : ADMINISTRATION CENTRALE DE LA PLATEFORME FONCIER+     -->
+  <!-- ========================================================================= -->
+  <div class="hero-card relative p-4 p-md-5 rounded-4 text-white d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4 shadow-xl hero-sovereign-bg border border-sky-900/60"
+       style="background-color: var(--foncier-secondary);">
+    
+    <div class="d-flex align-items-center gap-3.5 relative z-10">
+      <div class="rounded-3 p-3 d-flex align-items-center justify-content-center shrink-0 shadow-md"
+           style="background: linear-gradient(135deg, rgba(242, 142, 43, 0.25) 0%, rgba(229, 128, 26, 0.1) 100%); width: 56px; height: 56px; border: 1px solid rgba(242, 142, 43, 0.4);">
+        <mat-icon style="font-size: 28px; width: 28px; height: 28px; color: #F28E2B;">admin_panel_settings</mat-icon>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <h1 class="h5 fw-black font-heading tracking-tight mb-0 text-white">
+            Console d'Administration Plateforme
+          </h1>
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 text-[10px] fw-bold d-none d-sm-inline-block">
+            SUPERVISION GLOBALE
+          </span>
+        </div>
+        <p class="text-white-50 small mb-0 font-data">
+          Homologation des promoteurs immobiliers agréés, supervision cadastrale et régulation des accès Foncier+.
+        </p>
+      </div>
+    </div>
+
+    <!-- Sceau de certification de l'administration -->
+    <div class="d-flex flex-row flex-md-column align-items-start align-items-md-end gap-1.5 relative z-10">
+      <span class="badge rounded-pill px-3 py-2 small fw-bold tracking-wider text-uppercase d-inline-flex align-items-center gap-1.5 shadow-2xs"
+            style="background: rgba(56, 189, 248, 0.15); color: #7DD3FC; border: 1px solid rgba(125, 211, 252, 0.35);">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span>PILOTAGE CENTRALISÉ</span>
+      </span>
+      <span class="text-[11px] text-white-50 font-mono">Portail Foncier+ • Session Administrateur</span>
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 4 KPIS ADMIN EN TEMPS RÉEL (Issus de la vraie base de données)            -->
+  <!-- ========================================================================= -->
+  <div class="row g-3 g-md-4">
+    
+    <!-- KPI 1 : Sociétés à valider -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <app-stats-card 
+        [label]="'Sociétés à homologuer'" 
+        [value]="countEnAttente()" 
+        [subtext]="countEnAttente() > 0 ? 'Dossiers en attente d’audit' : 'Tous dossiers traités'" 
+        [accent]="'orange'">
+        <mat-icon icon style="color: var(--foncier-primary); font-size: 30px; width: 30px; height: 30px;">pending_actions</mat-icon>
+      </app-stats-card>
+    </div>
+
+    <!-- KPI 2 : Promoteurs Homologués -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <app-stats-card 
+        [label]="'Promoteurs Validés'" 
+        [value]="countHomologues()" 
+        [subtext]="tauxHomologation() + '% de taux d’homologation'" 
+        [subtextBadge]="true"
+        [accent]="'green'">
+        <mat-icon icon style="color: var(--foncier-success); font-size: 30px; width: 30px; height: 30px;">verified</mat-icon>
+      </app-stats-card>
+    </div>
+
+    <!-- KPI 3 : Programmes fonciers surveillés -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <app-stats-card 
+        [label]="'Programmes supervisés'" 
+        [value]="programmes().length" 
+        [subtext]="countProgrammesDispo() + ' actifs sur le marché'"
+        [accent]="'blue'">
+        <mat-icon icon style="color: var(--foncier-secondary); font-size: 30px; width: 30px; height: 30px;">holiday_village</mat-icon>
+      </app-stats-card>
+    </div>
+
+    <!-- KPI 4 : Parcelles cadastrales -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <app-stats-card 
+        [label]="'Lots & Parcelles certifiés'" 
+        [value]="parcelles().length" 
+        [subtext]="'Titres mères apurés'"
+        [accent]="'gray'">
+        <mat-icon icon style="color: #64748B; font-size: 30px; width: 30px; height: 30px;">grid_view</mat-icon>
+      </app-stats-card>
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- BARRE DE SUPERVISION & INDICATEURS RÉELS DYNAMIQUES                      -->
+  <!-- ========================================================================= -->
+  <div class="p-4 rounded-4 bg-white border border-[#E2DDD5]/80 -[0_12px_24px_-6px_rgba(26,40,64,0.06),0_4px_8px_-4px_rgba(26,40,64,0.03)] interactive-card shadow-card">
+    <div class="row g-3 align-items-center">
+      
+      <!-- Métrique 1 : Taux d'homologation réel -->
+      <div class="col-12 col-md-4 border-end-md border-[#F1ECE1]">
+        <div class="d-flex align-items-center gap-3">
+          <div class="w-11 h-11 rounded-3 bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+            <mat-icon class="text-emerald-700" style="font-size: 22px; width: 22px; height: 22px;">verified_user</mat-icon>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-bold text-uppercase" style="letter-spacing: 0.5px;">Taux de Conformité</div>
+            <div class="h6 fw-black text-brand-secondary font-heading mb-0">
+              {{ tauxHomologation() }}% Promoteurs Agréés
+            </div>
+            <span class="text-[11px] text-muted">{{ countHomologues() }} validés sur {{ societes().length }} inscrits</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métrique 2 : Volume des parcelles sous contrôle -->
+      <div class="col-12 col-md-4 border-end-md border-[#F1ECE1]">
+        <div class="d-flex align-items-center gap-3">
+          <div class="w-11 h-11 rounded-3 bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+            <mat-icon class="text-amber-700" style="font-size: 22px; width: 22px; height: 22px;">inventory_2</mat-icon>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-bold text-uppercase" style="letter-spacing: 0.5px;">Inventaire Foncier Global</div>
+            <div class="h6 fw-black text-brand-secondary font-heading mb-0">
+              {{ parcelles().length }} Lots Cadastrés
+            </div>
+            <span class="text-[11px] text-muted">Répartis sur {{ programmes().length }} programmes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métrique 3 : Utilisateurs & Sécurité -->
+      <div class="col-12 col-md-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="w-11 h-11 rounded-3 bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+            <mat-icon class="text-slate-700" style="font-size: 22px; width: 22px; height: 22px;">manage_accounts</mat-icon>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-bold text-uppercase" style="letter-spacing: 0.5px;">Comptes & Utilisateurs</div>
+            <div class="h6 fw-black text-brand-success font-heading mb-0">
+              {{ utilisateurs().length }} Profils Rattachés
+            </div>
+            <span class="text-[11px] text-muted">Contrôle d'accès actif</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TABLEAU D'INSPECTION : DOSSIERS SOCIÉTÉS AVEC RECHERCHE RAPIDE           -->
+  <!-- ========================================================================= -->
+  <div class="bg-white rounded-4 border border-gray-100 overflow-hidden interactive-card shadow-card" 
+       style=" box-shadow: var(--foncier-shadow-card);">
+    
+    <!-- En-tête de section avec Recherche et Filtres intégrés -->
+    <div class="p-3.5 px-4 border-bottom d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3" style="border-color: #F1ECE1 !important;">
+      
+      <div class="d-flex align-items-center gap-2.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-brand-primary animate-pulse"></span>
+        <div>
+          <h2 class="h6 fw-bold text-dark mb-0 fs-6 font-heading">
+            Dossiers d'Agrément & Inscriptions Récentes
+          </h2>
+          <span class="text-muted small">Supervision directe et arbitrage administratif</span>
+        </div>
+      </div>
+
+      <!-- Contrôles rapides : Recherche et Filtres -->
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Input de recherche instantanée -->
+        <div class="position-relative" style="min-width: 220px;">
+          <input 
+            type="text"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            placeholder="Rechercher nom, NIF, tél..."
+            class="form-control form-control-sm ps-4 pe-3 py-1.5 bg-light border text-xs"
+            style=" border-radius: 9px;"
+          />
+          <mat-icon class="position-absolute text-muted" style="font-size: 16px; width: 16px; height: 16px; left: 8px; top: 7px;">search</mat-icon>
+        </div>
+
+        <!-- Filtre rapide Statut -->
+        <div class="btn-group btn-group-sm" role="group">
+          <button 
+            type="button" 
+            (click)="statutFilter.set('TOUS')" 
+            [class]="statutFilter() === 'TOUS' ? 'btn btn-dark fw-bold' : 'btn btn-outline-secondary'"
+            class="text-xs">
+            Tous ({{ societes().length }})
+          </button>
+          <button 
+            type="button" 
+            (click)="statutFilter.set('EN_ATTENTE')" 
+            [class]="statutFilter() === 'EN_ATTENTE' ? 'btn btn-warning text-dark fw-bold' : 'btn btn-outline-secondary'"
+            class="text-xs">
+            Attente ({{ countEnAttente() }})
+          </button>
+          <button 
+            type="button" 
+            (click)="statutFilter.set('VERIFIER')" 
+            [class]="statutFilter() === 'VERIFIER' ? 'btn btn-success fw-bold' : 'btn btn-outline-secondary'"
+            class="text-xs">
+            Validées ({{ countHomologues() }})
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    @if (isLoading()) {
+      <div class="p-4">
+        <app-loading-skeleton [rows]="5"></app-loading-skeleton>
+      </div>
+    } @else {
+
+      <!-- 1. VUE TABLEAU DESKTOP & TABLETTE (>= md) -->
+      <div class="d-none d-md-block table-responsive">
+        <table class="table align-middle mb-0 text-start" style="min-width: 720px;">
+          
+          <thead class="bg-light">
+            <tr class="border-bottom" style="">
+              <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-bold" style="font-size: 11.5px; letter-spacing: 0.6px;">Société / Raison Sociale</th>
+              <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-bold" style="font-size: 11.5px; letter-spacing: 0.6px;">Identifiants Fiscaux & Légaux</th>
+              <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-bold" style="font-size: 11.5px; letter-spacing: 0.6px;">Contact & Localisation</th>
+              <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-bold text-center" style="font-size: 11.5px; letter-spacing: 0.6px;">Statut</th>
+              <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-bold text-end" style="font-size: 11.5px; letter-spacing: 0.6px;">Décision Admin</th>
+            </tr>
+          </thead>
+
+          <tbody class="border-top-0">
+            @for (soc of dernieresSocietes(); track soc.id) {
+              <tr class="table-interactive-row cursor-default">
+                
+                <!-- Raison Sociale -->
+                <td class="py-3 px-4">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center shrink-0 shadow-xs border"
+                         style="width: 44px; height: 44px; background: linear-gradient(180deg, var(--foncier-bg) 0%, #ECE7DE 100%); ">
+                      <mat-icon style="font-size: 22px; width: 22px; height: 22px; color: var(--foncier-secondary);">domain</mat-icon>
+                    </div>
+                    <div>
+                      <p class="fw-bold text-dark mb-0 font-heading" style="font-size: 14.5px; letter-spacing: -0.2px;">{{ soc.nom }}</p>
+                      <p class="text-muted font-monospace mb-0" style="font-size: 12px;">N° Agrément : {{ soc.numeroAgrement || 'Non renseigné' }}</p>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Pièces Légales (RCCM / NIF) -->
+                <td class="py-3 px-4">
+                  <div class="d-flex flex-column gap-1">
+                    <span class="text-dark font-monospace" style="font-size: 12.5px;">
+                      <span class="text-muted fw-medium font-sans">NIF :</span> {{ soc.nif || 'En cours' }}
+                    </span>
+                    <span class="text-muted small" style="font-size: 11.5px;">
+                      Date : {{ soc.dateAgrement || 'Récente' }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Contact & Localisation -->
+                <td class="py-3 px-4">
+                  <p class="fw-semibold text-dark mb-0" style="font-size: 13.5px;">{{ soc.adresse || 'Bamako' }}</p>
+                  <p class="text-secondary font-monospace mb-0 d-flex align-items-center gap-1" style="font-size: 12px;">
+                    <mat-icon style="font-size: 14px; width: 14px; height: 14px; color: #64748B;">phone</mat-icon>
+                    <span>{{ soc.telephone }}</span>
+                  </p>
+                </td>
+
+                <!-- Statut (Badges Pill vivants) -->
+                <td class="py-3 px-4 text-center">
+                  @if (soc.statutAgrement === 'VERIFIER') {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                      <span class="pulse-point-green d-inline-block rounded-circle bg-success" style="width: 7px; height: 7px;"></span>
+                      <span>Validée</span>
+                    </span>
+                  } @else if (soc.statutAgrement === 'REFUSER') {
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                      <span class="d-inline-block rounded-circle bg-danger" style="width: 7px; height: 7px;"></span>
+                      <span>Rejetée</span>
+                    </span>
+                  } @else {
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                      <span class="d-inline-block rounded-circle bg-warning animate-pulse" style="width: 7px; height: 7px;"></span>
+                      <span>En attente</span>
+                    </span>
+                  }
+                </td>
+
+                <!-- Décision Admin avec Quick View (Pas de validation directe) -->
+                <td class="py-3 px-4 text-end">
+                  <button 
+                    type="button" 
+                    (click)="ouvrirQuickView(soc)"
+                    matRipple
+                    class="btn btn-outline-secondary d-inline-flex align-items-center gap-1.5 py-1.5 px-3 fw-semibold rounded-pill"
+                    style="font-size: 12px; ">
+                    <mat-icon style="font-size: 16px; width: 16px; height: 16px;">visibility</mat-icon>
+                    <span>Détails</span>
+                  </button>
+                </td>
+
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="py-5 text-center text-muted small">
+                  Aucun dossier de promoteur ne correspond aux critères de recherche.
+                </td>
+              </tr>
+            }
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- 2. VUE CARTES MOBILES (< md) -->
+      <div class="d-md-none p-3.5 d-flex flex-column gap-3.5">
+        @for (soc of dernieresSocietes(); track soc.id) {
+          <div class="card border border-gray-100 rounded-3 p-3.5 shadow-card interactive-card" style=" background-color: #FCFBF9;">
+            
+            <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+              <div class="d-flex align-items-center gap-2.5">
+                <div class="rounded-3 d-flex align-items-center justify-content-center shrink-0 border shadow-2xs"
+                     style="width: 44px; height: 44px; background: #FFFFFF; ">
+                  <mat-icon style="font-size: 22px; width: 22px; height: 22px; color: var(--foncier-secondary);">domain</mat-icon>
+                </div>
+                <div>
+                  <h3 class="fw-bold text-dark mb-0 fs-6 font-heading">{{ soc.nom }}</h3>
+                  <span class="text-muted font-monospace small" style="font-size: 12px;">Agrément : {{ soc.numeroAgrement || 'En attente' }}</span>
+                </div>
+              </div>
+
+              <div>
+                @if (soc.statutAgrement === 'VERIFIER') {
+                  <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                    Validée
+                  </span>
+                } @else if (soc.statutAgrement === 'REFUSER') {
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                    Refusée
+                  </span>
+                } @else {
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                    En attente
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- Détails légaux & contact -->
+            <div class="p-3 rounded-2 bg-white border mb-3 d-flex flex-column gap-2 shadow-2xs" style="border-color: #EFEBE4 !important; font-size: 13px;">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Téléphone :</span>
+                <span class="font-monospace text-secondary">{{ soc.telephone }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small">NIF :</span>
+                <span class="font-monospace text-dark">{{ soc.nif }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Adresse :</span>
+                <span class="text-dark">{{ soc.adresse || 'Bamako' }}</span>
+              </div>
+            </div>
+
+            <!-- Actions adaptées au tactile mobile -->
+            <button 
+              type="button" 
+              (click)="ouvrirQuickView(soc)"
+              matRipple
+              class="btn btn-light border w-100 fw-semibold py-2 d-flex align-items-center justify-content-center gap-2"
+              style="font-size: 13px; border-radius: 8px; ">
+              <mat-icon style="font-size: 16px; width: 16px; height: 16px;">visibility</mat-icon>
+              <span>Voir les détails</span>
+            </button>
+
+          </div>
+        }
+      </div>
+
+      <!-- Pied de section récapitulatif -->
+      <div class="p-3.5 px-4 border-top bg-light-subtle d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2.5" 
+           style="">
+        <span class="text-muted small fw-medium text-center text-sm-start" style="font-size: 13px;">
+          Affichage de <strong>{{ dernieresSocietes().length }}</strong> dossiers sur <strong>{{ filteredSocietes().length }}</strong> correspondants
+        </span>
+        <a routerLink="/admin/inscriptions-societes" 
+           class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fw-semibold px-3.5 py-2 rounded-3 btn-cta-secondary"
+           style="font-size: 13px;  color: var(--foncier-secondary); background-color: #FFFFFF;">
+          <span>Gestion intégrale des dossiers d'agrément</span>
+          <mat-icon style="font-size: 16px; width: 16px; height: 16px;">arrow_forward</mat-icon>
+        </a>
+      </div>
+
+    }
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALE QUICK VIEW (Prévisualisation des Inscriptions)                     -->
+  <!-- ========================================================================= -->
+  <app-societe-quick-view-modal
+    [societe]="selectedSocieteForView()"
+    [isOpen]="isQuickViewModalOpen()"
+    (closeModal)="fermerQuickView()"
+    (openFullAudit)="naviguerVersInstruction($event)">
+  </app-societe-quick-view-modal>
+
+</div>

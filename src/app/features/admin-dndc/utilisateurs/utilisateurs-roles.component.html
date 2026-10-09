@@ -1,0 +1,362 @@
+<div class="d-flex flex-column gap-4 font-sans">
+
+  <!-- En-tête avec Actions : + Créer un compte Admin & Export CSV -->
+  <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
+    <div>
+      <h1 class="h4 fw-bold tracking-tight text-dark mb-1">
+        Gestion des Utilisateurs & Privilèges
+      </h1>
+      <p class="text-secondary small mb-0">
+        Supervision centralisée des accès : Acquéreurs, Promoteurs, Agents délégués et Administrateurs Plateforme.
+      </p>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 align-self-start align-self-sm-auto">
+      <!-- Bouton Export CSV -->
+      <button 
+        type="button" 
+        (click)="exporterCsv()"
+        matRipple
+        class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1.5 px-3 py-2 text-xs fw-semibold bg-white shadow-2xs"
+        style="border-radius: 10px; "
+        title="Exporter la sélection en CSV">
+        <mat-icon style="font-size: 17px; width: 17px; height: 17px;">file_download</mat-icon>
+        <span class="d-none d-md-inline">Exporter CSV</span>
+      </button>
+
+      <!-- Bouton Créer Admin -->
+      <button 
+        type="button" 
+        (click)="ouvrirModalCreateAdmin()"
+        matRipple
+        class="btn btn-foncier-primary d-inline-flex align-items-center justify-content-center gap-2 px-3 py-2 text-xs fw-bold shadow-sm"
+        style="border-radius: 10px;">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">person_add</mat-icon>
+        <span>+ Nouvel Admin</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Barre de filtres Tabs, Statut & Recherche -->
+  <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+    
+    <!-- Filtres Catégories avec Compteurs Réels -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <button 
+        type="button" 
+        (click)="setFilter('TOUS')" 
+        matRipple
+        [class]="currentFilter() === 'TOUS' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
+      <span>Tous ({{ countTous() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('PROSPECTS')" 
+        matRipple
+        [class]="currentFilter() === 'PROSPECTS' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >person_search</mat-icon>
+      <span>Acquéreurs ({{ countProspects() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('PROMOTEURS')" 
+        matRipple
+        [class]="currentFilter() === 'PROMOTEURS' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >real_estate_agent</mat-icon>
+      <span>Promoteurs ({{ countPromoteurs() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('AGENTS')" 
+        matRipple
+        [class]="currentFilter() === 'AGENTS' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >support_agent</mat-icon>
+      <span>Agents ({{ countAgents() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('ADMINS')" 
+        matRipple
+        [class]="currentFilter() === 'ADMINS' ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >admin_panel_settings</mat-icon>
+      <span>Admins ({{ countAdmins() }})</span>
+    </button>
+    </div>
+
+    <!-- Filtres secondaires : Statut & Champ Recherche -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <!-- Recherche réactive -->
+      <div class="position-relative" style="min-width: 220px;">
+        <input 
+          type="text" 
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Rechercher nom, tél, entité..."
+          class="form-control form-control-sm ps-4 pe-3 py-1.5 bg-white border text-xs"
+          style=" border-radius: 10px;"
+        />
+        <mat-icon class="position-absolute text-muted" style="font-size: 16px; width: 16px; height: 16px; left: 8px; top: 7px;">search</mat-icon>
+      </div>
+
+      <!-- Sélecteur Statut fonctionnel -->
+      <div class="position-relative">
+        <select 
+          [ngModel]="statutFilter()" 
+          (ngModelChange)="statutFilter.set($event)"
+          class="form-select form-select-sm bg-white border small fw-semibold text-secondary shadow-2xs ps-3 pe-4 py-1.5"
+          style=" border-radius: 10px; font-size: 12px; min-width: 170px;">
+          <option value="TOUS">Tous les statuts</option>
+          <option value="ACTIFS">Actifs uniquement</option>
+          <option value="SUSPENDUS">Suspendus uniquement</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tableau Utilisateurs & Rôles compact et surélevé -->
+  <div class="bg-white rounded-4 border border-gray-100 overflow-hidden shadow-card" 
+       style=" box-shadow: var(--foncier-shadow-card);">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 text-start" style="font-size: 13px;">
+        
+        <thead class="bg-light">
+          <tr class="border-bottom" style="">
+            <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-semibold small" style="font-size: 11px; letter-spacing: 0.5px;">Utilisateur / Compte</th>
+            <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-semibold small" style="font-size: 11px; letter-spacing: 0.5px;">Téléphone</th>
+            <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-semibold small" style="font-size: 11px; letter-spacing: 0.5px;">Rôle Système</th>
+            <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-semibold small" style="font-size: 11px; letter-spacing: 0.5px;">Entité Rattachée</th>
+            <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-semibold small text-center" style="font-size: 11px; letter-spacing: 0.5px;">Statut</th>
+            <th scope="col" class="py-2.5 px-4 text-uppercase text-secondary fw-semibold small text-end" style="font-size: 11px; letter-spacing: 0.5px;">Action</th>
+          </tr>
+        </thead>
+
+        <tbody class="border-top-0">
+          @for (u of paginatedUtilisateurs(); track u.id) {
+            <tr class="transition-all">
+              
+              <!-- Utilisateur avec avatar adouci -->
+              <td class="py-2.5 px-4">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="rounded-3 d-flex align-items-center justify-content-center shrink-0 shadow-2xs border text-dark fw-bold"
+                       style="width: 36px; height: 36px; background: linear-gradient(180deg, var(--foncier-bg) 0%, #ECE7DE 100%);  font-size: 12px;">
+                    {{ getUserInitials(u) }}
+                  </div>
+                  <div>
+                    <p class="fw-bold text-dark mb-0" style="font-size: 13px;">{{ u.prenom }} {{ u.nom }}</p>
+                    <p class="text-muted mb-0" style="font-size: 11px;">ID #{{ u.id }}</p>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Téléphone -->
+              <td class="py-2.5 px-4 font-monospace text-dark fw-medium" style="font-size: 12px;">
+                {{ u.telephone }}
+              </td>
+
+              <!-- Rôle appliqué -->
+              <td class="py-2.5 px-4">
+                @if (u.typeUtilisateur === 'ADMIN' || (u.roleLibelle && u.roleLibelle.includes('Admin'))) {
+                  <span class="badge text-white px-2.5 py-1 rounded-2 shadow-2xs fw-bold" style="background-color: var(--foncier-secondary); font-size: 11px;">
+                    Super Admin
+                  </span>
+                } @else if (u.typeUtilisateur === 'AGENT' || u.typeUtilisateur === 'PROMOTEUR' || (u.roleLibelle && u.roleLibelle.includes('Agent'))) {
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-2 fw-semibold" style="font-size: 11px;">
+                    {{ u.roleLibelle || 'Promoteur' }}
+                  </span>
+                } @else {
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-2 fw-semibold" style="font-size: 11px;">
+                    Acquéreur
+                  </span>
+                }
+              </td>
+
+              <!-- Entité rattachée -->
+              <td class="py-2.5 px-4 text-secondary fw-medium">
+                {{ u.entiteRattachee || '— Indépendant —' }}
+              </td>
+
+              <!-- Statut -->
+              <td class="py-2.5 px-4 text-center">
+                @if (u.statut === 'ACTIF') {
+                  <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold d-inline-flex align-items-center gap-1.5">
+                    <span class="pulse-point-green d-inline-block rounded-circle bg-success" style="width: 6px; height: 6px;"></span>
+                    <span>Actif</span>
+                  </span>
+                } @else {
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 small fw-semibold d-inline-flex align-items-center gap-1.5">
+                    <span class="d-inline-block rounded-circle bg-danger" style="width: 6px; height: 6px;"></span>
+                    <span>Suspendu</span>
+                  </span>
+                }
+              </td>
+
+              <!-- Actions (Bouton cadenas avec modale de confirmation) -->
+              <td class="py-2.5 px-4 text-end">
+                <button 
+                  type="button" 
+                  (click)="demanderToggleStatut(u)"
+                  matRipple
+                  class="btn btn-sm btn-white bg-white border p-1 d-inline-flex align-items-center justify-content-center shadow-2xs"
+                  [ngClass]="u.statut === 'ACTIF' ? 'text-danger hover-bg-danger-subtle' : 'text-success hover-bg-success-subtle'"
+                  style="width: 32px; height: 32px; border-radius: 8px; "
+                  [title]="u.statut === 'ACTIF' ? 'Suspendre ce compte' : 'Réactiver ce compte'">
+                  <mat-icon style="font-size: 16px; width: 16px; height: 16px;">
+                    {{ u.statut === 'ACTIF' ? 'lock' : 'lock_open' }}
+                  </mat-icon>
+                </button>
+              </td>
+
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="py-5 text-center text-muted small">
+                Aucun utilisateur ne correspond aux filtres sélectionnés.
+              </td>
+            </tr>
+          }
+        </tbody>
+
+      </table>
+    </div>
+
+    <!-- Pagination réelle -->
+    <div class="px-4 py-2 border-top bg-light-subtle d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2" 
+         style="">
+      <span class="text-muted small" style="font-size: 12px;">
+        Affichage de <strong>{{ paginatedUtilisateurs().length }}</strong> sur <strong>{{ filteredUtilisateurs().length }}</strong> comptes
+      </span>
+      <app-pagination 
+        [currentPage]="currentPage()" 
+        [pageSize]="pageSize" 
+        [totalItems]="filteredUtilisateurs().length"
+        (pageChange)="currentPage.set($event)">
+      </app-pagination>
+    </div>
+  </div>
+
+  <!-- MODALE DE CONFIRMATION DE BASCULE DE STATUT -->
+  <app-confirm-dialog
+    [isOpen]="userToToggle() !== null"
+    [title]="userToToggle()?.statut === 'ACTIF' ? 'Suspendre l’accès au compte ?' : 'Réactiver l’accès au compte ?'"
+    [message]="userToToggle()?.statut === 'ACTIF' 
+      ? 'Êtes-vous sûr de vouloir suspendre le compte de ' + (userToToggle()?.prenom || '') + ' ' + (userToToggle()?.nom || '') + ' (' + (userToToggle()?.telephone || '') + ') ? L’utilisateur ne pourra plus s’authentifier.' 
+      : 'Voulez-vous rétablir l’accès de ' + (userToToggle()?.prenom || '') + ' ' + (userToToggle()?.nom || '') + ' ? Ses droits de connexion seront immédiatement restaurés.'"
+    [confirmText]="userToToggle()?.statut === 'ACTIF' ? 'Suspendre le compte' : 'Réactiver le compte'"
+    cancelText="Annuler"
+    [variant]="userToToggle()?.statut === 'ACTIF' ? 'danger' : 'primary'"
+    (confirmed)="confirmerToggleStatut()"
+    (cancelled)="annulerToggleStatut()">
+  </app-confirm-dialog>
+
+  <!-- MODALE DE CRÉATION D'UN COMPTE ADMINISTRATEUR -->
+  @if (isCreateAdminModalOpen()) {
+    <div 
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      (click)="fermerModalCreateAdmin()">
+      
+      <div 
+        class="bg-white rounded-2xl w-full max-w-md overflow-hidden border border-gray-100 p-6 space-y-4 shadow-card"
+        (click)="$event.stopPropagation()">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-orange-100 text-brand-primary flex items-center justify-center">
+              <mat-icon style="font-size: 20px; width: 20px; height: 20px;">person_add</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-gray-900 leading-tight">
+                Créer un Compte Administrateur
+              </h3>
+              <p class="text-[11px] text-gray-500">
+                Accès Super Admin à la console de supervision
+              </p>
+            </div>
+          </div>
+          <button (click)="fermerModalCreateAdmin()" class="text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
+        </div>
+
+        <form [formGroup]="adminForm" (ngSubmit)="soumettreCreateAdmin()" class="space-y-3 text-xs">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-gray-700 mb-1">Prénom *</label>
+              <input 
+                type="text" 
+                formControlName="prenom"
+                class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-brand-primary"
+                placeholder="Ex: Moussa"
+              />
+            </div>
+            <div>
+              <label class="block font-semibold text-gray-700 mb-1">Nom *</label>
+              <input 
+                type="text" 
+                formControlName="nom"
+                class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-brand-primary"
+                placeholder="Ex: Diarra"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Numéro de téléphone (+223) *</label>
+            <input 
+              type="tel" 
+              formControlName="telephone"
+              class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-brand-primary font-monospace"
+              placeholder="70000000"
+            />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Mot de passe provisoire *</label>
+            <input 
+              type="password" 
+              formControlName="motDePasse"
+              class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-brand-primary"
+              placeholder="Au moins 6 caractères"
+            />
+          </div>
+
+          <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+            <button 
+              type="button" 
+              (click)="fermerModalCreateAdmin()"
+              class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl font-semibold cursor-pointer">
+              Annuler
+            </button>
+            <button 
+              type="submit" 
+              [disabled]="adminForm.invalid || isSubmittingAdmin()"
+              class="px-4 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl font-bold cursor-pointer disabled:opacity-50">
+              @if (isSubmittingAdmin()) {
+                <span>Création...</span>
+              } @else {
+                <span>Créer le compte</span>
+              }
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  }
+
+</div>

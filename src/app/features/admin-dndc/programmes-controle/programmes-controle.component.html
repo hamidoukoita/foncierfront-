@@ -1,0 +1,275 @@
+<div class="d-flex flex-column gap-4 font-sans">
+  <!-- En-tête : Titre & Action Export Synthèse -->
+  <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
+    <div>
+      <h1 class="h4 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+        <mat-icon class="text-warning" style="font-size: 26px; width: 26px; height: 26px"
+          >holiday_village</mat-icon
+        >
+        Contrôle des Programmes & Parcelles
+      </h1>
+      <p class="text-secondary small mb-0">
+        Supervision de l'inventaire foncier de la plateforme : cités résidentielles et parcelles
+        individuelles répertoriées.
+      </p>
+    </div>
+  </div>
+
+  <!-- Barre de filtres Tabs, Recherche & Promoteur -->
+  <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+    <!-- Filtres Tabs -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <button
+        type="button"
+        matRipple
+        (click)="setFilter('TOUS')"
+        [class]="
+          currentFilter() === 'TOUS'
+            ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer'
+            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+        "
+        style="font-size: 12px; border-radius: 10px; "
+        class="px-3 py-1.5 flex items-center gap-1.5"
+      >
+      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
+      <span>Tous ({{ countTous() }})</span>
+    </button>
+
+      <button
+        type="button"
+        matRipple
+        (click)="setFilter('PROGRAMMES')"
+        [class]="
+          currentFilter() === 'PROGRAMMES'
+            ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer'
+            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+        "
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5"
+      >
+      <mat-icon style="color: var(--foncier-primary)"  >location_city</mat-icon>
+      <span>Programmes & Cités ({{ countProgrammes() }})</span>
+    </button>
+
+      <button
+        type="button"
+        matRipple
+        (click)="setFilter('PARCELLES')"
+        [class]="
+          currentFilter() === 'PARCELLES'
+            ? 'bg-dark text-white fw-bold shadow-xs cursor-pointer'
+            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
+        "
+        style="font-size: 12px; border-radius: 10px; "
+        class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5"
+      >
+      <mat-icon style="color: var(--foncier-primary)"  >landscape</mat-icon>
+      <span>Parcelles Individuelles ({{ countParcelles() }})</span>
+    </button>
+    </div>
+
+    <!-- Recherche en direct + Dropdown Promoteur Dynamique -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <!-- Input Recherche rapide -->
+      <div class="position-relative" style="min-width: 220px">
+        <input
+          type="text"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          placeholder="Rechercher nom, TF, ville..."
+          class="form-control form-control-sm text-xs rounded-3 border ps-4 pe-2 bg-white shadow-card"
+          style="
+            
+            padding-left: 32px !important;
+            height: 35px;
+          "
+        />
+        <mat-icon
+          class="position-absolute text-muted"
+          style="top: 8px; left: 8px; font-size: 17px; width: 17px; height: 17px"
+          >search</mat-icon
+        >
+      </div>
+
+      <!-- Dropdown Promoteur Dynamique -->
+      <select
+        [ngModel]="selectedPromoteur()"
+        (ngModelChange)="selectedPromoteur.set($event)"
+        class="form-select form-select-sm text-xs rounded-3 border bg-white cursor-pointer shadow-card"
+        style=" width: auto; height: 35px"
+      >
+        <option value="TOUS">Tous promoteurs</option>
+        @for (prom of promoteursDisponibles(); track prom) {
+          <option [value]="prom">{{ prom }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Tableau Contrôle des Programmes & Parcelles -->
+  <div
+    class="card border border-gray-100 rounded-4 overflow-hidden bg-white shadow-card"
+    style=""
+  >
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 text-xs">
+        <thead>
+          <tr class="bg-light border-bottom" style="">
+            <th
+              class="py-2.5 px-4 text-xs text-uppercase fw-semibold text-secondary"
+              style="letter-spacing: 0.05em"
+            >
+              BIEN / DÉSIGNATION
+            </th>
+            <th
+              class="py-2.5 px-4 text-xs text-uppercase fw-semibold text-secondary"
+              style="letter-spacing: 0.05em"
+            >
+              SOCIÉTÉ PROMOTRICE
+            </th>
+            <th
+              class="py-2.5 px-4 text-xs text-uppercase fw-semibold text-secondary"
+              style="letter-spacing: 0.05em"
+            >
+              LOCALISATION
+            </th>
+            <th
+              class="py-2.5 px-4 text-xs text-uppercase fw-semibold text-secondary text-center"
+              style="letter-spacing: 0.05em"
+            >
+              TYPE (CITÉ / PARCELLE)
+            </th>
+            <th
+              class="py-2.5 px-4 text-xs text-uppercase fw-semibold text-secondary text-end"
+              style="letter-spacing: 0.05em"
+            >
+              ACTION
+            </th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y" style="border-color: rgba(226, 221, 213, 0.5)">
+          @for (b of paginatedBiens(); track b.id) {
+            <tr class="transition-colors hover-row">
+              <!-- Bien / Désignation avec avatar adouci -->
+              <td class="py-2.5 px-4">
+                <div class="d-flex align-items-center gap-3">
+                  <div
+                    class="rounded-3 d-flex align-items-center justify-content-center text-sm shrink-0 border shadow-2xs"
+                    style="
+                      width: 36px;
+                      height: 36px;
+                      background: #faf8f5;
+                      
+                    "
+                  >
+                    {{ b.iconEmoji }}
+                  </div>
+                  <div>
+                    <p class="fw-bold text-dark mb-0 text-xs">{{ b.designation }}</p>
+                    <p class="text-muted small mb-0" style="font-size: 11px">Ref #{{ b.id }}</p>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Société Promotrice -->
+              <td class="py-2.5 px-4">
+                <p class="fw-bold text-dark mb-0 text-xs">{{ b.societeNom }}</p>
+                <div class="d-flex align-items-center gap-1.5 mt-0.5" style="font-size: 11px">
+                  <span class="pulse-point-green"></span>
+                  <span class="fw-semibold text-success">Promoteur Agréé</span>
+                </div>
+              </td>
+
+              <!-- Localisation -->
+              <td class="py-2.5 px-4 text-dark fw-medium">
+                {{ b.localisation }}
+              </td>
+
+              <!-- Typologie / Type de bien (Cité ou Parcelle) -->
+              <td class="py-2.5 px-4 text-center">
+                @if (b.typologie === 'PROGRAMME') {
+                  <span
+                    class="badge bg-light text-dark border px-2.5 py-1 rounded-pill text-xs fw-semibold"
+                    style=""
+                  >
+                    Cité Résidentielle
+                  </span>
+                } @else {
+                  <span
+                    class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill text-xs fw-semibold"
+                  >
+                    Parcelle Individuelle
+                  </span>
+                }
+              </td>
+
+              <!-- Action -->
+              <td class="py-2.5 px-4 text-end">
+                <button
+                  type="button"
+                  (click)="voirDetailBien(b)"
+                  matRipple
+                  class="btn btn-sm btn-white bg-white border p-1 d-inline-flex align-items-center justify-content-center shadow-2xs"
+                  style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
+                    
+                  "
+                  title="Consulter le dossier cadastral"
+                >
+                  <mat-icon
+                    class="text-secondary"
+                    style="font-size: 17px; width: 17px; height: 17px"
+                    >visibility</mat-icon
+                  >
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <mat-icon
+                  class="text-muted mb-2 d-block mx-auto"
+                  style="font-size: 32px; width: 32px; height: 32px"
+                  >folder_off</mat-icon
+                >
+                <span>Aucun bien foncier ne correspond aux critères de recherche.</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination compacte réelle -->
+    <div
+      class="px-4 py-2 border-top bg-light bg-opacity-25 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2"
+      style=""
+    >
+      <span class="text-muted small" style="font-size: 12px">
+        Affichage de <strong>{{ paginatedBiens().length }}</strong> sur
+        <strong>{{ filteredBiens().length }}</strong> biens supervisés
+      </span>
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize"
+        [totalItems]="filteredBiens().length"
+        (pageChange)="currentPage.set($event)"
+      >
+      </app-pagination>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALE QUICK VIEW (Prévisualisation des Biens)                            -->
+  <!-- ========================================================================= -->
+  <app-programme-quick-view-modal
+    [bien]="selectedBienView()"
+    [isOpen]="isQuickViewOpen()"
+    (closeModal)="fermerQuickView()"
+    (openFullAudit)="voirDetailBienComplet($event)"
+  >
+  </app-programme-quick-view-modal>
+</div>

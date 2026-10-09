@@ -1,0 +1,4 @@
+/* Styles spécifiques pour InscriptionsSocietesComponent */
+:host {
+  display: block;
+}

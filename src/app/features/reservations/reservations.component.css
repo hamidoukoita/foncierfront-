@@ -1,0 +1,4 @@
+/* Styles spécifiques pour ReservationsComponent */
+:host {
+  display: block;
+}

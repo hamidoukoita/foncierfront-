@@ -1,0 +1,432 @@
+<div class="studio-page">
+  <header class="studio-header studio-header-pro">
+    <div class="studio-header-left">
+      <div class="studio-heading-line">
+        <div>
+          <button class="back-link" type="button" routerLink="/societe/programmes">← Programmes</button>
+          <div class="eyebrow">MODE CONCEPTION DE LOTISSEMENT</div>
+          <div class="studio-title-block">
+            <h1>{{ programme()?.nom || 'Plan de masse' }}</h1>
+            <p>{{ programme()?.localisation || 'Chargement du programme…' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="studio-metrics-visible" aria-label="Statistiques du lotissement">
+        <div class="studio-metric metric-lots">
+          <span>Lots</span>
+          <strong>{{ totalLots() }}</strong>
+          <small>{{ lotsNonPositionnes() }} à positionner</small>
+        </div>
+        <div class="studio-metric metric-available">
+          <span>Disponibles</span>
+          <strong>{{ lotsDisponibles() }}</strong>
+          <small>prêts à la vente</small>
+        </div>
+        <div class="studio-metric metric-reserved">
+          <span>Réservés</span>
+          <strong>{{ lotsReserves() }}</strong>
+          <small>en réservation</small>
+        </div>
+        <div class="studio-metric metric-sold">
+          <span>Vendus</span>
+          <strong>{{ lotsVendus() }}</strong>
+          <small>déjà vendus</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="save-state-block">
+        <span class="save-state" [class.saving]="isSaving()">
+          <span class="save-dot" [class.error]="saveStatus() === 'error'" [class.saved]="saveStatus() === 'saved'"></span>
+          {{ isSaving() ? 'Enregistrement…' : isDirty() ? 'Modifications non enregistrées' : saveStatus() === 'saved' ? 'Enregistré' : 'Prêt' }}
+        </span>
+        @if (lastSavedLabel()) {<span class="last-saved">Dernière sauvegarde : {{ lastSavedLabel() }}</span>}
+      </div>
+      <button class="st-btn st-btn-secondary" type="button" [routerLink]="['/societe/programmes']" [queryParams]="{ edit: programme()?.id }">Modifier le programme</button>
+      <button class="st-btn st-btn-primary save-main-btn" type="button" (click)="savePlan()" [disabled]="isSaving()">
+        {{ isSaving() ? 'Enregistrement…' : 'Enregistrer le plan' }}
+      </button>
+    </div>
+  </header>
+
+  <section class="studio-layout">
+    <aside class="left-panel">
+      <div class="panel-block workflow-card import-card">
+        <div class="panel-title-row">
+          <div><span class="eyebrow">RACCOURCI</span><h2>Plan SVG existant</h2></div><span class="step-badge">SVG</span>
+        </div>
+        <p class="helper strong-helper">Vous avez déjà le plan en SVG ? Importez-le : lots, numéros et formes sont créés d’un coup.</p>
+        <button class="primary-action full" type="button" (click)="openImport()" [disabled]="isSaving()">⬆ Importer un plan SVG</button>
+        @if (backgroundMarkup()) {
+          <div class="bg-controls">
+            <label class="bg-opacity">Opacité du fond
+              <input type="range" min="0.1" max="1" step="0.05" [value]="backgroundOpacity()" (input)="onBackgroundOpacity($event)" />
+            </label>
+            <button class="secondary-action full" type="button" (click)="removeBackground()">Retirer le fond importé</button>
+          </div>
+        }
+      </div>
+
+      <div class="panel-block workflow-card">
+        <div class="panel-title-row">
+          <div><span class="eyebrow">ÉTAPE 1</span><h2>Créer un lot</h2></div><span class="step-badge active">01</span>
+        </div>
+        <button class="primary-action full" type="button" (click)="openCreateLotModal()">＋ Créer un lot</button>
+        <p class="helper">Le lot est enregistré dans la base puis posé automatiquement sur le plan.</p>
+      </div>
+
+      <div class="panel-block workflow-card">
+        <div class="panel-title-row">
+          <div><span class="eyebrow">ÉTAPE 2</span><h2>Lots à positionner</h2></div><span class="count-badge">{{ lotsAPositionner().length }}</span>
+        </div>
+        <div class="queue-toolbar">
+          <span>Glissez un lot sur le plan</span>
+          <button type="button" (click)="autoPlaceRemainingLots()" [disabled]="!lotsAPositionner().length || isSaving()">Placer automatiquement</button>
+        </div>
+        <button class="secondary-action full" type="button" (click)="placeSelectedLotAsRectangle()" [disabled]="!selectedLot() || isSaving()">▭ Rectangle direct sur le plan</button>
+        <div class="queue-list">
+          @for (lot of lotsAPositionner(); track lot.id) {
+            <button
+              type="button"
+              class="queue-item"
+              draggable="true"
+              [class.active]="selectedLot()?.id === lot.id"
+              (dragstart)="onLotDragStart($event, lot)"
+              (dragend)="onLotDragEnd()"
+              (click)="startPlaceLot(lot)">
+              <div><strong>{{ lot.numeroLot }}</strong><span>{{ lot.superficie | number:'1.0-0' }} m² · Îlot {{ lot.numeroIlot || '—' }}</span></div>
+              <span class="queue-action">Glisser ⇢</span>
+            </button>
+          } @empty {
+            <div class="empty-mini">Tous les lots sont déjà positionnés.</div>
+          }
+        </div>
+      </div>
+
+      <div class="panel-block workflow-card">
+        <div class="panel-title-row">
+          <div><span class="eyebrow">ÉTAPE 3</span><h2>Gabarits prêts à l’emploi</h2></div><span class="step-badge">03</span>
+        </div>
+        <div class="shape-intro">
+          <div class="shape-intro-icon">✦</div>
+          <div><strong>Aucun dessin obligatoire</strong><span>Choisissez une forme, glissez-la sur le plan, puis ajustez simplement ses sommets.</span></div>
+        </div>
+        @if (!selectedLot()) {
+          <div class="shape-locked"><strong>Sélectionnez un lot créé</strong><span>La forme sera rattachée à ce lot métier.</span></div>
+        }
+        <div class="shape-grid">
+          @for (preset of shapePresets; track preset.id) {
+            <button
+              type="button"
+              class="shape-card"
+              draggable="true"
+              [class.locked]="!canPlaceShape()"
+              [class.active]="selectedPreset() === preset.id"
+              (dragstart)="onShapeDragStart($event, preset)"
+              (dragend)="onShapeDragEnd()"
+              (click)="choosePreset(preset)"
+              [title]="preset.description">
+              <svg class="shape-preview" viewBox="0 0 100 80" aria-hidden="true">
+                <polygon [attr.points]="preset.preview" fill="#E5A96A" fill-opacity=".58" stroke="#1A2B4C" stroke-width="2"></polygon>
+              </svg>
+              <strong>{{ preset.label }}</strong>
+              <span>{{ preset.description }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="panel-block workflow-card">
+        <div class="panel-title-row"><div><span class="eyebrow">ÉTAPE 4</span><h2>Modifier la forme</h2></div><span class="step-badge">04</span></div>
+        <div class="tool-grid-2">
+          <button class="tool-button" type="button" (click)="startFreeDrawSelectedLot()" [disabled]="!selectedLot()">✎ <span>Contour libre</span></button>
+          <button class="tool-button" type="button" (click)="scaleSelectedLot(0.9)" [disabled]="!selectedLotPositioned()">− <span>Réduire</span></button>
+          <button class="tool-button" type="button" (click)="scaleSelectedLot(1.1)" [disabled]="!selectedLotPositioned()">＋ <span>Agrandir</span></button>
+          <button class="tool-button" type="button" (click)="duplicateSelectedLot()" [disabled]="!selectedLot() || isSaving()">⧉ <span>Dupliquer</span></button>
+          <button class="tool-button" type="button" (click)="openLotRowModal()" [disabled]="!selectedLot() || isSaving()">▥ <span>Créer une rangée</span></button>
+          <button class="tool-button" type="button" (click)="alignSelectedLotToGrid()" [disabled]="!selectedLotPositioned() || isSaving()">⌗ <span>Aligner</span></button>
+        </div>
+        <div class="rotate-row">
+          <button type="button" (click)="rotateSelectedLot(-15)" [disabled]="!selectedLotPositioned()">↺ 15°</button>
+          <button type="button" (click)="rotateSelectedLot(15)" [disabled]="!selectedLotPositioned()">↻ 15°</button>
+        </div>
+        <div class="design-toggle-row">
+          <button type="button" [class.active]="snapToGrid()" (click)="toggleSnap()">{{ snapToGrid() ? '✓ Accroche grille' : '○ Accroche libre' }}</button>
+          <button type="button" [class.active]="showGrid()" (click)="toggleGrid()">{{ showGrid() ? '⌗ Grille visible' : '⌗ Grille masquée' }}</button>
+        </div>
+        <div class="edit-hint"><strong>Manipulation vectorielle</strong><span>Glisser la forme = déplacer. Glisser une poignée = modifier le contour. Double-clic sur un bord = ajouter un sommet. Double-clic sur un sommet = le supprimer.</span></div>
+      </div>
+
+      <div class="panel-block workflow-card">
+        <div class="panel-title-row"><div><span class="eyebrow">ÉTAPE 5</span><h2>Aménagement</h2></div><span class="step-badge">05</span></div>
+        <div class="quick-tools">
+          <button class="tool-button" [class.active]="activeTool() === 'ADD_ROAD'" type="button" (click)="setTool('ADD_ROAD')"><span>━</span><span>Tracer une route</span></button>
+          <button class="tool-button" [class.active]="activeTool() === 'ADD_GREEN'" type="button" (click)="setTool('ADD_GREEN')"><span>▧</span><span>Espace vert</span></button>
+          <button class="tool-button" [class.active]="activeTool() === 'ADD_POI'" type="button" (click)="setTool('ADD_POI')"><span>⌖</span><span>Équipement</span></button>
+        </div>
+        <div class="road-builder">
+          <div><span>Type de route</span><select [value]="roadMode()" (change)="roadMode.set($any($event.target).value)"><option value="GOUDRONNEE">Goudronnée</option><option value="NON_GOUDRONNEE">Non goudronnée</option></select></div>
+          <button class="smart-road-button" type="button" (click)="generateSmartRoads()" [disabled]="isSaving() || positionedLotsCount() < 2">⚙ Générer entre les lots</button>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <div class="panel-title-row"><div><span class="eyebrow">CALQUES</span><h2>Affichage</h2></div></div>
+        @if (backgroundMarkup()) {
+          <label class="layer-row"><span>Fond importé</span><input type="checkbox" [checked]="layerBackground()" (change)="layerBackground.set(!layerBackground())" /></label>
+        }
+        <label class="layer-row"><span>Lots</span><input type="checkbox" [checked]="layerLots()" (change)="toggleLayer('lots')" /></label>
+        <label class="layer-row"><span>Routes</span><input type="checkbox" [checked]="layerRoads()" (change)="toggleLayer('roads')" /></label>
+        <label class="layer-row"><span>Espaces verts</span><input type="checkbox" [checked]="layerGreen()" (change)="toggleLayer('green')" /></label>
+        <label class="layer-row"><span>Équipements</span><input type="checkbox" [checked]="layerPois()" (change)="toggleLayer('pois')" /></label>
+      </div>
+    </aside>
+
+    <main class="canvas-card">
+      <div class="canvas-toolbar">
+        <div>
+          <span class="mode-badge">MODE CONCEPTION</span>
+          <strong>
+            @switch (activeTool()) {
+              @case ('SELECT') { Sélection et édition }
+              @case ('PLACE_PRESET') { Placement d’un gabarit }
+              @case ('DRAW_FREE') { Dessin libre du contour }
+              @case ('ADD_ROAD') { Tracé d’une route }
+              @case ('ADD_GREEN') { Tracé d’un espace vert }
+              @case ('ADD_POI') { Placement d’un équipement }
+            }
+          </strong>
+          <span>@if (selectedLot()) { Lot sélectionné : <b>{{ selectedLot()?.numeroLot }}</b> } @else { Créez ou sélectionnez un lot pour commencer. }</span>
+          @if (toolHint()) { <span class="tool-hint">{{ toolHint() }}</span> }
+        </div>
+        <div class="canvas-info">
+          <div class="viewport-controls" aria-label="Navigation du plan">
+            <button type="button" title="Zoom arrière" (click)="zoomOut()">−</button>
+            <span class="zoom-value">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
+            <button type="button" title="Zoom avant" (click)="zoomIn()">＋</button>
+            <button type="button" title="Réinitialiser la vue" (click)="resetView()">100%</button>
+            <button type="button" title="Cadrer les lots" (click)="fitToLots()">Cadrer</button>
+            <button type="button" [class.active]="isPanMode()" title="Déplacer le plan" (click)="setPanMode()">✋</button>
+          </div>
+          <span class="plan-version">{{ planMasse()?.version || 'Nouveau plan' }}</span>
+          <span class="drop-badge" [class.active]="activeTool() === 'PLACE_PRESET'">⇩ Déposer ici</span>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <div class="canvas-guidance" [class.visible]="activeTool() === 'PLACE_PRESET'">
+          <strong>{{ selectedPreset() ? 'Forme prête' : 'Placement par gabarit' }}</strong>
+          <span>{{ selectedPreset() ? 'Déposez la forme ou cliquez dans le plan.' : 'Sélectionnez un gabarit à gauche.' }}</span>
+        </div>
+        <svg
+          #planCanvas
+          class="plan-canvas"
+          [attr.viewBox]="viewBoxAttribute()"
+          (pointerdown)="onCanvasPointerDown($event)"
+          (pointermove)="onCanvasPointerMove($event)"
+          (pointerup)="onCanvasPointerUp($event)"
+          (pointerleave)="onCanvasPointerUp($event)"
+          (wheel)="onCanvasWheel($event)"
+          (dblclick)="onCanvasDoubleClick($event)"
+          (dragover)="onCanvasDragOver($event)"
+          (drop)="onCanvasDrop($event)">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2ddd3" stroke-width="1" />
+            </pattern>
+            <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity=".12" /></filter>
+          </defs>
+          <rect width="1200" height="720" fill="#f8f7f2" />
+          <rect width="1200" height="720" fill="url(#grid)" [attr.display]="showGrid() ? 'block' : 'none'" />
+          @if (layerBackground() && backgroundMarkup()) {
+            <g class="imported-bg" style="pointer-events:none" [attr.opacity]="backgroundOpacity()" [innerHTML]="safeBackground()"></g>
+          }
+          @if (showGrid()) {
+            <g class="metric-grid-labels">
+              @for (x of majorGridX; track x) { <text [attr.x]="x + 3" y="17">{{ x / pixelsPerMeter() | number:'1.0-1' }} m</text> }
+              @for (y of majorGridY; track y) { <text x="4" [attr.y]="y - 3">{{ y / pixelsPerMeter() | number:'1.0-1' }} m</text> }
+            </g>
+          }
+          <g class="scale-bar">
+            <line x1="30" y1="680" [attr.x2]="30 + scaleBar().px" y2="680"></line>
+            <line x1="30" y1="675" x2="30" y2="685"></line>
+            <line [attr.x1]="30 + scaleBar().px" y1="675" [attr.x2]="30 + scaleBar().px" y2="685"></line>
+            <text x="30" y="698">{{ scaleBar().meters }} m</text>
+          </g>
+
+          <g *ngIf="layerGreen()">
+            @for (element of visibleGreenElements(); track element.id) {
+              <polygon *ngIf="element.geometry.type === 'POLYGON'" [attr.points]="getElementPath(element)" [attr.fill]="elementFill(element.type)" [attr.stroke]="elementStroke(element.type)" class="plan-element" [class.selected]="selectedElement()?.id === element.id" (pointerdown)="startElementBodyDrag($event, element)" (click)="selectElement(element, $event)" (dblclick)="addElementVertexAtEdge($event, element)"></polygon>
+            }
+          </g>
+
+          <g *ngIf="layerRoads()">
+            @for (element of visibleRoadElements(); track element.id) {
+              <polyline *ngIf="element.geometry.type === 'LINE'" [attr.points]="getElementPath(element)" fill="none" [attr.stroke]="elementStroke(element.type)" [attr.stroke-dasharray]="element.type === 'ROUTE_NON_GOUDRONNEE' ? '10 8' : null" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" class="plan-element road-element" [class.selected]="selectedElement()?.id === element.id" (pointerdown)="startElementBodyDrag($event, element)" (click)="selectElement(element, $event)" (dblclick)="addElementVertexAtEdge($event, element)"></polyline>
+            }
+          </g>
+
+          <g *ngIf="layerPois()">
+            @for (element of visiblePoiElements(); track element.id) {
+              <g class="poi-marker plan-element" [class.selected]="selectedElement()?.id === element.id" [attr.transform]="'translate(' + getElementCenter(element).x + ' ' + getElementCenter(element).y + ')'" (pointerdown)="startElementBodyDrag($event, element)" (click)="selectElement(element, $event)">
+                <circle r="18" fill="#fff" stroke="#1A2B4C" stroke-width="3"></circle>
+                <text text-anchor="middle" dominant-baseline="central" font-size="16">{{ getElementIcon(element) }}</text>
+                <text y="32" text-anchor="middle" class="poi-label">{{ element.nom }}</text>
+              </g>
+            }
+          </g>
+
+          <g *ngIf="layerLots()">
+            @for (lot of lots(); track lot.id) {
+              @if (lot.geometry.length >= 3) {
+                <g filter="url(#softShadow)">
+                  <polygon [attr.points]="pointsToSvg(lot.geometry)" [attr.fill]="getLotFillColor(lot)" [attr.stroke]="getLotStrokeColor(lot)" [attr.stroke-width]="selectedLot()?.id === lot.id ? 4 : 2" class="lot-shape" [class.selected]="selectedLot()?.id === lot.id" (click)="selectLot(lot, $event)" (pointerdown)="startLotBodyDrag($event, lot)" (dblclick)="addLotVertexAtEdge($event, lot)"></polygon>
+                  <text [attr.x]="getLotCenter(lot).x" [attr.y]="getLotCenter(lot).y" text-anchor="middle" class="lot-label" (click)="selectLot(lot, $event)">{{ lot.numeroLot.replace('Lot N° ', 'L ') }}</text>
+                </g>
+              }
+            }
+          </g>
+
+          @if (drawingPoints().length) {
+            <g>
+              @if (drawingPoints().length >= 2) {<polyline [attr.points]="pointsToSvg(drawingPoints())" fill="none" stroke="#1A2B4C" stroke-width="3" stroke-dasharray="8 6"></polyline>}
+              @for (point of drawingPoints(); track $index) {<circle [attr.cx]="point.x" [attr.cy]="point.y" r="6" fill="#fff" stroke="#1A2B4C" stroke-width="3"></circle>}
+            </g>
+          }
+
+          @if (selectedLot(); as lot) {
+            @for (point of lot.geometry; track $index) {
+              <circle [attr.cx]="point.x" [attr.cy]="point.y" r="9" fill="#fff" stroke="#1A2B4C" stroke-width="3" class="control-point" (pointerdown)="startLotVertexDrag($event, lot, $index)" (dblclick)="deleteLotVertex($event, lot, $index)" title="Glisser pour modifier • double-clic pour supprimer"></circle>
+            }
+          }
+
+          @if (selectedElement(); as element) {
+            @if (element.geometry.type !== 'POINT') {
+              @for (point of element.geometry.points; track $index) {
+                <circle [attr.cx]="point.x" [attr.cy]="point.y" r="8" fill="#fff" stroke="#1A2B4C" stroke-width="3" class="control-point" (pointerdown)="startElementVertexDrag($event, element, $index)" (dblclick)="deleteElementVertex($event, element, $index)"></circle>
+              }
+            }
+          }
+
+          @if (lotsAPositionner().length > 0) {
+            <g class="unpositioned-badge">
+              <rect x="28" y="28" width="270" height="54" rx="12" fill="#fff" stroke="#E5A96A" stroke-width="2"></rect>
+              <text x="44" y="49" class="badge-title">{{ lotsAPositionner().length }} lot(s) à positionner</text>
+              <text x="44" y="67" class="badge-subtitle">Glissez un lot depuis la liste ou choisissez un gabarit.</text>
+            </g>
+          }
+          <text x="30" y="695" class="canvas-note">Plan vectoriel • grille {{ snapStep() | number:'1.0-0' }} px • {{ snapToGrid() ? 'accrochage actif' : 'accrochage libre' }}</text>
+        </svg>
+      </div>
+
+      <div class="studio-save-strip">
+        <div><strong>{{ isDirty() ? 'Modifications en attente de sauvegarde' : 'Plan synchronisé avec le backend' }}</strong><span>« Enregistrer le plan » sauvegarde le Plan de masse, les géométries des lots et les équipements présents sur cette vue.</span></div>
+        <button class="st-btn st-btn-primary" type="button" (click)="savePlan()" [disabled]="isSaving()">{{ isSaving() ? 'Sauvegarde…' : 'Enregistrer le plan' }}</button>
+      </div>
+    </main>
+
+    <aside class="right-panel">
+      <ng-container *ngIf="selectedLot() as lot; else rightElementInspector">
+        <div class="inspector-header">
+          <div><span class="eyebrow">LOT SÉLECTIONNÉ</span><h2>{{ lot.numeroLot }}</h2><p>{{ lot.reference || 'Référence générée par le backend' }}</p></div>
+          <span class="status-pill" [style.background]="getLotFillColor(lot)">{{ statusLabel(lot.statut) }}</span>
+        </div>
+        <div class="inspector-grid"><div><span>Surface</span><strong>{{ lot.superficie | number:'1.0-0' }} m²</strong></div><div><span>Prix</span><strong>{{ lot.prix | number:'1.0-0' }} F</strong></div><div><span>Îlot</span><strong>{{ lot.numeroIlot || '—' }}</strong></div><div><span>Façade</span><strong>{{ lot.facade || '—' }} m</strong></div></div>
+        <div class="inspector-section"><span class="section-kicker">POSITION</span><div class="geometry-status" [class.positioned]="lot.geometry.length >= 3"><strong>{{ lot.geometry.length >= 3 ? 'Positionnée' : 'À positionner' }}</strong><span>{{ lot.geometry.length >= 3 ? lot.geometry.length + ' sommets' : 'Choisissez un gabarit ou dessinez le contour.' }}</span></div></div>
+        @if (selectedLotMetrics(); as metrics) {
+          <div class="inspector-section"><span class="section-kicker">MESURES GRAPHIQUES</span><div class="measure-grid"><div><span>Centre X</span><strong>{{ metrics.centerX | number:'1.1-1' }} m</strong></div><div><span>Centre Y</span><strong>{{ metrics.centerY | number:'1.1-1' }} m</strong></div><div><span>Largeur</span><strong>{{ metrics.width | number:'1.1-1' }} m</strong></div><div><span>Hauteur</span><strong>{{ metrics.height | number:'1.1-1' }} m</strong></div><div><span>Surface graphique</span><strong>{{ metrics.area | number:'1.0-1' }} m²</strong></div><div><span>Périmètre</span><strong>{{ metrics.perimeter | number:'1.1-1' }} m</strong></div></div></div>
+        }
+        <div class="inspector-section"><span class="section-kicker">TRANSFORMATIONS</span><div class="resize-actions"><button class="mini-action" type="button" (click)="scaleSelectedLot(0.9)">− 10%</button><button class="mini-action" type="button" (click)="scaleSelectedLot(1.1)">＋ 10%</button><button class="mini-action" type="button" (click)="rotateSelectedLot(-15)">↺ 15°</button><button class="mini-action" type="button" (click)="rotateSelectedLot(15)">↻ 15°</button></div></div>
+        <div class="inspector-actions"><button class="st-btn st-btn-primary full" type="button" (click)="openEditLot()">Modifier les données</button><button class="st-btn st-btn-secondary full" type="button" (click)="openLotMedias()">🧭 Photos et visite 360°</button><button class="st-btn st-btn-secondary full" type="button" (click)="startFreeDrawSelectedLot()">✎ Dessiner un contour</button><button class="st-btn st-btn-secondary full" type="button" (click)="resetLotGeometry()">□ Retirer la forme</button><button class="st-btn st-btn-danger full" type="button" (click)="deleteSelectedLotFromInspector()">Supprimer le lot</button></div>
+        <div class="selection-tip"><strong>Conseil :</strong> partez d’un rectangle, carré, trapèze, L ou polygone puis adaptez seulement les sommets nécessaires.</div>
+      </ng-container>
+
+      <ng-template #rightElementInspector>
+        <ng-container *ngIf="selectedElement() as element; else noSelection">
+          <div class="inspector-header"><div><span class="eyebrow">AMÉNAGEMENT</span><h2>{{ element.nom }}</h2><p>{{ elementTypeLabel(element.type) }}</p></div><span class="status-pill" [style.background]="elementStroke(element.type)">Plan</span></div>
+          <div class="inspector-actions"><button class="st-btn st-btn-danger full" type="button" (click)="deleteSelectedElement()">Supprimer l’élément</button></div>
+          <div class="selection-tip">Glissez l’élément pour le déplacer. Les poignées permettent d’ajuster son contour lorsqu’il s’agit d’une route ou d’une zone.</div>
+        </ng-container>
+      </ng-template>
+      <ng-template #noSelection>
+        <div class="no-selection"><div class="empty-icon">⌖</div><strong>Commencez la conception</strong><span>Créez un lot, sélectionnez-le, puis choisissez un gabarit dans la bibliothèque.</span></div>
+      </ng-template>
+    </aside>
+  </section>
+
+  <div class="canvas-statusbar">
+    <span><b>Curseur</b> X {{ cursorPosition().x / pixelsPerMeter() | number:'1.1-1' }} m · Y {{ cursorPosition().y / pixelsPerMeter() | number:'1.1-1' }} m</span>
+    <span><b>Échelle</b> 1 m = {{ pixelsPerMeter() | number:'1.0-2' }} px</span>
+    <span><b>Navigation</b> molette = zoom · {{ isPanMode() ? 'glisser = déplacer le plan' : 'glisser un lot = déplacer le lot' }}</span>
+  </div>
+
+  <section class="inventory-card">
+    <div class="inventory-head"><div><span class="eyebrow">INVENTAIRE MÉTIER</span><h2>Lots du programme</h2></div><div class="inventory-actions"><input class="search" [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" placeholder="Rechercher un lot, une référence ou un îlot…" /><button class="st-btn st-btn-primary" type="button" (click)="openCreateLotModal()">＋ Ajouter un lot</button></div></div>
+    <div class="filter-row"><button [class.active]="currentTableFilter() === 'ALL'" (click)="currentTableFilter.set('ALL')">Tous</button><button [class.active]="currentTableFilter() === 'DISPO'" (click)="currentTableFilter.set('DISPO')">Disponibles</button><button [class.active]="currentTableFilter() === 'RESERVE'" (click)="currentTableFilter.set('RESERVE')">Réservés</button><button [class.active]="currentTableFilter() === 'VENDU'" (click)="currentTableFilter.set('VENDU')">Vendus</button><button [class.active]="currentTableFilter() === 'A_POSITIONNER'" (click)="currentTableFilter.set('A_POSITIONNER')">À positionner</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Lot</th><th>Îlot</th><th>Référence</th><th>Surface</th><th>Prix</th><th>Statut</th><th>Géométrie</th><th>Action</th></tr></thead><tbody>
+      @for (lot of filteredLots(); track lot.id) {
+        <tr (click)="selectLot(lot)"><td><strong>{{ lot.numeroLot }}</strong></td><td>{{ lot.numeroIlot || '—' }}</td><td>{{ lot.reference || '—' }}</td><td>{{ lot.superficie | number:'1.0-0' }} m²</td><td>{{ lot.prix | number:'1.0-0' }} F</td><td><span class="status-chip" [class.green]="lot.statut === 'DISPONIBLE'" [class.orange]="lot.statut === 'RESERVE'" [class.red]="lot.statut === 'VENDU'">{{ statusLabel(lot.statut) }}</span></td><td><span class="position-chip" [class.positioned]="lot.geometry.length >= 3">{{ lot.geometry.length >= 3 ? 'Positionné' : 'À positionner' }}</span></td><td><button class="table-action" type="button" (click)="$event.stopPropagation(); startPlaceLot(lot)">{{ lot.geometry.length >= 3 ? 'Modifier' : 'Placer sur le plan' }}</button></td></tr>
+      } @empty {<tr><td colspan="8" class="empty-table">Aucun lot correspondant aux critères actuels.</td></tr>}
+    </tbody></table></div>
+  </section>
+</div>
+
+@if (isCreateLotModalOpen()) {
+  <div class="studio-backdrop" (click)="isCreateLotModalOpen.set(false)"><div class="studio-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-head"><div><span class="eyebrow">NOUVEAU LOT</span><h2>Créer le lot</h2><p>Le lot est enregistré puis posé sur le plan dès sa création.</p></div><button class="icon-btn" type="button" (click)="isCreateLotModalOpen.set(false)">×</button></div>
+    <form [formGroup]="lotForm" (ngSubmit)="confirmCreateLot()">
+      <div class="form-grid">
+        <label>Numéro du lot<input formControlName="numeroLot" /><small class="field-error">{{ lotFieldError('numeroLot') }}</small></label>
+        <label>Numéro d’îlot<input formControlName="numeroIlot" /><small class="field-error">{{ lotFieldError('numeroIlot') }}</small></label>
+        <label>Îlot de lotissement<input formControlName="numeroIlotLotissement" /></label>
+        <label>Référence<input formControlName="reference" placeholder="Optionnelle" /></label>
+        <label>Superficie (m²)<input type="number" min="1" formControlName="superficie" /><small class="field-error">{{ lotFieldError('superficie') }}</small></label>
+        <label>Prix (FCFA)<input type="number" min="1" formControlName="prix" /><small class="field-error">{{ lotFieldError('prix') }}</small></label>
+        <label>Façade (m)<input type="number" formControlName="facade" /></label>
+        <label>Profondeur (m)<input type="number" formControlName="profondeur" /></label>
+        <label>Statut<select formControlName="statut"><option value="DISPONIBLE">Disponible</option><option value="RESERVE">Réservé</option><option value="VENDU">Vendu</option><option value="INDISPONIBLE_LITIGE">Indisponible</option></select></label>
+      </div>
+      <div class="form-note"><strong>Placement automatique :</strong> le lot est enregistré dans Spring Boot puis posé sur le plan sous forme de rectangle, à partir de la façade et de la profondeur si elles sont renseignées. Vous pouvez ensuite déplacer ses sommets ou changer de forme.</div>
+      <div class="modal-actions"><button class="st-btn st-btn-secondary" type="button" (click)="isCreateLotModalOpen.set(false)">Annuler</button><button class="st-btn st-btn-primary" type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Création…' : 'Créer le lot' }}</button></div>
+    </form>
+  </div></div>
+}
+
+@if (isEditLotModalOpen()) {
+  <div class="studio-backdrop" (click)="isEditLotModalOpen.set(false)"><div class="studio-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-head"><div><span class="eyebrow">LOT</span><h2>Modifier les données</h2></div><button class="icon-btn" type="button" (click)="isEditLotModalOpen.set(false)">×</button></div>
+    <form [formGroup]="lotForm" (ngSubmit)="saveLotDetails()"><div class="form-grid"><label>Numéro du lot<input formControlName="numeroLot" /></label><label>Numéro d’îlot<input formControlName="numeroIlot" /></label><label>Îlot de lotissement<input formControlName="numeroIlotLotissement" /></label><label>Référence<input formControlName="reference" /></label><label>Superficie (m²)<input type="number" min="1" formControlName="superficie" /></label><label>Prix (FCFA)<input type="number" min="1" formControlName="prix" /></label><label>Façade (m)<input type="number" formControlName="facade" /></label><label>Profondeur (m)<input type="number" formControlName="profondeur" /></label><label>Statut<select formControlName="statut"><option value="DISPONIBLE">Disponible</option><option value="RESERVE">Réservé</option><option value="VENDU">Vendu</option><option value="INDISPONIBLE_LITIGE">Indisponible</option></select></label></div><div class="modal-actions"><button class="st-btn st-btn-secondary" type="button" (click)="isEditLotModalOpen.set(false)">Annuler</button><button class="st-btn st-btn-primary" type="submit" [disabled]="isSaving() || lotForm.invalid">Enregistrer</button></div></form>
+  </div></div>
+}
+
+@if (isRowModalOpen()) {
+  <div class="studio-backdrop" (click)="isRowModalOpen.set(false)"><div class="studio-dialog modal-small" (click)="$event.stopPropagation()">
+    <div class="modal-head"><div><span class="eyebrow">CONCEPTION EN SÉRIE</span><h2>Créer une rangée de lots</h2><p>Le lot sélectionné sert de modèle. Chaque nouveau lot sera d’abord créé en base avec sa propre géométrie.</p></div><button class="icon-btn" type="button" (click)="isRowModalOpen.set(false)">×</button></div>
+    <form [formGroup]="rowForm" (ngSubmit)="generateLotRow()"><div class="form-grid"><label>Nombre de nouveaux lots<input type="number" min="2" max="30" formControlName="count" /></label><label>Espacement (m)<input type="number" min="0.5" step="0.5" formControlName="spacingMeters" /></label><label>Direction<select formControlName="direction"><option value="HORIZONTAL">Horizontale</option><option value="VERTICAL">Verticale</option></select></label></div><div class="form-note">Les lots sont enregistrés via l’API existante puis positionnés automatiquement avec la même forme et un espacement métrique.</div><div class="modal-actions"><button class="st-btn st-btn-secondary" type="button" (click)="isRowModalOpen.set(false)">Annuler</button><button class="st-btn st-btn-primary" type="submit" [disabled]="isGeneratingRow() || isSaving() || rowForm.invalid">{{ isGeneratingRow() ? 'Création…' : 'Créer la rangée' }}</button></div></form>
+  </div></div>
+}
+
+@if (isElementModalOpen()) {
+  <div class="studio-backdrop" (click)="isElementModalOpen.set(false)"><div class="studio-dialog modal-small" (click)="$event.stopPropagation()">
+    <div class="modal-head"><div><span class="eyebrow">AMÉNAGEMENT</span><h2>Configurer l’équipement</h2></div><button class="icon-btn" type="button" (click)="isElementModalOpen.set(false)">×</button></div>
+    <form [formGroup]="elementForm" (ngSubmit)="confirmElement()"><div class="form-grid one-col"><label>Type<select formControlName="type">@for(option of getElementTypeOptions(); track option.value){<option [value]="option.value">{{ option.label }}</option>}</select></label><label>Nom<input formControlName="nom" placeholder="Ex. École principale, marché central…" /></label><label>Description<textarea rows="3" formControlName="description"></textarea></label></div><div class="form-note">L’équipement sera enregistré sur le Plan de masse.</div><div class="modal-actions"><button class="st-btn st-btn-secondary" type="button" (click)="isElementModalOpen.set(false)">Annuler</button><button class="st-btn st-btn-primary" type="submit" [disabled]="isSaving() || elementForm.invalid">Enregistrer</button></div></form>
+  </div></div>
+}
+
+@if (mediaCible(); as cible) {
+  <app-media-manager [cible]="cible" (closed)="mediaCible.set(null)" />
+}
+
+@if (isImportOpen(); as _open) {
+  @if (programme(); as prog) {
+    <app-svg-import-dialog
+      [programmeId]="prog.id"
+      [existingLots]="existingLotRefs()"
+      [canvasWidth]="canvasWidth"
+      [canvasHeight]="canvasHeight"
+      (closed)="isImportOpen.set(false)"
+      (imported)="onSvgImported($event)" />
+  }
+}

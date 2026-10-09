@@ -1,0 +1,16 @@
+/* Styles spécifiques pour LoginComponent */
+:host {
+  display: block;
+}
+
+.glass-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px) scale(1.01);
+}
+
+.btn-foncier-primary {
+  height: 48px;
+}

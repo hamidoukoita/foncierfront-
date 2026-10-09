@@ -1,0 +1,48 @@
+/* Styles spécifiques pour SuperDashboardComponent */
+:host {
+  display: block;
+}
+
+/* Effets visuels des lignes du tableau */
+.table > :not(caption) > * > * {
+  border-bottom-color: #F3F4F6 !important;
+}
+
+tbody tr:hover {
+  background-color: #FAF8F5 !important;
+}
+
+@media (min-width: 768px) {
+  .border-end-md {
+    border-right: 1px solid #F1ECE1;
+  }
+}
+
+/* Micro-animations pour les indicateurs de statut */
+@keyframes pulseDot {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(46, 125, 50, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0);
+  }
+}
+
+.pulse-point-green {
+  animation: pulseDot 2s infinite;
+}
+
+/* Transition douce des cartes en vue mobile */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:active {
+  transform: scale(0.99);
+}

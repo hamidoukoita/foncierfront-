@@ -1,0 +1,4 @@
+/* Styles spécifiques pour PlanMasseComponent */
+:host {
+  display: block;
+}

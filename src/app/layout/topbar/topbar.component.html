@@ -1,0 +1,183 @@
+<header class="topbar-container shadow-sm">
+  
+  <!-- ROW 1 : Header principal (Logo + Accréditation + Outils + Profil) -->
+  <div class="topbar-master-header px-3 sm:px-6 lg:px-8 xl:px-10 d-flex align-items-center justify-content-between">
+    
+    <!-- Gauche : Bouton burger mobile + Logo officiel + Badge espace -->
+    <div class="d-flex align-items-center gap-2 gap-sm-3">
+      <!-- Burger uniquement visible sur mobile/tablette (< 992px) -->
+      <button
+        type="button"
+        matRipple
+        (click)="layoutService.toggleSidebar()"
+        aria-label="Basculer le menu mobile"
+        class="btn btn-sm border-0 p-2 rounded-3 text-gray-800 d-flex align-items-center justify-content-center cursor-pointer d-lg-none"
+        style="background: rgba(255, 255, 255, 0.1);"
+        title="Ouvrir le menu">
+        <mat-icon style="font-size: 22px; width: 22px; height: 22px; color: var(--foncier-secondary);">menu</mat-icon>
+      </button>
+
+      <!-- Logo Foncier+ avec darkTheme actif -->
+      <div class="d-flex align-items-center">
+        <app-logo [size]="'md'" [darkTheme]="false" [isSuperAdmin]="authService.isPlatformAdmin()"></app-logo>
+      </div>
+
+      <!-- Badge officiel de régulation -->
+      @if (authService.isPlatformAdmin()) {
+        <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 rounded-pill border"
+             style="background: rgba(229, 128, 26, 0.15); border-color: rgba(229, 128, 26, 0.35) !important;">
+          <span class="pulse-point-amber"></span>
+          <span style="font-size: 11.5px; font-weight: 700; color: var(--foncier-warning); letter-spacing: 0.3px;">
+            Console Administrateur Plateforme
+          </span>
+        </div>
+      } @else {
+        <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 rounded-pill border"
+             style="background: rgba(46, 125, 50, 0.2); border-color: rgba(74, 222, 128, 0.35) !important;">
+          <span class="pulse-point-green"></span>
+          <span style="font-size: 11.5px; font-weight: 700; color: var(--foncier-success); letter-spacing: 0.3px;">
+            {{ currentUser()?.societeNom || 'SEMA S.A' }} • Promoteur Agréé
+          </span>
+        </div>
+      }
+    </div>
+
+    <!-- Droite : Cloche notification + Menu utilisateur + Déconnexion -->
+    <div class="d-flex align-items-center gap-2 gap-sm-3">
+      <!-- Cloche de notification -->
+      <a
+        [routerLink]="notificationRoute()"
+        matRipple
+        class="position-relative p-2 rounded-circle d-flex align-items-center justify-content-center cursor-pointer text-decoration-none text-gray-800 transition-all"
+        style="background: rgba(26, 43, 76, 0.05);"
+        title="Notifications">
+        <mat-icon style="font-size: 20px; width: 20px; height: 20px; color: var(--foncier-text-muted);">notifications</mat-icon>
+        <span class="position-absolute top-0 end-0 translate-middle p-1 bg-danger border border-dark rounded-circle" 
+              style="width: 8px; height: 8px; margin-top: 8px; margin-right: 8px;">
+          <span class="visually-hidden">Nouvelles alertes</span>
+        </span>
+      </a>
+
+      <!-- Profil Utilisateur avec menu dropdown -->
+      <div class="position-relative user-menu-container">
+        <button
+          type="button"
+          matRipple
+          (click)="toggleMenu()"
+          class="btn btn-sm border-0 d-flex align-items-center gap-2 p-1.5 pe-2.5 rounded-pill cursor-pointer"
+          style="background: rgba(26, 43, 76, 0.05);">
+          <!-- Avatar rond avec initiales -->
+          <div class="rounded-circle text-white fw-bold d-flex align-items-center justify-content-center shadow-xs" 
+               [style.background-color]="authService.isPlatformAdmin() ? 'var(--foncier-secondary)' : 'var(--foncier-primary)'"
+               style="width: 32px; height: 32px; font-size: 11.5px;">
+            {{ authService.userInitials() }}
+          </div>
+
+          <!-- Détails utilisateur sur Desktop -->
+          <div class="d-none d-sm-flex flex-column text-start" style="line-height: 1.15;">
+            <span class="text-gray-800 fw-bold text-truncate" style="font-size: 12.5px; max-width: 140px;">
+              {{ currentUser()?.prenom }} {{ currentUser()?.nom }}
+            </span>
+            <span class="text-gray-500" style="font-size: 10px;">
+              {{ authService.isPlatformAdmin() ? 'Super Admin' : (currentUser()?.societeNom || 'Direction') }}
+            </span>
+          </div>
+
+          <mat-icon style="font-size: 16px; width: 16px; height: 16px; color: var(--foncier-text-muted);">expand_more</mat-icon>
+        </button>
+
+        <!-- Menu déroulant profil -->
+        @if (isMenuOpen()) {
+          <div class="dropdown-menu-custom position-absolute end-0 mt-2 bg-white rounded-3 border py-2 z-3 shadow-card" 
+               style="width: 260px; border-color: #E2DDD5 !important;">
+            <div class="px-3 py-2 border-bottom" style="border-color: #E2DDD5 !important;">
+              <p class="text-xs fw-bold text-dark mb-0">
+                {{ currentUser()?.prenom }} {{ currentUser()?.nom }}
+              </p>
+              <p class="text-muted small mb-1 text-truncate" style="font-size: 11px;">
+                {{ currentUser()?.email || currentUser()?.telephone }}
+              </p>
+              <span class="badge bg-light text-dark border px-2 py-0.5 rounded text-uppercase" style="font-size: 9px; letter-spacing: 0.05em; border-color: #E2DDD5;">
+                {{
+                  authService.isPlatformAdmin()
+                    ? 'Super Administrateur Plateforme'
+                    : authService.isResponsableSociete()
+                      ? 'Directeur Promoteur Agréé'
+                      : 'Agent Commercial Terrain'
+                }}
+              </span>
+            </div>
+
+            @if (authService.isResponsableSociete()) {
+              <a
+                routerLink="/societe/profil"
+                (click)="isMenuOpen.set(false)"
+                class="dropdown-item d-flex align-items-center gap-2 px-3 py-2 text-xs text-dark hover-bg-light text-decoration-none">
+                <mat-icon class="text-secondary" style="font-size: 16px; width: 16px; height: 16px;">corporate_fare</mat-icon>
+                <span>Dossier Société & Agréments</span>
+              </a>
+            }
+
+            <a
+              [routerLink]="notificationRoute()"
+              (click)="isMenuOpen.set(false)"
+              class="dropdown-item d-flex align-items-center gap-2 px-3 py-2 text-xs text-dark hover-bg-light text-decoration-none">
+              <mat-icon class="text-secondary" style="font-size: 16px; width: 16px; height: 16px;">notifications</mat-icon>
+              <span>Notifications & Alertes</span>
+            </a>
+
+            <div class="border-top my-1" style="border-color: #E2DDD5 !important;"></div>
+
+            <button
+              type="button"
+              (click)="onLogout()"
+              class="dropdown-item d-flex align-items-center gap-2 px-3 py-2 text-xs fw-bold text-danger hover-bg-light w-100 border-0 bg-transparent text-start cursor-pointer">
+              <mat-icon class="text-danger" style="font-size: 16px; width: 16px; height: 16px;">logout</mat-icon>
+              <span>Déconnexion</span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Bouton Déconnexion rapide Desktop -->
+      <button 
+        type="button" 
+        (click)="onLogout()" 
+        matRipple
+        class="btn btn-sm border-0 p-2 rounded-circle text-gray-500 hover-text-gray-800 d-none d-xl-flex align-items-center justify-content-center cursor-pointer transition-colors"
+        style="background: rgba(26, 43, 76, 0.05);"
+        title="Se déconnecter">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px; color: var(--foncier-text-muted);">power_settings_new</mat-icon>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ROW 2 : Navbar Horizontale des Menus avec Tabs / Pills scrollables -->
+  <nav class="topbar-nav-row d-none d-lg-flex align-items-center px-3 sm:px-6 lg:px-8 xl:px-10" aria-label="Navigation principale">
+    <div class="nav-scroll-container d-flex align-items-center gap-2.5 py-2 w-100">
+      @for (item of currentNavItems(); track item.route) {
+        <a 
+          [routerLink]="item.route" 
+          routerLinkActive="active-nav"
+          [routerLinkActiveOptions]="{ exact: item.route === '/admin/dashboard' || item.route === '/societe/dashboard' }"
+          matRipple
+          class="nav-tab-pill">
+          
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+
+          @if (item.badge) {
+            <span class="nav-tab-badge">
+              {{ item.badge }}
+            </span>
+          }
+        </a>
+      }
+    </div>
+  </nav>
+
+  <!-- ROW 3 : Bandeau décoratif aux couleurs républicaines Foncier+ -->
+  <div class="topbar-brand-strip"></div>
+
+</header>

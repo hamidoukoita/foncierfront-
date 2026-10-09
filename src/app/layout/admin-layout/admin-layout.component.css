@@ -1,0 +1,29 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+/* Sidebar tiroir uniquement sur écran mobile / tablette (< 992px) */
+@media (max-width: 991.98px) {
+  .sidebar-container {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 280px;
+    transform: translateX(0);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar-container.sidebar-closed {
+    transform: translateX(-100%) !important;
+  }
+}
+
+/* Sur Desktop (>= 992px) : Aucune sidebar latérale, plein écran libéré pour les données */
+@media (min-width: 992px) {
+  .sidebar-container {
+    display: none !important;
+  }
+}

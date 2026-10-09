@@ -1,0 +1,38 @@
+/* 
+  Fichier centralisé des couleurs de l'application (Charte Graphique Foncier+)
+  Ces variables étendent le thème Tailwind CSS par défaut.
+*/
+
+@theme {
+  /* Couleurs de marque principales */
+  --color-brand-primary: #E67E22; /* Orange Mandarine / Ocre Moderne */
+  --color-brand-primary-hover: #d6711c;
+  
+  --color-brand-secondary: #1A2B4C; /* Bleu Anthracite */
+  --color-brand-secondary-hover: #121e36;
+  
+  --color-brand-success: #4A7A56; /* Vert Émeraude Épuré */
+  
+  --color-brand-bg-lin: #F4F3EF; /* Beige Lin */
+
+  /* Couleurs de statuts (étendues pour les alertes) */
+  --color-brand-warning: #D97706; /* Ambre */
+  --color-brand-danger: #DC2626;  /* Rouge */
+  --color-brand-litige: #1A1A1A;  /* Noir profond */
+
+  /* Ombres personnalisées */
+  --shadow-card: 0 4px 12px -2px rgba(26, 40, 64, 0.08), 0 2px 4px -2px rgba(26, 40, 64, 0.04);
+  --shadow-card-hover: 0 10px 25px -5px rgba(26, 40, 64, 0.12), 0 8px 10px -6px rgba(26, 40, 64, 0.08);
+}
+
+/* Variables CSS classiques (si besoin hors Tailwind) */
+:root {
+  --foncier-primary: var(--color-brand-primary);
+  --foncier-primary-hover: var(--color-brand-primary-hover);
+  --foncier-secondary: var(--color-brand-secondary);
+  --foncier-success: var(--color-brand-success);
+  --foncier-bg: var(--color-brand-bg-lin);
+  --foncier-warning: var(--color-brand-warning);
+  --foncier-danger: var(--color-brand-danger);
+  --foncier-litige: var(--color-brand-litige);
+}

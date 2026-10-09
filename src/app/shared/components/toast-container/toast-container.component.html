@@ -1,0 +1,44 @@
+<div 
+  class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
+  aria-live="polite"
+  aria-atomic="true">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div 
+      role="status"
+      class="pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border backdrop-blur-md bg-white/95 animate-slideInRight transition-all shadow-card"
+      [ngClass]="getToastBorderAndBg(toast.type)">
+      
+      <!-- Icône de statut -->
+      <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold"
+           [ngClass]="getIconClass(toast.type)">
+        @switch (toast.type) {
+          @case ('success') { <span>✓</span> }
+          @case ('error') { <span>✕</span> }
+          @case ('warning') { <span>⚠️</span> }
+          @default { <span>ℹ️</span> }
+        }
+      </div>
+
+      <!-- Contenu texte -->
+      <div class="flex-1 min-w-0 pr-1">
+        <h4 class="text-xs font-bold text-gray-900 leading-tight">
+          {{ toast.title }}
+        </h4>
+        @if (toast.message) {
+          <p class="text-[11px] text-gray-600 mt-0.5 leading-snug">
+            {{ toast.message }}
+          </p>
+        }
+      </div>
+
+      <!-- Bouton fermer -->
+      <button 
+        type="button" 
+        (click)="toastService.dismiss(toast.id)"
+        class="text-gray-400 hover:text-gray-600 p-1 rounded-md text-xs cursor-pointer focus:outline-none transition-colors"
+        aria-label="Fermer">
+        ✕
+      </button>
+    </div>
+  }
+</div>

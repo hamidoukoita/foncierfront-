@@ -1,0 +1,4 @@
+/* Styles spécifiques pour VisitesComponent */
+:host {
+  display: block;
+}

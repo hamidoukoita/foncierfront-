@@ -1,0 +1,765 @@
+<div class="min-h-screen bg-[#F8F9FA] flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+  
+  <!-- Motif décoratif d'arrière-plan discret -->
+  <div class="absolute inset-0 pointer-events-none opacity-40">
+    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-orange-100 blur-3xl"></div>
+    <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-emerald-100 blur-3xl"></div>
+  </div>
+
+  <div class="sm:mx-auto sm:w-full sm:max-w-2xl relative z-10 text-center mb-6">
+    <!-- Logo Officiel Foncier+ -->
+    <div class="flex justify-center mb-3">
+      <app-logo [size]="'lg'"></app-logo>
+    </div>
+    
+    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
+      Adhésion Société Promotrice Agréée
+    </h1>
+    <p class="text-sm text-gray-500 mt-1 max-w-lg mx-auto">
+      Dépôt du dossier d'agrément ministériel et création du compte de direction d'entreprise foncière.
+    </p>
+  </div>
+
+  <!-- Stepper de progression (visible sur les slides 1 à 4) -->
+  @if (currentStep() <= totalSteps) {
+    <div class="sm:mx-auto sm:w-full sm:max-w-2xl relative z-10 mb-6">
+      <div class="bg-white px-6 py-4 rounded-2xl border border-gray-100 shadow-card">
+        <!-- Barre de progression relative -->
+        <div class="flex items-center justify-between relative">
+          <!-- Ligne de fond -->
+          <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 w-full z-0 rounded-full"></div>
+          <!-- Ligne de progression active -->
+          <div 
+            class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#E07A22] z-0 rounded-full transition-all duration-300"
+            [style.width.%]="((currentStep() - 1) / (totalSteps - 1)) * 100">
+          </div>
+
+          <!-- Étape 1 -->
+          <button 
+            type="button" 
+            (click)="goToStep(1)" 
+            class="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none">
+            <div 
+              class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-200"
+              [ngClass]="{
+                'bg-[#E07A22] text-white ring-4 ring-orange-100 shadow-md': currentStep() === 1,
+                'bg-emerald-600 text-white shadow-sm': currentStep() > 1,
+                'bg-gray-100 text-gray-400': currentStep() < 1
+              }">
+              @if (currentStep() > 1) {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+              } @else {
+                <span>1</span>
+              }
+            </div>
+            <span class="text-[11px] font-semibold mt-1.5 hidden sm:block" 
+                  [ngClass]="currentStep() >= 1 ? 'text-gray-900 font-bold' : 'text-gray-400'">
+              Société
+            </span>
+          </button>
+
+          <!-- Étape 2 -->
+          <button 
+            type="button" 
+            (click)="goToStep(2)" 
+            class="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none">
+            <div 
+              class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-200"
+              [ngClass]="{
+                'bg-[#E07A22] text-white ring-4 ring-orange-100 shadow-md': currentStep() === 2,
+                'bg-emerald-600 text-white shadow-sm': currentStep() > 2,
+                'bg-gray-100 text-gray-400': currentStep() < 2
+              }">
+              @if (currentStep() > 2) {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+              } @else {
+                <span>2</span>
+              }
+            </div>
+            <span class="text-[11px] font-semibold mt-1.5 hidden sm:block" 
+                  [ngClass]="currentStep() >= 2 ? 'text-gray-900 font-bold' : 'text-gray-400'">
+              Agréments DNDC
+            </span>
+          </button>
+
+          <!-- Étape 3 -->
+          <button 
+            type="button" 
+            (click)="goToStep(3)" 
+            class="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none">
+            <div 
+              class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-200"
+              [ngClass]="{
+                'bg-[#E07A22] text-white ring-4 ring-orange-100 shadow-md': currentStep() === 3,
+                'bg-emerald-600 text-white shadow-sm': currentStep() > 3,
+                'bg-gray-100 text-gray-400': currentStep() < 3
+              }">
+              @if (currentStep() > 3) {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+              } @else {
+                <span>3</span>
+              }
+            </div>
+            <span class="text-[11px] font-semibold mt-1.5 hidden sm:block" 
+                  [ngClass]="currentStep() >= 3 ? 'text-gray-900 font-bold' : 'text-gray-400'">
+              Direction
+            </span>
+          </button>
+
+          <!-- Étape 4 -->
+          <button 
+            type="button" 
+            (click)="goToStep(4)" 
+            class="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none">
+            <div 
+              class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-200"
+              [ngClass]="{
+                'bg-[#E07A22] text-white ring-4 ring-orange-100 shadow-md': currentStep() === 4,
+                'bg-emerald-600 text-white shadow-sm': currentStep() > 4,
+                'bg-gray-100 text-gray-400': currentStep() < 4
+              }">
+              <span>4</span>
+            </div>
+            <span class="text-[11px] font-semibold mt-1.5 hidden sm:block" 
+                  [ngClass]="currentStep() >= 4 ? 'text-gray-900 font-bold' : 'text-gray-400'">
+              KYC & Synthèse
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Conteneur Formulaire Principal -->
+  <div class="sm:mx-auto sm:w-full sm:max-w-2xl relative z-10">
+    <div class="bg-white py-8 px-6 sm:px-10 rounded-2xl border border-gray-100 shadow-card">
+      
+      <!-- Alerte Erreur -->
+      @if (errorMessage()) {
+        <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3 animate-shake">
+          <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <div class="text-xs sm:text-sm text-red-700 leading-snug font-medium">
+            {{ errorMessage() }}
+          </div>
+        </div>
+      }
+
+      <!-- Formulaire avec slides -->
+      <form [formGroup]="form" class="space-y-6">
+
+        <!-- ========================================== -->
+        <!-- SLIDE 1 : IDENTITÉ DE L'ENTREPRISE         -->
+        <!-- ========================================== -->
+        @if (currentStep() === 1) {
+          <div class="animate-fadeIn">
+            <div class="border-b border-gray-100 pb-4 mb-6">
+              <span class="text-xs font-bold text-[#E07A22] uppercase tracking-wider">Étape 1 sur 4</span>
+              <h2 class="text-lg font-bold text-gray-900">Identité de l'entreprise</h2>
+              <p class="text-xs text-gray-500 mt-0.5">Renseignez la raison sociale et les coordonnées officielles de votre société.</p>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Raison sociale -->
+              <div>
+                <label for="nomSociete" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Raison sociale / Nom de la société <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  id="nomSociete"
+                  type="text"
+                  formControlName="nomSociete"
+                  placeholder="Ex: SEMA SA, SIFMA, IMMO MALI..."
+                  class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                />
+                @if (form.controls.nomSociete.touched && form.controls.nomSociete.invalid) {
+                  <p class="mt-1 text-xs text-red-600">Le nom de la société est obligatoire.</p>
+                }
+              </div>
+
+              <!-- Forme Juridique & Téléphone Siège -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="formeJuridique" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Forme Juridique <span class="text-red-500">*</span>
+                  </label>
+                  <select 
+                    id="formeJuridique"
+                    formControlName="formeJuridique"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card">
+                    <option value="SARL">SARL (Société à Responsabilité Limitée)</option>
+                    <option value="SA">SA (Société Anonyme)</option>
+                    <option value="SAS">SAS (Société par Actions Simplifiée)</option>
+                    <option value="SUARL">SUARL (SARL Unipersonnelle)</option>
+                    <option value="GIE">GIE (Groupement d'Intérêt Économique)</option>
+                    <option value="ENTREPRISE_INDIVIDUELLE">Entreprise Individuelle</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="telephoneSociete" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Téléphone du siège <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative rounded-xl">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                      <span class="text-xs font-bold text-gray-500 mr-1.5 border-r border-gray-200 pr-2">+223</span>
+                    </div>
+                    <input 
+                      id="telephoneSociete"
+                      type="text"
+                      formControlName="telephoneSociete"
+                      placeholder="20 22 00 00"
+                      class="block w-full pl-18 pr-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                    />
+                  </div>
+                  @if (form.controls.telephoneSociete.touched && form.controls.telephoneSociete.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Numéro de téléphone requis (8 chiffres minimum).</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Adresse du siège -->
+              <div>
+                <label for="adresse" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Adresse du siège social <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  id="adresse"
+                  type="text"
+                  formControlName="adresse"
+                  placeholder="Ex: Hamdallaye ACI 2000, Rue 312, Porte 45, Bamako"
+                  class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                />
+                @if (form.controls.adresse.touched && form.controls.adresse.invalid) {
+                  <p class="mt-1 text-xs text-red-600">L'adresse du siège est obligatoire.</p>
+                }
+              </div>
+
+              <!-- Email et Site Web -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="emailSociete" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Email officiel (optionnel)
+                  </label>
+                  <input 
+                    id="emailSociete"
+                    type="email"
+                    formControlName="emailSociete"
+                    placeholder="contact@societe.ml"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                  />
+                  @if (form.controls.emailSociete.touched && form.controls.emailSociete.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Format d'email invalide.</p>
+                  }
+                </div>
+
+                <div>
+                  <label for="siteWeb" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Site Internet (optionnel)
+                  </label>
+                  <input 
+                    id="siteWeb"
+                    type="text"
+                    formControlName="siteWeb"
+                    placeholder="https://www.societe.ml"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ========================================== -->
+        <!-- SLIDE 2 : AGRÉMENTS & FISCALITÉ DNDC       -->
+        <!-- ========================================== -->
+        @if (currentStep() === 2) {
+          <div class="animate-fadeIn">
+            <div class="border-b border-gray-100 pb-4 mb-6">
+              <span class="text-xs font-bold text-[#E07A22] uppercase tracking-wider">Étape 2 sur 4</span>
+              <h2 class="text-lg font-bold text-gray-900">Agréments ministériels & Fiscalité</h2>
+              <p class="text-xs text-gray-500 mt-0.5">Ces informations permettront aux services de la DNCG de vérifier votre habilitation légale.</p>
+            </div>
+
+            <div class="space-y-4">
+              <!-- N° Agrément ministériel -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="numeroAgrement" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    N° Agrément Promoteur <span class="text-red-500">*</span>
+                  </label>
+                  <input 
+                    id="numeroAgrement"
+                    type="text"
+                    formControlName="numeroAgrement"
+                    placeholder="Ex: AGR-DNDC-2024-045"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all uppercase shadow-card"
+                  />
+                  @if (form.controls.numeroAgrement.touched && form.controls.numeroAgrement.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Le numéro d'agrément est obligatoire.</p>
+                  }
+                </div>
+
+                <div>
+                  <label for="dateAgrement" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Date d'octroi de l'agrément <span class="text-red-500">*</span>
+                  </label>
+                  <input 
+                    id="dateAgrement"
+                    type="date"
+                    formControlName="dateAgrement"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                  />
+                  @if (form.controls.dateAgrement.touched && form.controls.dateAgrement.invalid) {
+                    <p class="mt-1 text-xs text-red-600">La date d'agrément est requise.</p>
+                  }
+                </div>
+              </div>
+
+              <!-- NIF & RCCM -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="nif" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    NIF (Numéro d'Identification Fiscale) <span class="text-red-500">*</span>
+                  </label>
+                  <input 
+                    id="nif"
+                    type="text"
+                    formControlName="nif"
+                    placeholder="Ex: 0801234567M"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all uppercase shadow-card"
+                  />
+                  @if (form.controls.nif.touched && form.controls.nif.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Le NIF est obligatoire.</p>
+                  }
+                </div>
+
+                <div>
+                  <label for="rccm" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    RCCM (Registre du Commerce)
+                  </label>
+                  <input 
+                    id="rccm"
+                    type="text"
+                    formControlName="rccm"
+                    placeholder="Ex: MA-BKO-2023-B-4321"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all uppercase shadow-card"
+                  />
+                </div>
+              </div>
+
+              <!-- Présentation / Domaines d'activité -->
+              <div>
+                <label for="description" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Présentation succincte des activités (optionnel)
+                </label>
+                <textarea 
+                  id="description"
+                  rows="3"
+                  formControlName="description"
+                  placeholder="Ex: Aménagement foncier viabilisé, lotissements agréés Titres Fonciers, construction de cités résidentielles et villas clés en main..."
+                  class="block w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all resize-none shadow-card"
+                ></textarea>
+              </div>
+
+              <!-- Note sécurité foncier Mali -->
+              <div class="bg-amber-50 rounded-xl p-3.5 border border-amber-200/80 flex items-start gap-2.5">
+                <span class="text-base mt-0.5">⚖️</span>
+                <p class="text-xs text-amber-900 leading-relaxed">
+                  <strong>Conformité Titres Fonciers (TF) :</strong> Conformément à la charte Foncier+, toutes les parcelles et cités proposées par la société doivent détenir des TF mères authentiques immatriculés auprès de la conservation foncière.
+                </p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ========================================== -->
+        <!-- SLIDE 3 : COMPTE DU RESPONSABLE LÉGAL      -->
+        <!-- ========================================== -->
+        @if (currentStep() === 3) {
+          <div class="animate-fadeIn">
+            <div class="border-b border-gray-100 pb-4 mb-6">
+              <span class="text-xs font-bold text-[#E07A22] uppercase tracking-wider">Étape 3 sur 4</span>
+              <h2 class="text-lg font-bold text-gray-900">Compte du Directeur / Responsable Légal</h2>
+              <p class="text-xs text-gray-500 mt-0.5">Ce compte de direction aura les pleins pouvoirs d'administration, de gestion du catalogue et de recrutement des agents.</p>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Prénom et Nom -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="prenomResponsable" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Prénom du Responsable <span class="text-red-500">*</span>
+                  </label>
+                  <input 
+                    id="prenomResponsable"
+                    type="text"
+                    formControlName="prenomResponsable"
+                    placeholder="Ex: Bakary"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                  />
+                  @if (form.controls.prenomResponsable.touched && form.controls.prenomResponsable.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Le prénom est obligatoire.</p>
+                  }
+                </div>
+
+                <div>
+                  <label for="nomResponsable" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Nom de famille <span class="text-red-500">*</span>
+                  </label>
+                  <input 
+                    id="nomResponsable"
+                    type="text"
+                    formControlName="nomResponsable"
+                    placeholder="Ex: TRAORÉ"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all uppercase shadow-card"
+                  />
+                  @if (form.controls.nomResponsable.touched && form.controls.nomResponsable.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Le nom de famille est obligatoire.</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Téléphone de connexion et Email direct -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="telephoneResponsable" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Téléphone personnel (Connexion) <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative rounded-xl">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                      <span class="text-xs font-bold text-gray-500 mr-1.5 border-r border-gray-200 pr-2">+223</span>
+                    </div>
+                    <input 
+                      id="telephoneResponsable"
+                      type="text"
+                      formControlName="telephoneResponsable"
+                      placeholder="70 12 34 56"
+                      class="block w-full pl-18 pr-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                    />
+                  </div>
+                  @if (form.controls.telephoneResponsable.touched && form.controls.telephoneResponsable.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Numéro malien valide requis (8 chiffres minimum).</p>
+                  }
+                </div>
+
+                <div>
+                  <label for="emailResponsable" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Email direct du Responsable
+                  </label>
+                  <input 
+                    id="emailResponsable"
+                    type="email"
+                    formControlName="emailResponsable"
+                    placeholder="b.traore@societe.ml"
+                    class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                  />
+                  @if (form.controls.emailResponsable.touched && form.controls.emailResponsable.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Format d'email invalide.</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Mot de passe et Confirmation -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="motDePasse" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Mot de passe <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative rounded-xl">
+                    <input 
+                      id="motDePasse"
+                      [type]="showPassword() ? 'text' : 'password'"
+                      formControlName="motDePasse"
+                      placeholder="••••••••"
+                      class="block w-full pl-4 pr-10 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                    />
+                    <button 
+                      type="button" 
+                      (click)="togglePasswordVisibility()" 
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none">
+                      @if (showPassword()) {
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                      } @else {
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                  @if (form.controls.motDePasse.touched && form.controls.motDePasse.invalid) {
+                    <p class="mt-1 text-xs text-red-600">Au moins 6 caractères requis.</p>
+                  }
+                </div>
+
+                <div>
+                  <label for="confirmerMotDePasse" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Confirmer le mot de passe <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative rounded-xl">
+                    <input 
+                      id="confirmerMotDePasse"
+                      [type]="showConfirmPassword() ? 'text' : 'password'"
+                      formControlName="confirmerMotDePasse"
+                      placeholder="••••••••"
+                      class="block w-full pl-4 pr-10 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
+                    />
+                    <button 
+                      type="button" 
+                      (click)="toggleConfirmPasswordVisibility()" 
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none">
+                      @if (showConfirmPassword()) {
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                      } @else {
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                  @if (form.controls.confirmerMotDePasse.touched && form.hasError('passwordMismatch')) {
+                    <p class="mt-1 text-xs text-red-600">Les mots de passe ne correspondent pas.</p>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ========================================== -->
+        <!-- SLIDE 4 : DOSSIER KYC & SYNTHÈSE          -->
+        <!-- ========================================== -->
+        @if (currentStep() === 4) {
+          <div class="animate-fadeIn">
+            <div class="border-b border-gray-100 pb-4 mb-6">
+              <span class="text-xs font-bold text-[#E07A22] uppercase tracking-wider">Étape 4 sur 4</span>
+              <h2 class="text-lg font-bold text-gray-900">Dossier KYC & Récapitulatif</h2>
+              <p class="text-xs text-gray-500 mt-0.5">Joignez le dossier de pièces justificatives consolidé et confirmez votre demande.</p>
+            </div>
+
+            <div class="space-y-5">
+              <!-- Upload dossier consolidé PDF -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Dossier d'agrément consolidé (PDF)
+                </label>
+                <div class="border-2 border-dashed border-gray-300 hover:border-[#E07A22] rounded-2xl p-6 text-center transition-colors bg-gray-50/50">
+                  <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-orange-100 text-[#E07A22] flex items-center justify-center mb-3">
+                      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    </div>
+                    <label for="fileUpload" class="cursor-pointer">
+                      <span class="text-sm font-bold text-[#E07A22] hover:underline">Sélectionner un fichier PDF</span>
+                      <span class="text-sm text-gray-500"> ou glisser-déposer ici</span>
+                      <input 
+                        id="fileUpload" 
+                        type="file" 
+                        accept=".pdf,application/pdf" 
+                        (change)="onFileSelected($event)" 
+                        class="hidden" 
+                      />
+                    </label>
+                    <p class="text-xs text-gray-400 mt-1">
+                      PDF consolidé regroupant : Agrément ministériel, RCCM, NIF et CNI du dirigeant (Max 25 Mo).
+                    </p>
+                    @if (selectedFileName()) {
+                      <div class="mt-3 inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-200">
+                        <span>📄 {{ selectedFileName() }} ({{ selectedFileSize() }})</span>
+                        <span class="text-emerald-600">✓ Prêt</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Récapitulatif rapide des informations -->
+              <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/80 space-y-3">
+                <div class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1">
+                  Synthèse de la demande
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span class="text-gray-500">Société :</span>
+                    <span class="font-bold text-gray-800 ml-1">{{ form.value.nomSociete }} ({{ form.value.formeJuridique }})</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">Agrément :</span>
+                    <span class="font-bold text-gray-800 ml-1">{{ form.value.numeroAgrement }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">NIF :</span>
+                    <span class="font-bold text-gray-800 ml-1">{{ form.value.nif }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">Téléphone Siège :</span>
+                    <span class="font-bold text-gray-800 ml-1">+223 {{ form.value.telephoneSociete }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">Responsable :</span>
+                    <span class="font-bold text-gray-800 ml-1">{{ form.value.prenomResponsable }} {{ form.value.nomResponsable }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">Connexion mobile :</span>
+                    <span class="font-bold text-gray-800 ml-1">+223 {{ form.value.telephoneResponsable }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Déclaration d'honneur -->
+              <div class="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200 shadow-card">
+                <input 
+                  id="engagementHonneur" 
+                  type="checkbox" 
+                  formControlName="engagementHonneur"
+                  class="mt-1 h-4 w-4 text-[#E07A22] focus:ring-[#E07A22] border-gray-300 rounded cursor-pointer"
+                />
+                <label for="engagementHonneur" class="text-xs text-gray-700 leading-relaxed cursor-pointer">
+                  <span class="font-bold text-gray-900">Engagement sur l'honneur et conformité juridique :</span>
+                  Je certifie que les informations et documents fournis sont exacts, authentiques et vérifiables auprès de la Direction Nationale du Cadastre et des services des Domaines du Mali.
+                </label>
+              </div>
+              @if (form.controls.engagementHonneur.touched && form.controls.engagementHonneur.invalid) {
+                <p class="text-xs text-red-600">Vous devez certifier sur l'honneur l'authenticité de vos pièces.</p>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ========================================== -->
+        <!-- BOUTONS DE NAVIGATION DES SLIDES           -->
+        <!-- ========================================== -->
+        @if (currentStep() <= totalSteps) {
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+            <!-- Bouton Précédent -->
+            @if (currentStep() > 1) {
+              <button 
+                type="button" 
+                (click)="prevStep()"
+                class="px-5 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Précédent</span>
+              </button>
+            } @else {
+              <div></div>
+            }
+
+            <!-- Bouton Suivant OU Soumettre -->
+            @if (currentStep() < totalSteps) {
+              <button 
+                type="button" 
+                (click)="nextStep()"
+                class="px-6 py-2.5 rounded-xl shadow-md text-xs sm:text-sm font-bold text-white bg-[#E07A22] hover:bg-[#c9691b] active:scale-95 transition-all cursor-pointer flex items-center gap-2">
+                <span>Étape suivante</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+              </button>
+            } @else {
+              <button 
+                type="button" 
+                (click)="onSubmit()"
+                [disabled]="isSubmitting()"
+                class="px-6 py-3 rounded-xl shadow-md text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                @if (isSubmitting()) {
+                  <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Transmission du dossier...</span>
+                } @else {
+                  <span>Transmettre mon dossier d'agrément</span>
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                }
+              </button>
+            }
+          </div>
+        }
+
+      </form>
+
+      <!-- ========================================== -->
+      <!-- SLIDE 5 : ÉCRAN DE CONFIRMATION / SUCCÈS   -->
+      <!-- ========================================== -->
+      @if (currentStep() === 5) {
+        <div class="text-center py-6 animate-fadeIn">
+          <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          <h2 class="text-xl sm:text-2xl font-black text-gray-900 mb-2">
+            Dossier d'agrément transmis avec succès !
+          </h2>
+
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 rounded-full text-xs font-bold border border-amber-200 mb-4">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            Statut : EN ATTENTE DE VALIDATION DNCG
+          </div>
+
+          <p class="text-sm text-gray-600 max-w-md mx-auto leading-relaxed mb-6">
+            Votre dossier d'adhésion pour la société <strong class="text-gray-900">{{ form.value.nomSociete }}</strong> (Agrément <strong>{{ form.value.numeroAgrement }}</strong>) a été enregistré sur le registre national Foncier+.
+          </p>
+
+          <div class="bg-gray-50 rounded-xl p-4 text-left border border-gray-200 mb-6 space-y-2 text-xs text-gray-600">
+            <div class="font-bold text-gray-800 flex items-center gap-1.5">
+              <span>📋</span> Prochaines étapes de validation :
+            </div>
+            <p>1. Les inspecteurs de la <strong>Direction Nationale du Cadastre (DNCG)</strong> et du Ministère procèdent à l'authentification de vos documents.</p>
+            <p>2. Délai moyen d'instruction souveraine : <strong>48h à 72h ouvrées</strong>.</p>
+            <p>3. Dès validation officielle, vous recevrez une confirmation et pourrez vous connecter avec votre numéro <strong>+223 {{ form.value.telephoneResponsable }}</strong>.</p>
+          </div>
+
+          <button 
+            type="button" 
+            (click)="goToLogin()"
+            class="w-full py-3 px-4 rounded-xl shadow-md text-sm font-bold text-white bg-[#E07A22] hover:bg-[#c9691b] transition-all cursor-pointer flex items-center justify-center gap-2">
+            <span>Retourner à la page de connexion</span>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+            </svg>
+          </button>
+        </div>
+      }
+
+    </div>
+
+    <!-- Lien vers connexion (si pas encore validé) -->
+    @if (currentStep() <= totalSteps) {
+      <div class="mt-6 text-center">
+        <p class="text-xs text-gray-600">
+          Votre société est déjà enregistrée sur Foncier+ ?
+          <a routerLink="/auth/login" class="font-bold text-[#E07A22] hover:underline ml-1">
+            Se connecter à l'espace direction
+          </a>
+        </p>
+      </div>
+    }
+
+    <!-- Pied de page officiel -->
+    <div class="mt-6 text-center text-xs text-gray-400">
+      <p>Système National Intégré de Sécurisation Foncière & Cadastrale</p>
+      <p class="mt-0.5">Conforme aux Titres Fonciers certifiés République du Mali • 2026</p>
+    </div>
+  </div>
+
+</div>

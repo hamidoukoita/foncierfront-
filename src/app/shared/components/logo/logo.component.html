@@ -1,0 +1,47 @@
+<div class="flex items-center gap-2.5 select-none" [class.cursor-pointer]="clickable()">
+  <!-- Icône stylisée Cadastre & Maisons Foncier+ -->
+  <div [class]="iconSizeClass()" class="relative flex items-center justify-center shrink-0">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-sm">
+      <!-- Parcelle cadastrale en perspective verte var(--foncier-success) -->
+      <polygon points="32,24 58,38 32,52 6,38" fill="var(--foncier-success)" stroke="#1B5E20" stroke-width="1.5" />
+      <line x1="32" y1="24" x2="32" y2="52" stroke="#A5D6A7" stroke-width="1" stroke-dasharray="2 2" />
+      <line x1="19" y1="31" x2="45" y2="45" stroke="#A5D6A7" stroke-width="1" stroke-dasharray="2 2" />
+
+      <!-- Bâtiment principal (Bleu Anthracite var(--foncier-secondary)) -->
+      <path d="M38 18 L50 25 V40 L38 33 Z" fill="var(--foncier-secondary)" stroke="#0F172A" stroke-width="1" />
+      <polygon points="38,18 44,14 50,25 44,28" fill="#2A3B56" />
+      <rect x="41" y="24" width="3" height="4" fill="#E2E8F0" rx="0.5" />
+      <rect x="46" y="27" width="3" height="4" fill="#E2E8F0" rx="0.5" />
+
+      <!-- Maisonnette gauche (Ocre Terre de Sienne var(--foncier-primary)) -->
+      <path d="M16 28 L28 22 V36 L16 41 Z" fill="var(--foncier-primary)" stroke="#C26A12" stroke-width="1" />
+      <polygon points="22,16 28,22 16,28 11,21" fill="#F09028" />
+      <rect x="18" y="30" width="3" height="4" fill="#FEF3C7" rx="0.5" />
+      
+      <!-- Borne / Piquet TF -->
+      <circle cx="32" cy="38" r="2.5" fill="#FACC15" stroke="#B45309" stroke-width="1" />
+    </svg>
+  </div>
+
+  <!-- Typographie officielle Foncier+ -->
+  @if (showText()) {
+    <div class="flex flex-col leading-none">
+      <div class="flex items-center font-black tracking-tight" [class.text-white]="darkTheme()" [class.text-slate-900]="!darkTheme()" [class]="textSizeClass()">
+        <span>Foncier</span>
+        <span class="text-brand-primary ml-0.5">+</span>
+      </div>
+      @if (subtitle()) {
+        <span class="text-[9px] uppercase tracking-wider font-bold mt-0.5" [class.text-gray-300]="darkTheme()" [class.text-gray-500]="!darkTheme()">
+          {{ subtitle() }}
+        </span>
+      }
+      @if (isSuperAdmin()) {
+        <span class="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase mt-0.5 text-center shadow-2xs border"
+              [class.bg-white/10]="darkTheme()" [class.text-amber-400]="darkTheme()" [class.border-amber-400/40]="darkTheme()"
+              [class.bg-slate-900]="!darkTheme()" [class.text-white]="!darkTheme()" [class.border-transparent]="!darkTheme()">
+          RÉGULATION DNCG
+        </span>
+      }
+    </div>
+  }
+</div>

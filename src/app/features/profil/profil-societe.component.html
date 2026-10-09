@@ -1,0 +1,257 @@
+<div class="space-y-6">
+  <!-- En-tête avec bouton Enregistrer les modifications (Figma) -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-gray-900">
+        Profil de l’Entreprise Promotrice
+      </h1>
+      <p class="text-xs sm:text-sm text-gray-500 mt-1">
+        Identifiants officiels, statut d'homologation légale DNDC et coordonnées du compte.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      (click)="submitSave()"
+      class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white text-xs font-bold shadow-sm transition-all cursor-pointer self-start sm:self-auto"
+    >
+      <span>Enregistrer les modifications</span>
+    </button>
+  </div>
+
+  @if (isSavedSuccess()) {
+    <div
+      class="bg-emerald-50 border-l-4 border-brand-success p-3.5 rounded-xl flex items-center justify-between text-xs text-emerald-800 animate-fadeIn"
+    >
+      <span>✓ Les informations de l'entreprise ont été mises à jour avec succès.</span>
+    </div>
+  }
+
+  <!-- Bannière Homologation & Certification DNDC (Figma) -->
+  <div
+    class="bg-white rounded-2xl p-5 border border-gray-100 border-l-4 border-l-[var(--foncier-success)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-card"
+  >
+    <div class="flex items-center gap-3.5">
+      <div
+        class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-brand-success font-bold shrink-0"
+      >
+        <mat-icon> done_outline</mat-icon>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-brand-secondary">Compte Promoteur Homologué & Certifié DNDC</h3>
+        <p class="text-xs text-gray-500 mt-0.5">
+          Votre société dispose des prérogatives de publication directe des programmes et de gestion
+          des lots cadastraux.
+        </p>
+      </div>
+    </div>
+
+    <span
+      class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider text-brand-success bg-emerald-100 self-start sm:self-auto uppercase"
+    >
+      AGRÉMENT VALIDÉ
+    </span>
+  </div>
+
+  <!-- Grille 2 Colonnes (Figma) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <!-- COLONNE GAUCHE (6 ou 7 cols) : Identité de l'Entreprise -->
+    <div class="lg:col-span-6 bg-white rounded-2xl p-6 border border-gray-100 space-y-5 shadow-card">
+      <div>
+        <h2 class="text-sm font-bold text-brand-secondary">Identité de l’Entreprise</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Éléments visibles sur vos annonces et devis.</p>
+      </div>
+
+      <!-- Bloc Logo -->
+      <div class="flex items-center gap-4 pt-1">
+        <div
+          class="w-16 h-16 rounded-2xl bg-brand-secondary text-white text-xl font-extrabold flex items-center justify-center shadow-xs shrink-0"
+        >
+          SA
+        </div>
+        <div class="space-y-1">
+          <button
+            type="button"
+            class="px-3.5 py-2 rounded-xl bg-brand-bg hover:bg-gray-100 border border-gray-200 text-xs font-bold text-gray-700 transition-colors cursor-pointer shadow-2xs"
+          >
+            Changer le logo
+          </button>
+          <p class="text-[10px] text-gray-400">PNG ou JPG (max 2 Mo)</p>
+        </div>
+      </div>
+
+      <!-- Formulaire Réactif Identité -->
+      <form [formGroup]="profilForm" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+            RAISON SOCIALE
+          </label>
+          <input
+            type="text"
+            formControlName="raisonSociale"
+            class="w-full px-4 py-3 text-xs font-bold rounded-xl border border-gray-200 bg-brand-bg text-gray-900 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+          />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+            SIÈGE SOCIAL / ADRESSE PHYSIQUE
+          </label>
+          <input
+            type="text"
+            formControlName="siegeSocial"
+            class="w-full px-4 py-3 text-xs rounded-xl border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+              TÉLÉPHONE FIXE / DIRECTION
+            </label>
+            <input
+              type="text"
+              formControlName="telephoneFixe"
+              class="w-full px-4 py-3 text-xs font-mono rounded-xl border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+              EMAIL OFFICIEL
+            </label>
+            <input
+              type="email"
+              formControlName="emailOfficiel"
+              class="w-full px-4 py-3 text-xs rounded-xl border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+            SITE WEB DE L’ENTREPRISE
+          </label>
+          <input
+            type="text"
+            formControlName="siteWeb"
+            class="w-full px-4 py-3 text-xs font-mono rounded-xl border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+          />
+        </div>
+      </form>
+    </div>
+
+    <!-- COLONNE DROITE (6 cols) : Références Fiscales & Agréments DNDC -->
+    <div class="lg:col-span-6 space-y-6">
+      <!-- Bloc Références Fiscales -->
+      <div class="bg-white rounded-2xl p-6 border border-gray-100 space-y-4 shadow-card">
+        <div>
+          <h2 class="text-sm font-bold text-brand-secondary">Références Fiscales & Agréments DNDC</h2>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Données homologuées lors de votre enregistrement national.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <!-- Carte 1 : Agrément DNDC -->
+          <div class="p-3.5 rounded-xl bg-brand-bg border border-gray-100 space-y-1">
+            <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider"
+              >N° AGRÉMENT DNDC</span
+            >
+            <p class="text-xs font-extrabold text-brand-primary font-mono">
+              {{ profil().numeroAgrement }}
+            </p>
+            <p class="text-[11px] text-brand-success font-semibold flex items-center gap-1">
+              <mat-icon style="font-size: 14px; width: 14px; height: 14px">done_outline</mat-icon>
+              Homologué
+            </p>
+          </div>
+
+          <!-- Carte 2 : RCCM -->
+          <div class="p-3.5 rounded-xl bg-brand-bg border border-gray-100 space-y-1">
+            <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider"
+              >REGISTRE DU COMMERCE (RCCM)</span
+            >
+            <p class="text-xs font-bold text-gray-900 font-mono">{{ profil().rccm }}</p>
+            <p class="text-[11px] text-brand-success font-semibold flex items-center gap-1">
+              <mat-icon style="font-size: 14px; width: 14px; height: 14px">done_outline</mat-icon>
+              Vérifié DNDC
+            </p>
+          </div>
+
+          <!-- Carte 3 : NIF -->
+          <div class="p-3.5 rounded-xl bg-brand-bg border border-gray-100 space-y-1">
+            <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider"
+              >NUMÉRO FISCAL (NIF)</span
+            >
+            <p class="text-xs font-bold text-gray-900 font-mono">{{ profil().nif }}</p>
+            <p class="text-[11px] text-brand-success font-semibold flex items-center gap-1">
+              <mat-icon style="font-size: 14px; width: 14px; height: 14px">done_outline</mat-icon>
+              En règle DGI
+            </p>
+          </div>
+
+          <!-- Carte 4 : Directeur Gérant -->
+          <div class="p-3.5 rounded-xl bg-brand-bg border border-gray-100 space-y-1">
+            <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider"
+              >DIRECTEUR GÉRANT</span
+            >
+            <p class="text-xs font-bold text-gray-900">{{ profil().directeurGerant }}</p>
+            <p class="text-[11px] text-gray-500 font-medium">Signataire autorisé</p>
+          </div>
+        </div>
+
+        <!-- Documentation légale déposée (PDF) -->
+        <div class="pt-3">
+          <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+            DOCUMENTATION LÉGALE DÉPOSÉE
+          </label>
+          <div
+            class="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 bg-brand-bg"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-lg bg-red-100 text-brand-danger font-extrabold text-xs flex items-center justify-center shrink-0"
+              >
+                PDF
+              </div>
+              <div>
+                <p class="text-xs font-bold text-gray-900">{{ profil().documentKycNom }}</p>
+                <p class="text-[11px] text-gray-500">{{ profil().documentKycDate }}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer flex justify-center items-center shadow-card"
+            >
+              <span>Voir</span>
+              <mat-icon style="width: 0.5">arrow_outward</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sécurité du compte principal -->
+        <div class="pt-3">
+          <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+            SÉCURITÉ DU COMPTE PRINCIPAL
+          </label>
+          <div
+            class="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 bg-white shadow-card"
+          >
+            <div>
+              <p class="text-xs font-bold text-gray-900">Mot de passe Administrateur Société</p>
+              <p class="text-xs text-gray-400 tracking-widest mt-0.5">••••••••••••••</p>
+            </div>
+            <button
+              type="button"
+              class="px-3.5 py-1.5 text-xs font-bold text-gray-700 bg-brand-bg hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors cursor-pointer"
+            >
+              Modifier clé
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

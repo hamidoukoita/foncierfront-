@@ -1,0 +1,223 @@
+<div class="space-y-6">
+
+  <!-- En-tête -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">
+        Gestion des agents & collaborateurs
+      </h1>
+      <p class="text-xs sm:text-sm text-gray-600 mt-1">
+        Créez des accès collaborateurs, attribuez les visites de chantiers et suivez les portefeuilles de dossiers.
+      </p>
+    </div>
+
+    <button 
+      type="button" 
+      (click)="openAddModal()" 
+      class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white text-xs font-bold shadow-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-primary">
+      <span class="text-base leading-none">+</span>
+      <span>Ajouter un agent</span>
+    </button>
+  </div>
+
+  <!-- Filtres Tabs -->
+  <div class="flex items-center gap-2">
+    <button 
+      type="button" 
+      (click)="setFilter('TOUS')" 
+      [class]="currentFilter() === 'TOUS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
+      <span>Tous ({{ countTous() }})</span>
+    </button>
+
+    <button 
+      type="button" 
+      (click)="setFilter('ACTIFS')" 
+      [class]="currentFilter() === 'ACTIFS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >how_to_reg</mat-icon>
+      <span>Actifs ({{ countActifs() }})</span>
+    </button>
+
+    <button 
+      type="button" 
+      (click)="setFilter('SUSPENDUS')" 
+      [class]="currentFilter() === 'SUSPENDUS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >person_off</mat-icon>
+      <span>Suspendus ({{ countSuspendus() }})</span>
+    </button>
+  </div>
+
+  <!-- Tableau Agents & Collaborateurs -->
+  <div class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        
+        <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+          <tr>
+            <th class="py-3.5 px-6">COLLABORATEUR / MATRICULE</th>
+            <th class="py-3.5 px-6">CONTACT (TÉLÉPHONE)</th>
+            <th class="py-3.5 px-6">FONCTION DÉLÉGUÉE</th>
+            <th class="py-3.5 px-6">CHARGES ASSIGNÉES</th>
+            <th class="py-3.5 px-6 text-center">STATUT</th>
+            <th class="py-3.5 px-6 text-right">ACTIONS</th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y divide-gray-50">
+          @for (ag of filteredAgents(); track ag.id) {
+            <tr class="hover:bg-orange-50/20 transition-colors">
+              
+              <!-- Collaborateur / Matricule (Avatar rond sombre Bleu Anthracite) -->
+              <td class="py-4 px-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-brand-secondary text-white text-xs font-extrabold flex items-center justify-center shrink-0">
+                    {{ ag.initiales }}
+                  </div>
+                  <div>
+                    <p class="font-bold text-gray-900 text-xs">{{ ag.prenom }} {{ ag.nom }}</p>
+                    <p class="text-[10px] text-gray-500 font-mono tracking-wider">{{ ag.matricule }}</p>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Contact -->
+              <td class="py-4 px-6 font-mono text-gray-800 font-medium">
+                {{ ag.telephone }}
+              </td>
+
+              <!-- Fonction déléguée -->
+              <td class="py-4 px-6 font-bold text-gray-900">
+                {{ ag.fonctionDeleguee }}
+              </td>
+
+              <!-- Charges assignées -->
+              <td class="py-4 px-6">
+                <p class="text-xs font-bold text-brand-primary">{{ ag.rdvVisitesCount }} RDV Visites</p>
+                <p class="text-[11px] text-gray-500">{{ ag.reservationsCount }} Réservations en cours</p>
+              </td>
+
+              <!-- Statut -->
+              <td class="py-4 px-6 text-center">
+                <app-status-badge [status]="ag.statut"></app-status-badge>
+              </td>
+
+              <!-- Actions -->
+              <td class="py-4 px-6 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button 
+                    type="button" 
+                    class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 flex items-center justify-center text-xs text-gray-600 cursor-pointer shadow-card" 
+                    title="Modifier">
+                    ✏️
+                  </button>
+                  <button 
+                    type="button" 
+                    (click)="requestToggleAgentStatut(ag)"
+                    [title]="ag.statut === 'ACTIF' ? 'Suspendre l\'accès' : 'Réactiver l\'accès'"
+                    [class]="ag.statut === 'ACTIF' ? 'hover:bg-red-50 hover:text-brand-danger' : 'hover:bg-emerald-50 hover:text-brand-success'"
+                    class="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-xs text-gray-500 cursor-pointer transition-colors shadow-card">
+                    🔒
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          }
+        </tbody>
+
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-6 border-t border-gray-100">
+      <app-pagination 
+        [currentPage]="currentPage()" 
+        [pageSize]="5" 
+        [totalItems]="countTous()"
+        (pageChange)="currentPage.set($event)">
+      </app-pagination>
+    </div>
+  </div>
+
+  <!-- Modale d'ajout d'agent -->
+  @if (isAddModalOpen()) {
+    <div 
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      (click)="isAddModalOpen.set(false)">
+      <div 
+        class="bg-white rounded-2xl w-full max-w-lg overflow-hidden border border-gray-100 shadow-card"
+        (click)="$event.stopPropagation()">
+        
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="text-base font-bold text-brand-secondary">
+            Ajouter un Agent Collaborateur
+          </h3>
+          <button (click)="isAddModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
+        </div>
+
+        <form [formGroup]="agentForm" (ngSubmit)="submitAddAgent()" class="p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Prénom *</label>
+              <input type="text" formControlName="prenom" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" placeholder="Ex: Moussa"/>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Nom *</label>
+              <input type="text" formControlName="nom" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none uppercase shadow-card" placeholder="Ex: DIARRA"/>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Numéro Téléphone Malien *</label>
+            <input type="text" formControlName="telephone" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" placeholder="76123456"/>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Fonction Déléguée</label>
+            <select formControlName="fonctionDeleguee" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+              <option value="Commercial Terrains">Commercial Terrains</option>
+              <option value="Responsable Cités & VRD">Responsable Cités & VRD</option>
+              <option value="Gestionnaire Technique">Gestionnaire Technique</option>
+              <option value="Suivi Chantiers BTP">Suivi Chantiers BTP</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Mot de passe temporaire *</label>
+            <input type="password" formControlName="motDePasse" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"/>
+          </div>
+
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+            <button type="button" (click)="isAddModalOpen.set(false)" class="px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">
+              Annuler
+            </button>
+            <button type="submit" [disabled]="agentForm.invalid" class="px-5 py-2.5 text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs cursor-pointer transition-colors">
+              Créer le compte collaborateur
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  }
+
+  <!-- Dialogue de confirmation de suspension/réactivation -->
+  <app-confirm-dialog
+    [isOpen]="agentToToggle() !== null"
+    [title]="agentToToggle()?.statut === 'ACTIF' ? 'Suspendre l\'accès de cet agent ?' : 'Réactiver l\'accès ?'"
+    [message]="agentToToggle()?.statut === 'ACTIF'
+      ? 'L\'agent ' + agentToToggle()?.prenom + ' ' + agentToToggle()?.nom + ' ne pourra plus se connecter pour traiter les visites et réservations.'
+      : 'L\'accès de ' + agentToToggle()?.prenom + ' ' + agentToToggle()?.nom + ' sera immédiatement rétabli.'"
+    [confirmText]="agentToToggle()?.statut === 'ACTIF' ? 'Confirmer la suspension' : 'Rétablir l\'accès'"
+    [variant]="agentToToggle()?.statut === 'ACTIF' ? 'danger' : 'primary'"
+    (confirmed)="confirmToggleAgentStatut()"
+    (cancelled)="cancelToggleAgentStatut()">
+  </app-confirm-dialog>
+
+</div>

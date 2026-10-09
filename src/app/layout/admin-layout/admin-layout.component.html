@@ -1,0 +1,31 @@
+<div class="d-flex flex-column vh-100 overflow-hidden font-sans" style="background-color: var(--foncier-bg); color: #1E293B;">
+  <app-toast-container></app-toast-container>
+  
+  <!-- Backdrop Mobile (< 992px) pour fermer le tiroir au clic extérieur -->
+  @if (layoutService.sidebarOpen()) {
+    <div 
+      (click)="layoutService.closeSidebar()" 
+      class="sidebar-backdrop position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none" 
+      style="z-index: 1040; backdrop-filter: blur(2px);">
+    </div>
+  }
+
+  <!-- Tiroir Mobile Offcanvas (< 992px uniquement) -->
+  <aside 
+    class="sidebar-container d-lg-none"
+    [class.sidebar-closed]="!layoutService.sidebarOpen()"
+    style="z-index: 1045;">
+    <app-sidebar (linkClicked)="onLinkNavigated()"></app-sidebar>
+  </aside>
+
+  <!-- Master Top Navbar Horizontale Foncier+ (Navigation haute complète) -->
+  <app-topbar></app-topbar>
+  
+  <!-- Corps de la page en grand format élargi pour une lisibilité et densité optimales -->
+  <main class="flex-grow-1 overflow-y-auto px-3 sm:px-6 lg:px-8 xl:px-10 py-4 sm:py-6">
+    <div class="w-full max-w-[1800px] mx-auto">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+</div>

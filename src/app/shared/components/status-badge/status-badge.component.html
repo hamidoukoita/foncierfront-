@@ -1,0 +1,4 @@
+<span [class]="badgeClasses()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide transition-all shadow-2xs select-none">
+  <span [class]="dotClass()" class="w-1.5 h-1.5 rounded-full shrink-0"></span>
+  <span class="truncate">{{ label() || defaultLabel() }}</span>
+</span>

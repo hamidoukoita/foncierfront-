@@ -1,0 +1,453 @@
+<div class="space-y-6">
+
+  <!-- En-tête (même structure que Agents) -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">
+        Construction &amp; modèles
+      </h1>
+      <p class="text-xs sm:text-sm text-gray-600 mt-1">
+        Suivez les demandes, proposez les modèles adaptés au terrain et pilotez l’avancement des projets.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      (click)="openCreateModel()"
+      class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white text-xs font-bold shadow-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-primary">
+      <span class="text-base leading-none">+</span>
+      <span>Ajouter un modèle</span>
+    </button>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="rounded-xl px-4 py-3 text-xs font-semibold bg-red-50 text-red-700 border border-red-200">{{ errorMessage() }}</div>
+  }
+  @if (successMessage()) {
+    <div class="rounded-xl px-4 py-3 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">{{ successMessage() }}</div>
+  }
+
+  <!-- Onglets Projets / Modèles (style filtres Agents) -->
+  <div class="flex flex-wrap items-center gap-2">
+    <button type="button" (click)="setView('PROJETS')"
+      [class]="viewMode() === 'PROJETS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs">
+      Projets ({{ countTous() }})
+    </button>
+    <button type="button" (click)="setView('MODELES')"
+      [class]="viewMode() === 'MODELES' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs">
+      Modèles ({{ modeles().length }})
+    </button>
+  </div>
+
+  <!-- ========== VUE PROJETS ========== -->
+  @if (viewMode() === 'PROJETS') {
+
+    <!-- Filtres statut -->
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" (click)="setFilter('TOUS')"
+        [class]="currentFilter() === 'TOUS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
+      <span>Tous ({{ countTous() }})</span>
+    </button>
+      <button type="button" (click)="setFilter('EN_ETUDE')"
+        [class]="currentFilter() === 'EN_ETUDE' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >architecture</mat-icon>
+      <span>En étude ({{ countEnEtude() }})</span>
+    </button>
+      <button type="button" (click)="setFilter('ACCEPTER')"
+        [class]="currentFilter() === 'ACCEPTER' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >check_circle</mat-icon>
+      <span>Acceptés ({{ countAcceptes() }})</span>
+    </button>
+      <button type="button" (click)="setFilter('REFUSER')"
+        [class]="currentFilter() === 'REFUSER' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >cancel</mat-icon>
+      <span>Refusés ({{ countRefuses() }})</span>
+    </button>
+
+      <div class="ml-auto">
+        <input
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Rechercher…"
+          class="px-3.5 py-2 text-xs rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none w-44 sm:w-56 shadow-card" />
+      </div>
+    </div>
+
+    <!-- Tableau projets -->
+    <div class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+            <tr>
+              <th class="py-3.5 px-6">DOSSIER / ACQUÉREUR</th>
+              <th class="py-3.5 px-6">TERRAIN</th>
+              <th class="py-3.5 px-6">MODÈLE</th>
+              <th class="py-3.5 px-6">AVANCEMENT</th>
+              <th class="py-3.5 px-6 text-center">STATUT</th>
+              <th class="py-3.5 px-6 text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            @if (isLoading()) {
+              <tr>
+                <td colspan="6" class="py-12 text-center text-gray-400 font-medium">Chargement…</td>
+              </tr>
+            } @else if (filteredProjets().length === 0) {
+              <tr>
+                <td colspan="6" class="py-12 text-center text-gray-400 font-medium">
+                  Aucun projet de construction pour le moment.
+                </td>
+              </tr>
+            } @else {
+              @for (p of filteredProjets(); track p.id) {
+                <tr class="hover:bg-orange-50/20 transition-colors">
+                  <td class="py-4 px-6">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-brand-secondary text-white text-xs font-extrabold flex items-center justify-center shrink-0">
+                        {{ (p.prospectNom || '?').slice(0, 2).toUpperCase() }}
+                      </div>
+                      <div>
+                        <p class="font-bold text-gray-900 text-xs">{{ p.numeroDossier || ('#' + p.id) }}</p>
+                        <p class="text-[10px] text-gray-500">{{ p.prospectNom }}</p>
+                        <p class="text-[10px] text-gray-400 font-mono">{{ p.prospectTelephone || '—' }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <p class="font-bold text-gray-900">{{ p.surfaceTerrainM2 }} m²</p>
+                    <p class="text-[11px] text-gray-500">{{ p.typeTerrain || 'Type —' }}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5 max-w-[140px] truncate" [title]="p.localisationTerrain">{{ p.localisationTerrain || '—' }}</p>
+                  </td>
+                  <td class="py-4 px-6 font-bold text-gray-900">
+                    {{ p.modeleVilla }}
+                  </td>
+                  <td class="py-4 px-6 min-w-[140px]">
+                    <p class="text-xs font-bold text-brand-primary">{{ p.progression || 0 }}%</p>
+                    <p class="text-[11px] text-gray-500 mb-1">{{ p.etapeAvancement || 'Non défini' }}</p>
+                    <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[120px]">
+                      <div class="h-full bg-brand-primary rounded-full" [style.width.%]="p.progression || 0"></div>
+                    </div>
+                  </td>
+                  <td class="py-4 px-6 text-center">
+                    <app-status-badge [status]="p.etatEtude"></app-status-badge>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button type="button" (click)="openProjectDetail(p)" title="Détails"
+                        class="w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors shadow-card">👁</button>
+                      <button type="button" (click)="openProgressModal(p)" title="Avancement"
+                        class="w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors shadow-card">%</button>
+                      @if (p.etatEtude === 'EN_ETUDE') {
+                        <button type="button" [disabled]="isSaving()" (click)="validerProjet(p)" title="Accepter"
+                          class="w-8 h-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 flex items-center justify-center cursor-pointer disabled:opacity-50">✓</button>
+                        <button type="button" [disabled]="isSaving()" (click)="refuserProjet(p)" title="Refuser"
+                          class="w-8 h-8 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-card">✕</button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="px-6 py-3 border-t border-gray-50 text-[11px] text-gray-400">
+        Affichage de {{ filteredProjets().length }} projet(s)
+      </div>
+    </div>
+  }
+
+  <!-- ========== VUE MODÈLES ========== -->
+  @if (viewMode() === 'MODELES') {
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="ml-auto">
+        <input
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Rechercher un modèle…"
+          class="px-3.5 py-2 text-xs rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none w-44 sm:w-56 shadow-card" />
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+            <tr>
+              <th class="py-3.5 px-6">MODÈLE</th>
+              <th class="py-3.5 px-6">TERRAIN COMPATIBLE</th>
+              <th class="py-3.5 px-6">SURFACE CONSTRUITE</th>
+              <th class="py-3.5 px-6">PIÈCES</th>
+              <th class="py-3.5 px-6">PLAN</th>
+              <th class="py-3.5 px-6 text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            @if (filteredModeles().length === 0) {
+              <tr>
+                <td colspan="6" class="py-12 text-center text-gray-400 font-medium">
+                  Aucun modèle. Cliquez sur « Ajouter un modèle » pour commencer.
+                </td>
+              </tr>
+            } @else {
+              @for (m of filteredModeles(); track m.id) {
+                <tr class="hover:bg-orange-50/20 transition-colors">
+                  <td class="py-4 px-6">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-brand-bg overflow-hidden flex items-center justify-center shrink-0 border border-gray-100">
+                        @if (m.imageUrl) {
+                          <img [src]="imageUrl(m.imageUrl)" class="w-full h-full object-cover" [alt]="m.libeller" />
+                        } @else {
+                          <span class="text-base">🏡</span>
+                        }
+                      </div>
+                      <div>
+                        <p class="font-bold text-gray-900 text-xs">{{ m.libeller }}</p>
+                        <p class="text-[10px] text-gray-500 max-w-[180px] truncate">{{ m.description || '—' }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <p class="font-bold text-gray-900">{{ modelSurface(m) }}</p>
+                    @if (m.typeTerrainCompatible) {
+                      <p class="text-[11px] text-gray-500">{{ m.typeTerrainCompatible }}</p>
+                    }
+                  </td>
+                  <td class="py-4 px-6 font-bold text-gray-900">
+                    {{ m.surfaceConstruite != null ? m.surfaceConstruite + ' m²' : '—' }}
+                  </td>
+                  <td class="py-4 px-6">
+                    <p class="text-xs font-bold text-brand-primary">{{ m.nombreChambres ?? '—' }} ch.</p>
+                    <p class="text-[11px] text-gray-500">{{ m.nombreSallesBain ?? '—' }} SDB</p>
+                  </td>
+                  <td class="py-4 px-6">
+                    @if (m.planUrl) {
+                      <a [href]="imageUrl(m.planUrl)" target="_blank" rel="noopener"
+                        class="text-xs font-bold text-brand-primary hover:underline">Voir le plan</a>
+                    } @else {
+                      <span class="text-gray-400">—</span>
+                    }
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button type="button" (click)="openEditModel(m)" title="Modifier"
+                        class="w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors shadow-card">✎</button>
+                      <button type="button" [disabled]="isSaving()" (click)="deleteModel(m)" title="Supprimer"
+                        class="w-8 h-8 rounded-lg border border-red-200 bg-white text-red-500 hover:bg-red-50 flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-card">🗑</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="px-6 py-3 border-t border-gray-50 text-[11px] text-gray-400">
+        Affichage de {{ filteredModeles().length }} modèle(s)
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Modal modèle (même pattern Agents) -->
+@if (isModelModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+    role="dialog" aria-modal="true" (click)="isModelModalOpen.set(false)">
+    <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden border border-gray-100 max-h-[92vh] overflow-y-auto shadow-card"
+      (click)="$event.stopPropagation()">
+
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+        <h3 class="text-base font-bold text-brand-secondary">
+          {{ activeModel() ? 'Modifier le modèle' : 'Ajouter un modèle de maison' }}
+        </h3>
+        <button type="button" (click)="isModelModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
+      </div>
+
+      <form [formGroup]="modelForm" (ngSubmit)="saveModel()" class="p-6 space-y-4">
+        @if (errorMessage()) {
+          <div class="rounded-xl px-3 py-2 text-xs font-semibold bg-red-50 text-red-700 border border-red-200">{{ errorMessage() }}</div>
+        }
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Nom du modèle *</label>
+          <input type="text" formControlName="libeller"
+            class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+            placeholder="Ex: Villa Yiri" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Description</label>
+          <textarea formControlName="description" rows="2"
+            class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Terrain min (m²)</label>
+            <input type="number" formControlName="surfaceTerrainMin" min="0"
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Terrain max (m²)</label>
+            <input type="number" formControlName="surfaceTerrainMax" min="0"
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Surface construite</label>
+            <input type="number" formControlName="surfaceConstruite" min="0"
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Type terrain</label>
+            <input type="text" formControlName="typeTerrainCompatible"
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+              placeholder="STANDARD, ANGLE…" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Chambres</label>
+            <input type="number" formControlName="nombreChambres" min="0"
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Salles de bain</label>
+            <input type="number" formControlName="nombreSallesBain" min="0"
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Image</label>
+            <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onImageFile($event)"
+              class="w-full text-xs text-gray-600" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Plan (PDF/image)</label>
+            <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="onPlanFile($event)"
+              class="w-full text-xs text-gray-600" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" (click)="isModelModalOpen.set(false)"
+            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer shadow-card">
+            Annuler
+          </button>
+          <button type="submit" [disabled]="isSaving()"
+            class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover cursor-pointer disabled:opacity-50">
+            {{ isSaving() ? 'Enregistrement…' : (activeModel() ? 'Mettre à jour' : 'Créer le modèle') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal avancement -->
+@if (isProgressModalOpen() && activeProject()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+    (click)="isProgressModalOpen.set(false)">
+    <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden border border-gray-100 shadow-card"
+      (click)="$event.stopPropagation()">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="text-base font-bold text-brand-secondary">Avancement — {{ activeProject()?.numeroDossier || ('#' + activeProject()?.id) }}</h3>
+        <button type="button" (click)="isProgressModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
+      </div>
+      <form [formGroup]="progressForm" (ngSubmit)="saveProgress()" class="p-6 space-y-4">
+        <div class="rounded-xl bg-brand-bg p-3">
+          <p class="text-xs font-bold text-brand-secondary">{{ activeProject()?.prospectNom }}</p>
+          <p class="text-[11px] text-gray-500">{{ activeProject()?.surfaceTerrainM2 }} m² · {{ activeProject()?.localisationTerrain }}</p>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-gray-500 font-semibold">Progression</span>
+            <strong class="text-brand-primary">{{ progressForm.controls.progression.value }}%</strong>
+          </div>
+          <input type="range" min="0" max="100" step="5" formControlName="progression" class="w-full accent-[var(--foncier-primary)]" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Étape</label>
+          <select formControlName="etapeAvancement"
+            class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+            @for (e of etapesDisponibles; track e) {
+              <option [value]="e">{{ e }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Modèle compatible</label>
+          <select formControlName="modelMaisonId"
+            class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+            <option value="">— Conserver le modèle actuel —</option>
+            @for (m of compatibleModels(); track m.id) {
+              <option [value]="m.id">{{ m.libeller }} · {{ modelSurface(m) }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Commentaire (acquéreur)</label>
+          <textarea formControlName="commentaireAvancement" rows="3"
+            class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
+            placeholder="Ex. Fondations coulées…"></textarea>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" (click)="isProgressModalOpen.set(false)"
+            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-gray-200 cursor-pointer shadow-card">Annuler</button>
+          <button type="submit" [disabled]="isSaving()"
+            class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover cursor-pointer disabled:opacity-50">
+            {{ isSaving() ? '…' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal détail -->
+@if (isDetailModalOpen() && activeProject()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+    (click)="isDetailModalOpen.set(false)">
+    <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden border border-gray-100 shadow-card"
+      (click)="$event.stopPropagation()">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="text-base font-bold text-brand-secondary">Détails du projet</h3>
+        <button type="button" (click)="isDetailModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
+      </div>
+      <div class="p-6 space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Dossier</p><p class="font-bold text-brand-secondary">{{ activeProject()?.numeroDossier || '—' }}</p></div>
+          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Statut</p><p class="font-bold text-brand-secondary">{{ statusLabel(activeProject()!.etatEtude) }}</p></div>
+          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Acquéreur</p><p class="font-bold text-brand-secondary">{{ activeProject()?.prospectNom }}</p></div>
+          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Terrain</p><p class="font-bold text-brand-secondary">{{ activeProject()?.surfaceTerrainM2 }} m²</p></div>
+          <div class="col-span-2"><p class="text-[10px] uppercase text-gray-400 font-bold">Modèle</p><p class="font-bold text-brand-secondary">{{ activeProject()?.modeleVilla }}</p></div>
+          <div class="col-span-2">
+            <p class="text-[10px] uppercase text-gray-400 font-bold">Avancement</p>
+            <p class="font-bold text-brand-primary">{{ activeProject()?.progression }}% · {{ activeProject()?.etapeAvancement || '—' }}</p>
+          </div>
+          @if (activeProject()?.commentaireAvancement) {
+            <div class="col-span-2"><p class="text-[10px] uppercase text-gray-400 font-bold">Commentaire</p><p class="text-gray-600">{{ activeProject()?.commentaireAvancement }}</p></div>
+          }
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" (click)="isDetailModalOpen.set(false)"
+            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-gray-200 cursor-pointer shadow-card">Fermer</button>
+          <button type="button" (click)="isDetailModalOpen.set(false); openProgressModal(activeProject()!)"
+            class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-primary cursor-pointer">Mettre à jour</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

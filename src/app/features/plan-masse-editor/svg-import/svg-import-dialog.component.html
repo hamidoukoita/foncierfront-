@@ -1,0 +1,205 @@
+<div class="fixed inset-0 z-[120] flex items-center justify-center bg-[#141d2b]/50 p-4" (click)="close()">
+  <div
+    class="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#e3dfd6] bg-white shadow-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="svg-import-title"
+    (click)="$event.stopPropagation()">
+
+    <!-- En-tête -->
+    <div class="flex items-start justify-between gap-4 border-b border-[#eee9df] px-5 py-4">
+      <div>
+        <span class="text-[10px] font-black tracking-[.14em] text-[#84909e]">GAIN DE TEMPS</span>
+        <h2 id="svg-import-title" class="text-xl font-extrabold text-[#1A2B4C]">Importer le plan de masse (SVG)</h2>
+        <p class="mt-1 text-xs text-gray-500">
+          Les lots, leurs numéros et leurs formes sont créés automatiquement ; le reste du dessin (routes, légendes…) devient le fond du plan.
+        </p>
+      </div>
+      <button type="button" class="h-9 w-9 rounded-lg bg-[#f4f3ef] text-2xl leading-none text-[#1A2B4C] disabled:opacity-40" [disabled]="busy()" (click)="close()" aria-label="Fermer">×</button>
+    </div>
+
+    <div class="overflow-y-auto p-5">
+      @if (!analysis()) {
+        <!-- Étape 1 : choix du fichier -->
+        <label
+          class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-14 text-center transition-colors"
+          [class]="dragOver() ? 'border-[#4A7A56] bg-emerald-50' : 'border-[#d9d3c7] bg-[#fbfaf7] hover:border-[#4A7A56]'"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave()"
+          (drop)="onDrop($event)">
+          <span class="text-4xl">🗺️</span>
+          <strong class="text-sm text-[#1A2B4C]">Glissez votre fichier <code>plan_masse.svg</code> ici</strong>
+          <span class="text-xs text-gray-500">ou cliquez pour le choisir · SVG uniquement · 5 Mo maximum</span>
+          <input type="file" accept=".svg,image/svg+xml" class="sr-only" (change)="onFileInput($event)" />
+        </label>
+        @if (error(); as message) {
+          <div class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">{{ message }}</div>
+        }
+        <div class="mt-4 rounded-xl bg-[#f7f5ef] p-3 text-[11px] leading-relaxed text-gray-600">
+          <strong class="text-[#1A2B4C]">Pour de meilleurs résultats :</strong>
+          chaque lot est un polygone ou un chemin <em>fermé</em> ; le numéro est écrit dans le lot (texte) ou dans l'identifiant de l'objet
+          (<code>lot-12</code>) ; les îlots peuvent être nommés <code>ilot-A</code>. Sans ces informations, les lots sont numérotés
+          automatiquement et vous pourrez les corriger ensuite.
+        </div>
+      } @else {
+        <div class="grid gap-5 lg:grid-cols-5">
+          <!-- Aperçu -->
+          <div class="lg:col-span-3">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span class="font-bold text-[#1A2B4C]">📄 {{ fileInfo()?.name }}</span>
+              <button type="button" class="rounded-lg border border-[#dfe3e8] px-2.5 py-1 font-bold text-[#1A2B4C]" [disabled]="busy()" (click)="parseResult.set(null)">Changer de fichier</button>
+            </div>
+            <svg [attr.viewBox]="'0 0 ' + canvasWidth() + ' ' + canvasHeight()" class="w-full rounded-xl border border-[#e3dfd6] bg-[#f8f7f2]" role="img" aria-label="Aperçu du plan importé">
+              <g style="pointer-events:none" [innerHTML]="previewBackground()"></g>
+              @for (lot of allLots(); track lot.key) {
+                <g class="cursor-pointer" (click)="toggleLot(lot.key)">
+                  <polygon
+                    [attr.points]="pointsAttr(lot)"
+                    [attr.fill]="included().has(lot.key) ? '#4A7A56' : '#9aa4b0'"
+                    [attr.fill-opacity]="included().has(lot.key) ? 0.5 : 0.18"
+                    [attr.stroke]="included().has(lot.key) ? '#1A2B4C' : '#7c8794'"
+                    [attr.stroke-dasharray]="included().has(lot.key) ? null : '4 3'"
+                    stroke-width="1.5"></polygon>
+                  @if (included().has(lot.key)) {
+                    <text [attr.x]="center(lot).x" [attr.y]="center(lot).y" text-anchor="middle" dominant-baseline="central" [attr.font-size]="labelSize(lot)" font-weight="800" fill="#1A2B4C" style="pointer-events:none">{{ lot.numero }}</text>
+                  }
+                </g>
+              }
+            </svg>
+            <p class="mt-1.5 text-[11px] text-gray-500">Cliquez sur une forme pour l'exclure (ce n'est pas un lot) ou la réintégrer.</p>
+          </div>
+
+          <!-- Options -->
+          <div class="space-y-4 lg:col-span-2">
+            <section class="rounded-xl border border-[#eee9df] p-3">
+              <h3 class="text-xs font-extrabold text-[#1A2B4C]">1 · Détection des lots</h3>
+              <div class="mt-2 grid grid-cols-3 gap-1.5 text-[11px] font-bold">
+                @for (opt of modes; track opt.value) {
+                  <button type="button" class="rounded-lg border px-2 py-1.5"
+                    [class]="mode() === opt.value ? 'border-[#1A2B4C] bg-[#1A2B4C] text-white' : 'border-[#dfe3e8] bg-white text-[#5d6a79]'"
+                    (click)="setMode(opt.value)">{{ opt.label }}</button>
+                }
+              </div>
+              <p class="mt-2 text-[11px] text-gray-600">
+                <strong>{{ includedLots().length }}</strong> lot(s) retenu(s) sur {{ allLots().length }} détecté(s)
+                · {{ analysis()?.stats?.containers }} îlot(s)/enceinte(s) reconnu(s).
+              </p>
+              <div class="mt-1 flex gap-3 text-[11px] font-bold text-[#4A7A56]">
+                <button type="button" (click)="setAll(true)">Tout cocher</button>
+                <button type="button" (click)="setAll(false)">Tout décocher</button>
+              </div>
+            </section>
+
+            <section class="rounded-xl border border-[#eee9df] p-3">
+              <h3 class="text-xs font-extrabold text-[#1A2B4C]">2 · Échelle réelle</h3>
+              <p class="mt-1 text-[11px] text-gray-500">Nécessaire pour calculer superficie, façade et profondeur en mètres.</p>
+              <select class="mt-2 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="calibKind()" (change)="onCalibSelect($event)">
+                @if (hasTextAreas()) { <option value="TEXT_AREAS">Utiliser les superficies écrites sur le plan</option> }
+                <option value="UNIT_METERS">Les unités du fichier sont des mètres (plan CAD)</option>
+                <option value="TYPICAL_LOT">Je connais la superficie d'un lot type</option>
+                <option value="PLAN_WIDTH">Je connais la largeur du lotissement</option>
+              </select>
+              @if (calibKind() !== 'TEXT_AREAS') {
+                <label class="mt-2 block text-[11px] font-bold text-gray-600">
+                  @switch (calibKind()) {
+                    @case ('UNIT_METERS') { Mètres par unité du fichier (1 = mètres · 0,01 = centimètres · 0,001 = millimètres) }
+                    @case ('TYPICAL_LOT') { Superficie d'un lot type (m²) }
+                    @default { Largeur réelle du lotissement (m) }
+                  }
+                  <input type="number" min="0" step="any" class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="calibValue()" (input)="onNumber($event, 'calib')" />
+                </label>
+              }
+              @if (scale(); as s) {
+                <p class="mt-2 text-[11px] text-gray-600">Lot médian estimé : <strong>{{ s.medianLotAreaM2 | number:'1.0-0' }} m²</strong></p>
+                @if (s.warning) { <p class="mt-1 rounded-lg bg-amber-50 p-2 text-[11px] font-semibold text-amber-800">⚠ {{ s.warning }}</p> }
+              } @else {
+                <p class="mt-2 rounded-lg bg-red-50 p-2 text-[11px] font-semibold text-red-700">Renseignez une échelle valide.</p>
+              }
+            </section>
+
+            <section class="rounded-xl border border-[#eee9df] p-3">
+              <h3 class="text-xs font-extrabold text-[#1A2B4C]">3 · Nouveaux lots</h3>
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <label class="text-[11px] font-bold text-gray-600">Prix au m² (FCFA)
+                  <input type="number" min="0" class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="prixM2() || ''" placeholder="ex. 15000" (input)="onNumber($event, 'prix')" />
+                </label>
+                <label class="text-[11px] font-bold text-gray-600">Statut initial
+                  <select class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="statut()" (change)="onStatutSelect($event)">
+                    <option value="DISPONIBLE">Disponible</option>
+                    <option value="RESERVE">Réservé</option>
+                    <option value="VENDU">Vendu</option>
+                    <option value="INDISPONIBLE_LITIGE">Indisponible</option>
+                  </select>
+                </label>
+              </div>
+              <p class="mt-2 text-[11px] text-gray-500">
+                {{ toCreate() }} lot(s) à créer · {{ toUpdate() }} déjà existant(s) (seule leur forme est mise à jour : prix, statut et réservations sont conservés).
+                Les prix restent modifiables lot par lot.
+              </p>
+            </section>
+          </div>
+        </div>
+
+        @if (analysis()?.warnings?.length || backgroundHeavy() || (background()?.leftovers ?? 0) > 0) {
+          <ul class="mt-4 space-y-1 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-semibold text-amber-900">
+            @for (w of analysis()?.warnings ?? []; track w) { <li>⚠ {{ w }}</li> }
+            @if (backgroundHeavy()) { <li>⚠ Le fond du plan est volumineux : l'enregistrement peut être plus lent. Simplifiez le SVG si possible.</li> }
+            @if ((background()?.leftovers ?? 0) > 0) { <li>⚠ {{ background()?.leftovers }} tracé(s) composé(s) mêlent lots et autres éléments : ils restent visibles dans le fond sous les lots.</li> }
+          </ul>
+        }
+
+        <!-- Liste détaillée -->
+        <div class="mt-4 max-h-56 overflow-auto rounded-xl border border-[#eee9df]">
+          <table class="w-full text-left text-[11px]">
+            <thead class="sticky top-0 bg-[#f7f5ef] text-[9px] uppercase tracking-wider text-gray-500">
+              <tr><th class="px-2 py-2"></th><th class="px-2 py-2">Lot</th><th class="px-2 py-2">Îlot</th><th class="px-2 py-2">Surface</th><th class="px-2 py-2">Façade × prof.</th><th class="px-2 py-2">Prix</th><th class="px-2 py-2">Action</th></tr>
+            </thead>
+            <tbody>
+              @for (lot of allLots(); track lot.key) {
+                <tr class="border-t border-[#eee9df]" [class.opacity-40]="!included().has(lot.key)">
+                  <td class="px-2 py-1.5"><input type="checkbox" class="h-3.5 w-3.5" [checked]="included().has(lot.key)" (change)="toggleLot(lot.key)" [attr.aria-label]="'Inclure le lot ' + lot.numero" /></td>
+                  <td class="px-2 py-1.5 font-bold text-[#1A2B4C]">{{ lot.numero }} @if (lot.numeroAuto) { <span class="ml-1 rounded bg-amber-100 px-1 text-[9px] text-amber-800">auto</span> } @if (lot.warning) { <span class="ml-1 rounded bg-red-100 px-1 text-[9px] text-red-700">{{ lot.warning }}</span> }</td>
+                  <td class="px-2 py-1.5">{{ lot.numeroIlot }}</td>
+                  @if (rowFor(lot.key); as r) {
+                    <td class="px-2 py-1.5">{{ r.superficie | number:'1.0-0' }} m²</td>
+                    <td class="px-2 py-1.5">{{ r.facade }} × {{ r.profondeur }} m</td>
+                    <td class="px-2 py-1.5">{{ prixM2() ? (r.prix | number:'1.0-0') + ' F' : '—' }}</td>
+                    <td class="px-2 py-1.5"><span class="rounded-full px-2 py-0.5 text-[9px] font-bold" [class]="r.existingId === null ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'">{{ r.existingId === null ? 'Créer' : 'Mettre à jour la forme' }}</span></td>
+                  } @else {
+                    <td class="px-2 py-1.5 text-gray-400" colspan="4">Exclu</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <!-- Pied -->
+    <div class="flex items-center justify-between gap-3 border-t border-[#eee9df] bg-[#fffdf9] px-5 py-3">
+      <div class="text-[11px] text-gray-500">
+        @if (busy()) {
+          <div class="w-64">
+            <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full bg-[#4A7A56] transition-all" [style.width.%]="progress().total ? (progress().done / progress().total) * 100 : 0"></div></div>
+            <span class="mt-1 block font-semibold">Enregistrement… {{ progress().done }} / {{ progress().total }}</span>
+          </div>
+        } @else if (analysis() && !canConfirm()) {
+          @if (toCreate() > 0 && prixM2() <= 0) { Indiquez un prix au m² pour créer les nouveaux lots. }
+          @else if (!scale()) { Renseignez l'échelle du plan. }
+          @else { Sélectionnez au moins un lot. }
+        } @else if (analysis()) {
+          Le plan sera enregistré avec le fond importé ; vous pourrez ensuite modifier chaque lot dans le Studio.
+        }
+      </div>
+      <div class="flex gap-2">
+        <button type="button" class="rounded-xl border border-[#dfe3e8] bg-white px-4 py-2 text-xs font-extrabold text-[#1A2B4C] disabled:opacity-40 shadow-card" [disabled]="busy()" (click)="close()">Annuler</button>
+        @if (analysis()) {
+          <button type="button" class="rounded-xl bg-[#1A2B4C] px-4 py-2 text-xs font-extrabold text-white disabled:opacity-40" [disabled]="!canConfirm()" (click)="confirm()">
+            Importer {{ rows().length }} lot(s)
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</div>

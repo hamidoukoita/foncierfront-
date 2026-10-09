@@ -1,0 +1,46 @@
+@if (isOpen()) {
+  <div 
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+    role="dialog"
+    aria-modal="true"
+    (click)="onBackdropClick($event)">
+    
+    <div 
+      class="bg-white rounded-2xl w-full max-w-md overflow-hidden border border-gray-100 p-6 space-y-4 shadow-card"
+      (click)="$event.stopPropagation()">
+      
+      <div class="flex items-center gap-3.5">
+        <div 
+          class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-lg font-bold"
+          [ngClass]="variant() === 'danger' ? 'bg-red-100 text-brand-danger' : 'bg-orange-100 text-brand-primary'">
+          @if (variant() === 'danger') { ⚠️ } @else { ❓ }
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-gray-900 leading-tight">
+            {{ title() }}
+          </h3>
+          <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+            {{ message() }}
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+        <button 
+          type="button" 
+          (click)="cancelled.emit()"
+          class="px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
+          {{ cancelText() }}
+        </button>
+        <button 
+          type="button" 
+          (click)="confirmed.emit()"
+          class="px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer"
+          [ngClass]="variant() === 'danger' ? 'bg-brand-danger hover:bg-red-700' : 'bg-brand-primary hover:bg-brand-primary-hover'">
+          {{ confirmText() }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

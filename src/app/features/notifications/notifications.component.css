@@ -1,0 +1,4 @@
+/* Styles spécifiques pour NotificationsComponent */
+:host {
+  display: block;
+}

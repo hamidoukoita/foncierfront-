@@ -1,0 +1,17 @@
+/* Styles spécifiques pour StatsCardComponent */
+:host {
+  display: block;
+  height: 100%;
+}
+
+.stats-card-wrapper {
+  min-height: 135px;
+  height: 100%;
+  padding-top: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
+}
+
+.stats-icon-box {
+  width: 58px;
+  height: 58px;
+}

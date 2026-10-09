@@ -1,0 +1,281 @@
+<div class="space-y-6">
+
+  <!-- En-tête -->
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">
+      Planning des rendez-vous & visites terrain
+    </h1>
+    <p class="text-xs sm:text-sm text-gray-600 mt-1">
+      Coordonnez les rendez-vous d'information au siège et les visites guidées sur chantier avec les acquéreurs.
+    </p>
+  </div>
+
+  <!-- Barre de filtres doubles : Statuts + Modalité Bimodale (Siège vs Chantier) -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    
+    <!-- Filtres Tabs Statut -->
+    <div class="flex flex-wrap items-center gap-2">
+      <button 
+        type="button" 
+        (click)="setFilter('TOUS')" 
+        [class]="currentFilter() === 'TOUS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
+      <span>Tous ({{ countTous() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('EN_ATTENTE')" 
+        [class]="currentFilter() === 'EN_ATTENTE' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >hourglass_empty</mat-icon>
+      <span>En attente ({{ countEnAttente() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('CONFIRMEES')" 
+        [class]="currentFilter() === 'CONFIRMEES' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >check_circle</mat-icon>
+      <span>Confirmées ({{ countConfirmees() }})</span>
+    </button>
+
+      <button 
+        type="button" 
+        (click)="setFilter('EFFECTUEES')" 
+        [class]="currentFilter() === 'EFFECTUEES' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
+      <mat-icon style="color: var(--foncier-primary)"  >done_all</mat-icon>
+      <span>Effectuées ({{ countEffectuees() }})</span>
+    </button>
+    </div>
+
+    <!-- Filtre Bimodal : Type de Rendez-vous -->
+    <div class="flex items-center gap-2">
+      <div class="bg-gray-200/70 p-1 rounded-xl flex items-center gap-1 text-xs">
+        <button 
+          type="button"
+          (click)="setTypeFilter('TOUS')"
+          [class]="selectedTypeVisite() === 'TOUS' ? 'bg-white font-bold text-brand-secondary shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+          class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+          Tous lieux
+        </button>
+        <button 
+          type="button"
+          (click)="setTypeFilter('CHANTIER')"
+          [class]="selectedTypeVisite() === 'CHANTIER' ? 'bg-white font-bold text-brand-primary shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+          class="px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer">
+          <span>🚜</span>
+          <span>Sur Chantier</span>
+        </button>
+        <button 
+          type="button"
+          (click)="setTypeFilter('SIEGE')"
+          [class]="selectedTypeVisite() === 'SIEGE' ? 'bg-white font-bold text-brand-secondary shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+          class="px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer">
+          <span>🏢</span>
+          <span>Au Siège</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tableau Planning des Visites -->
+  <div class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        
+        <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+          <tr>
+            <th class="py-3.5 px-6">DATE & CRÉNEAU</th>
+            <th class="py-3.5 px-6">MODALITÉ / LIEU</th>
+            <th class="py-3.5 px-6">PROSPECT / CONTACT</th>
+            <th class="py-3.5 px-6">PROGRAMME & LOT</th>
+            <th class="py-3.5 px-6">AGENT ASSIGNÉ</th>
+            <th class="py-3.5 px-6 text-center">STATUT</th>
+            <th class="py-3.5 px-6 text-right">ACTIONS</th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y divide-gray-50">
+          @for (v of filteredVisites(); track v.id) {
+            <tr class="hover:bg-orange-50/20 transition-colors">
+              
+              <!-- Date & Créneau -->
+              <td class="py-4 px-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex flex-col items-center justify-center shrink-0 leading-tight">
+                    <span class="text-[9px] font-extrabold text-brand-primary uppercase tracking-wider">{{ v.jourSemaine }}</span>
+                    <span class="text-sm font-extrabold text-brand-secondary">{{ v.jourMois }}</span>
+                  </div>
+                  <div>
+                    <p class="font-extrabold text-gray-900 text-xs">{{ v.heureDebut }} - {{ v.heureFin }}</p>
+                    <p class="text-[11px] text-gray-500">{{ v.dateComplete }}</p>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Modalité Bimodale : Siège vs Chantier -->
+              <td class="py-4 px-6">
+                @if (v.typeVisite === 'SIEGE') {
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-brand-secondary font-bold text-[11px] border border-slate-200">
+                    <span>🏢</span>
+                    <span>Au Siège</span>
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 text-brand-primary font-bold text-[11px] border border-orange-200">
+                    <span>🚜</span>
+                    <span>Sur Chantier</span>
+                  </span>
+                }
+              </td>
+
+              <!-- Prospect / Contact -->
+              <td class="py-4 px-6">
+                <p class="font-bold text-gray-900 text-xs">{{ v.prospectNom }}</p>
+                <p class="text-[11px] text-gray-600 font-mono">{{ v.prospectTelephone }}</p>
+              </td>
+
+              <!-- Programme & Lot ciblé -->
+              <td class="py-4 px-6">
+                <p class="font-bold text-gray-900 text-xs">{{ v.programmeNom }}</p>
+                <p class="text-[11px] font-semibold text-brand-primary">{{ v.bienCible }}</p>
+              </td>
+
+              <!-- Agent assigné -->
+              <td class="py-4 px-6">
+                @if (v.agentAssignNom) {
+                  <div>
+                    <p class="font-bold text-gray-900 text-xs">{{ v.agentAssignNom }}</p>
+                    <p class="text-[11px] text-brand-success flex items-center gap-1 font-semibold">
+                      <span class="w-1.5 h-1.5 rounded-full bg-brand-success"></span>
+                      <span>{{ v.agentStatutConfirmation || 'Confirmé' }}</span>
+                    </p>
+                  </div>
+                } @else {
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400 font-medium">Non assigné</span>
+                    <button 
+                      type="button" 
+                      (click)="openAssignModal(v)"
+                      class="text-[11px] font-bold text-brand-primary hover:underline cursor-pointer">
+                      + Assigner
+                    </button>
+                  </div>
+                }
+              </td>
+
+              <!-- Statut -->
+              <td class="py-4 px-6 text-center">
+                <app-status-badge [status]="v.statut"></app-status-badge>
+              </td>
+
+              <!-- Actions -->
+              <td class="py-4 px-6 text-right">
+                <button 
+                  type="button" 
+                  (click)="openAssignModal(v)"
+                  class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 inline-flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card" 
+                  title="Détails du rendez-vous">
+                  👁️
+                </button>
+              </td>
+
+            </tr>
+          }
+        </tbody>
+
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-6 border-t border-gray-100">
+      <app-pagination 
+        [currentPage]="currentPage()" 
+        [pageSize]="5" 
+        [totalItems]="countTous()"
+        (pageChange)="currentPage.set($event)">
+      </app-pagination>
+    </div>
+  </div>
+
+  <!-- Modale d'assignation de visite accessible -->
+  @if (isAssignModalOpen() && activeVisite()) {
+    <div 
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      (click)="isAssignModalOpen.set(false)">
+      <div 
+        class="bg-white rounded-2xl w-full max-w-lg overflow-hidden border border-gray-100 shadow-card"
+        (click)="$event.stopPropagation()">
+        
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="text-base font-bold text-brand-secondary">
+            Déléguer la Visite Terrain
+          </h3>
+          <button (click)="isAssignModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="bg-brand-bg p-4 rounded-xl border border-gray-200 space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-gray-500">Date & Heure :</span>
+              <span class="font-bold text-gray-900">{{ activeVisite()?.jourSemaine }} {{ activeVisite()?.jourMois }} • {{ activeVisite()?.heureDebut }} - {{ activeVisite()?.heureFin }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Lieu de RDV :</span>
+              <span class="font-bold text-brand-secondary">
+                {{ activeVisite()?.typeVisite === 'SIEGE' ? '🏢 Siège de la Société Promotrice' : '🚜 Sur Site / Chantier du Lotissement' }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Programme & Bien :</span>
+              <span class="font-bold text-gray-900">{{ activeVisite()?.programmeNom }} ({{ activeVisite()?.bienCible }})</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Prospect :</span>
+              <span class="font-bold text-gray-900">{{ activeVisite()?.prospectNom }} ({{ activeVisite()?.prospectTelephone }})</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1.5">
+              Choisir l'agent commercial accompagnateur
+            </label>
+            <select 
+              [ngModel]="selectedAgentNom()" 
+              (ngModelChange)="selectedAgentNom.set($event)"
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+              @for (ag of agents(); track ag.id) {
+                <option [value]="ag.prenom + ' ' + ag.nom[0] + '.'">
+                  {{ ag.prenom }} {{ ag.nom }} ({{ ag.fonctionDeleguee }})
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+            <button 
+              type="button" 
+              (click)="isAssignModalOpen.set(false)" 
+              class="px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">
+              Annuler
+            </button>
+            <button 
+              type="button" 
+              (click)="confirmAssign()" 
+              class="px-5 py-2.5 text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-xl shadow-xs cursor-pointer transition-colors">
+              Confirmer la délégation
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

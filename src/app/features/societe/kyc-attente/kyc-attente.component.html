@@ -1,0 +1,88 @@
+<div class="kyc-container p-6 bg-gray-50 min-h-screen">
+  <div class="max-w-4xl mx-auto bg-white rounded-lg p-8 shadow-card">
+    
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">Dossier d'Agrément (KYC)</h1>
+      <p class="text-gray-600">
+        Conformément à la réglementation, vous devez soumettre vos documents officiels 
+        pour vérification avant de pouvoir publier des programmes fonciers.
+      </p>
+    </div>
+
+    <!-- Alert Statut -->
+    <div *ngIf="statut() === 'EN_ATTENTE'" class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+      <div class="flex">
+        <div class="ml-3">
+          <p class="text-sm text-blue-700 font-medium">
+            Votre dossier a été soumis et est actuellement en cours de vérification par l'Administration Foncier+. 
+            Vous serez notifié dès qu'il sera validé.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="statut() === 'REFUSER'" class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+      <div class="flex">
+        <div class="ml-3">
+          <p class="text-sm text-red-700 font-medium">
+            Votre dossier a été rejeté par l'Administration. Veuillez corriger les documents et soumettre à nouveau.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="statut() === 'VERIFIER'" class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+      <div class="flex">
+        <div class="ml-3">
+          <p class="text-sm text-green-700 font-medium">
+            Félicitations, votre dossier KYC est validé ! Vous pouvez maintenant accéder à toutes les fonctionnalités de la plateforme.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <!-- Documents Obligatoires -->
+      <div *ngFor="let type of requiredTypes" class="border rounded-lg p-4 relative" [ngClass]="hasDocument(type) ? 'border-green-300 bg-green-50' : 'border-gray-200'">
+        <div class="absolute top-2 right-2">
+          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Obligatoire</span>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">{{ getLabel(type) }}</h3>
+        
+        <div *ngIf="hasDocument(type)" class="text-green-600 flex items-center mb-4">
+          <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          Document fourni
+        </div>
+        
+        <div *ngIf="statut() !== 'VERIFIER'">
+          <input type="file" (change)="onFileSelected($event, type)" accept=".pdf,.png,.jpg,.jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+        </div>
+      </div>
+
+      <!-- Document Optionnel -->
+      <div *ngFor="let type of optionalTypes" class="border rounded-lg p-4 relative" [ngClass]="hasDocument(type) ? 'border-green-300 bg-green-50' : 'border-gray-200'">
+        <div class="absolute top-2 right-2">
+          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Optionnel</span>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">{{ getLabel(type) }}</h3>
+        
+        <div *ngIf="hasDocument(type)" class="text-green-600 flex items-center mb-4">
+          <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          Document fourni
+        </div>
+        
+        <div *ngIf="statut() !== 'VERIFIER'">
+          <input type="file" (change)="onFileSelected($event, type)" accept=".pdf,.png,.jpg,.jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-8 flex justify-end" *ngIf="statut() !== 'VERIFIER'">
+      <button (click)="soumettre()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-150">
+        Soumettre le dossier
+      </button>
+    </div>
+    
+  </div>
+</div>
