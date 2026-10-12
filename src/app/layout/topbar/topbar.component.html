@@ -42,22 +42,8 @@
       }
     </div>
 
-    <!-- Droite : Cloche notification + Menu utilisateur + Déconnexion -->
+    <!-- Droite : Menu utilisateur + Déconnexion. Les notifications restent accessibles depuis le menu du profil. -->
     <div class="d-flex align-items-center gap-2 gap-sm-3">
-      <!-- Cloche de notification -->
-      <a
-        [routerLink]="notificationRoute()"
-        matRipple
-        class="position-relative p-2 rounded-circle d-flex align-items-center justify-content-center cursor-pointer text-decoration-none text-gray-800 transition-all"
-        style="background: rgba(26, 43, 76, 0.05);"
-        title="Notifications">
-        <mat-icon style="font-size: 20px; width: 20px; height: 20px; color: var(--foncier-text-muted);">notifications</mat-icon>
-        <span class="position-absolute top-0 end-0 translate-middle p-1 bg-danger border border-dark rounded-circle" 
-              style="width: 8px; height: 8px; margin-top: 8px; margin-right: 8px;">
-          <span class="visually-hidden">Nouvelles alertes</span>
-        </span>
-      </a>
-
       <!-- Profil Utilisateur avec menu dropdown -->
       <div class="position-relative user-menu-container">
         <button

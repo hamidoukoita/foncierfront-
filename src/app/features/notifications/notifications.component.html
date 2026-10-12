@@ -1,181 +1,166 @@
-<div class="space-y-6">
-  <!-- En-tête -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight text-gray-900">Centre de notifications</h1>
-      <p class="text-xs sm:text-sm text-gray-500 mt-1">
-        Alertes sur les réservations, demandes de visite entrantes et demandes de construction.
+<div class="notifications-page space-y-6">
+  <header class="notifications-header">
+    <div class="notifications-heading">
+      <h1 class="notifications-title">Notifications</h1>
+      <p class="notifications-subtitle">
+        Retrouvez les informations importantes concernant les réservations, les visites et les projets de construction de votre société.
       </p>
     </div>
 
     <button
       type="button"
       (click)="markAllAsRead()"
-      class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-gray-800 transition-colors cursor-pointer self-start sm:self-auto shadow-card"
+      [disabled]="isMarkingAll() || countNonLues() === 0 || isLoading()"
+      class="notifications-primary-button"
     >
-      <mat-icon>done_all</mat-icon>
-      <span>Tout marquer comme lu</span>
+      @if (isMarkingAll()) {
+        <mat-icon class="animate-spin">progress_activity</mat-icon>
+        <span>Mise à jour...</span>
+      } @else {
+        <mat-icon>done_all</mat-icon>
+        <span>Tout marquer comme lu</span>
+      }
     </button>
-  </div>
+  </header>
 
-  <!-- Barre de filtres (Figma) -->
-  <div class="flex flex-wrap items-center gap-2">
-    <button
-      type="button"
-      (click)="setFilter('TOUTES')"
-      [class]="
-        currentFilter() === 'TOUTES'
-          ? 'bg-[#1E293B] text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
-      <span>Toutes ({{ countToutes() }})</span>
-    </button>
-
-    <button
-      type="button"
-      (click)="setFilter('NON_LUES')"
-      [class]="
-        currentFilter() === 'NON_LUES'
-          ? 'bg-[#1E293B] text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >mark_email_unread</mat-icon>
-      <span>Non lues ({{ countNonLues() }})</span>
-    </button>
-
-    <button
-      type="button"
-      (click)="setFilter('RESERVATIONS')"
-      [class]="
-        currentFilter() === 'RESERVATIONS'
-          ? 'bg-[#1E293B] text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >book_online</mat-icon>
-      <span>Réservations ({{ countReservations() }})</span>
-    </button>
-
-    <button
-      type="button"
-      (click)="setFilter('VISITES')"
-      [class]="
-        currentFilter() === 'VISITES'
-          ? 'bg-[#1E293B] text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >emoji_transportation</mat-icon>
-      <span>Visites terrain ({{ countVisites() }})</span>
-    </button>
-
-    <button
-      type="button"
-      (click)="setFilter('CONSTRUCTION')"
-      [class]="
-        currentFilter() === 'CONSTRUCTION'
-          ? 'bg-[#1E293B] text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >construction</mat-icon>
-      <span>Construction ({{ countConstruction() }})</span>
-    </button>
-  </div>
-
-  <!-- Liste des alertes et cartes de notification (Figma) -->
-  <div class="space-y-3">
-    @for (item of filteredNotifications(); track item.id) {
-      <div
-        [class.border-[#E07A22]]="item.nonLu"
-        [class.border-gray-100]="!item.nonLu"
-        class="bg-white rounded-2xl p-4 sm:p-5 border-2 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover: shadow-card"
-      >
-        <!-- Puce + Icône + Contenu -->
-        <div class="flex items-start gap-3.5">
-          <!-- Puce orange/grise -->
-          <span
-            [class.bg-[#E07A22]]="item.nonLu"
-            [class.bg-gray-300]="!item.nonLu"
-            class="w-2.5 h-2.5 rounded-full mt-2 shrink-0"
-          >
-          </span>
-
-          <!-- Rond d'icône -->
-          <div
-            class="w-10 h-10 rounded-xl bg-orange-50/70 border border-orange-100 flex items-center justify-center text-lg shrink-0"
-          >
-            {{ item.iconEmoji }}
-          </div>
-
-          <!-- Texte -->
-          <div>
-            <div class="flex flex-wrap items-baseline gap-2">
-              <h3 class="text-xs sm:text-sm font-bold text-gray-900">
-                {{ item.titre }}
-              </h3>
-            </div>
-            <p class="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
-              {{ item.message }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Date relative + Bouton contextuel -->
-        <div class="flex items-center justify-between md:justify-end gap-4 shrink-0 pl-6 md:pl-0">
-          <span class="text-xs text-gray-400 font-mono">
-            {{ item.dateRelative }}
-          </span>
-
-          <!-- Boutons selon la capture Figma -->
-          @if (item.actionLabel === 'Assigner agent') {
-            <button
-              type="button"
-              (click)="handleAction(item)"
-              class="px-5 py-2.5 rounded-xl bg-[#E07A22] hover:bg-[#c9691b] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
-            >
-              {{ item.actionLabel }}
-            </button>
-          } @else if (
-            item.actionLabel === 'Déléguer RDV' || item.actionLabel === 'Étudier dossier'
-          ) {
-            <button
-              type="button"
-              (click)="handleAction(item)"
-              class="px-5 py-2.5 rounded-xl bg-[#1E293B] hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
-            >
-              {{ item.actionLabel }}
-            </button>
-          } @else {
-            <button
-              type="button"
-              (click)="handleAction(item)"
-              class="px-5 py-2.5 rounded-xl border border-gray-200 bg-[#F8F9FA] hover:bg-gray-100 text-gray-800 text-xs font-bold transition-colors cursor-pointer"
-            >
-              {{ item.actionLabel }}
-            </button>
-          }
-        </div>
+  <section class="notification-stats" aria-label="Résumé des notifications">
+    <article class="notification-stat-card">
+      <span class="notification-stat-icon stat-icon-navy"><mat-icon>notifications</mat-icon></span>
+      <div class="notification-stat-content">
+        <span class="notification-stat-label">Toutes</span>
+        <strong>{{ countToutes() }}</strong>
+        <small>Notifications reçues</small>
       </div>
-    }
-  </div>
+    </article>
+    <article class="notification-stat-card">
+      <span class="notification-stat-icon stat-icon-orange"><mat-icon>mark_email_unread</mat-icon></span>
+      <div class="notification-stat-content">
+        <span class="notification-stat-label">Non lues</span>
+        <strong>{{ countNonLues() }}</strong>
+        <small>À consulter</small>
+      </div>
+    </article>
+    <article class="notification-stat-card">
+      <span class="notification-stat-icon stat-icon-green"><mat-icon>event_available</mat-icon></span>
+      <div class="notification-stat-content">
+        <span class="notification-stat-label">Réservations</span>
+        <strong>{{ countReservations() }}</strong>
+        <small>Dossiers liés aux biens</small>
+      </div>
+    </article>
+    <article class="notification-stat-card">
+      <span class="notification-stat-icon stat-icon-blue"><mat-icon>calendar_month</mat-icon></span>
+      <div class="notification-stat-content">
+        <span class="notification-stat-label">Visites & construction</span>
+        <strong>{{ countVisites() + countConstruction() }}</strong>
+        <small>Suivi des activités</small>
+      </div>
+    </article>
+  </section>
 
-  <!-- Pagination (Figma) -->
-  <div class="pt-2">
-    <app-pagination
-      [currentPage]="currentPage()"
-      [pageSize]="5"
-      [totalItems]="countToutes()"
-      (pageChange)="currentPage.set($event)"
-    >
-    </app-pagination>
-  </div>
+  <section class="notifications-toolbar" aria-label="Filtrer les notifications">
+    <div class="notifications-filters">
+      <button type="button" (click)="setFilter('TOUTES')" [class.active]="currentFilter() === 'TOUTES'">
+        <mat-icon>apps</mat-icon><span>Toutes</span><b>{{ countToutes() }}</b>
+      </button>
+      <button type="button" (click)="setFilter('NON_LUES')" [class.active]="currentFilter() === 'NON_LUES'">
+        <mat-icon>mark_email_unread</mat-icon><span>Non lues</span><b>{{ countNonLues() }}</b>
+      </button>
+      <button type="button" (click)="setFilter('RESERVATIONS')" [class.active]="currentFilter() === 'RESERVATIONS'">
+        <mat-icon>event_available</mat-icon><span>Réservations</span><b>{{ countReservations() }}</b>
+      </button>
+      <button type="button" (click)="setFilter('VISITES')" [class.active]="currentFilter() === 'VISITES'">
+        <mat-icon>calendar_month</mat-icon><span>Visites</span><b>{{ countVisites() }}</b>
+      </button>
+      <button type="button" (click)="setFilter('CONSTRUCTION')" [class.active]="currentFilter() === 'CONSTRUCTION'">
+        <mat-icon>construction</mat-icon><span>Construction</span><b>{{ countConstruction() }}</b>
+      </button>
+    </div>
+
+    <button type="button" class="notifications-refresh-button" (click)="loadNotifications()" [disabled]="isLoading()">
+      <mat-icon [class.animate-spin]="isLoading()">refresh</mat-icon>
+      <span>Actualiser</span>
+    </button>
+  </section>
+
+  @if (isLoading()) {
+    <div class="notifications-state-card" role="status" aria-live="polite">
+      <mat-icon class="animate-spin state-loading-icon">progress_activity</mat-icon>
+      <strong>Chargement des notifications</strong>
+      <p>Récupération des dernières activités depuis le serveur...</p>
+    </div>
+  } @else if (hasError()) {
+    <div class="notifications-error-card" role="alert">
+      <span class="notification-error-icon"><mat-icon>error_outline</mat-icon></span>
+      <div class="notifications-error-copy">
+        <h2>Impossible de récupérer les notifications</h2>
+        <p>Vérifiez la connexion, votre session et l’API, puis réessayez.</p>
+      </div>
+      <button type="button" class="notifications-retry-button" (click)="loadNotifications()">Réessayer</button>
+    </div>
+  } @else if (filteredNotifications().length === 0) {
+    <div class="notifications-state-card">
+      <span class="notifications-empty-icon"><mat-icon>notifications_none</mat-icon></span>
+      <h2>Aucune notification</h2>
+      <p>Aucune notification ne correspond à ce filtre pour le moment. Les nouvelles activités apparaîtront ici lorsqu’elles seront transmises par le système.</p>
+      <button type="button" class="notifications-secondary-button" (click)="loadNotifications()">
+        <mat-icon>refresh</mat-icon>Actualiser la liste
+      </button>
+    </div>
+  } @else {
+    <section class="notifications-results" aria-label="Liste des notifications">
+      <div class="notifications-results-header">
+        <div>
+          <h2>Centre d’activité</h2>
+          <p>{{ filteredNotifications().length }} notification(s) correspondant au filtre</p>
+        </div>
+        <span class="notifications-live-label"><span></span> Synchronisées avec le serveur</span>
+      </div>
+
+      <div class="notifications-list">
+        @for (item of paginatedNotifications(); track item.id) {
+          <article class="notification-item" [class.is-unread]="item.nonLu">
+            <span class="notification-unread-marker" [class.visible]="item.nonLu" aria-hidden="true"></span>
+
+            <span class="notification-type-icon" [class.type-reservation]="item.type === 'RESERVATION'" [class.type-paiement]="item.type === 'PAIEMENT'" [class.type-visite]="item.type === 'VISITE'" [class.type-construction]="item.type === 'CONSTRUCTION'">
+              <mat-icon>{{ iconForType(item.type) }}</mat-icon>
+            </span>
+
+            <div class="notification-item-content">
+              <div class="notification-item-heading">
+                <h3>{{ item.titre }}</h3>
+                <span class="notification-type-label">{{ typeLabel(item.type) }}</span>
+                @if (item.nonLu) {
+                  <span class="notification-unread-label"><span></span>Non lue</span>
+                }
+              </div>
+              <p class="notification-message">{{ item.message }}</p>
+              <div class="notification-item-meta">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ item.dateRelative }}</span>
+                @if (item.prospectConcerne) {
+                  <span class="notification-meta-separator">·</span>
+                  <span>{{ item.prospectConcerne }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="notification-item-actions">
+              <button type="button" (click)="handleAction(item)" [disabled]="actingNotificationId() !== null" class="notification-open-button">
+                @if (actingNotificationId() === item.id) {
+                  <mat-icon class="animate-spin">progress_activity</mat-icon><span>Ouverture...</span>
+                } @else {
+                  <span>{{ item.actionLabel }}</span><mat-icon>arrow_forward</mat-icon>
+                }
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <div class="notifications-pagination">
+        <app-pagination [currentPage]="currentPage()" [pageSize]="5" [totalItems]="filteredNotifications().length" (pageChange)="currentPage.set($event)" />
+      </div>
+    </section>
+  }
 </div>
