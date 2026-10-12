@@ -34,6 +34,8 @@ export class ReservationsComponent implements OnInit {
 
   readonly reservations = this.societeService.reservations;
   readonly agents = this.societeService.agents;
+  /** Uniquement les agents actifs pour l'attribution. */
+  readonly agentsActifs = this.societeService.agentsActifs;
 
   ngOnInit(): void {
     this.isLoading.set(true);
@@ -82,7 +84,9 @@ export class ReservationsComponent implements OnInit {
 
   openAssignModal(reservation: Reservation): void {
     this.activeReservation.set(reservation);
-    this.selectedAgentId.set(reservation.agentAssignId ?? this.agents()[0]?.id ?? null);
+    const actifs = this.agentsActifs();
+    const stillValid = reservation.agentAssignId && actifs.some(a => a.id === reservation.agentAssignId);
+    this.selectedAgentId.set(stillValid ? reservation.agentAssignId! : (actifs[0]?.id ?? null));
     this.isAssignModalOpen.set(true);
   }
 
@@ -99,7 +103,7 @@ export class ReservationsComponent implements OnInit {
       return;
     }
 
-    const agent = this.agents().find((a) => a.id === agentId);
+    const agent = this.agentsActifs().find((a) => a.id === agentId) ?? this.agents().find((a) => a.id === agentId);
     const agentLabel = agent ? `${agent.prenom} ${agent.nom}` : `Agent #${agentId}`;
 
     this.isAssigning.set(true);

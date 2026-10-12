@@ -35,6 +35,8 @@ export class VisitesComponent implements OnInit {
 
   readonly visites = this.societeService.visites;
   readonly agents = this.societeService.agents;
+  /** Uniquement les agents actifs pour l'attribution. */
+  readonly agentsActifs = this.societeService.agentsActifs;
 
   ngOnInit(): void {
     this.isLoading.set(true);
@@ -83,7 +85,9 @@ export class VisitesComponent implements OnInit {
 
   openAssignModal(visite: VisiteRendezVous): void {
     this.activeVisite.set(visite);
-    this.selectedAgentId.set(visite.agentAssignId ?? this.agents()[0]?.id ?? null);
+    const actifs = this.agentsActifs();
+    const stillValid = visite.agentAssignId && actifs.some(a => a.id === visite.agentAssignId);
+    this.selectedAgentId.set(stillValid ? visite.agentAssignId! : (actifs[0]?.id ?? null));
     this.isAssignModalOpen.set(true);
   }
 
@@ -94,7 +98,7 @@ export class VisitesComponent implements OnInit {
       this.toast.warning('Agent requis', 'Sélectionnez un agent avant de confirmer.');
       return;
     }
-    const agent = this.agents().find(a => a.id === agentId);
+    const agent = this.agentsActifs().find(a => a.id === agentId) ?? this.agents().find(a => a.id === agentId);
     const agentLabel = agent ? `${agent.prenom} ${agent.nom}` : 'Agent';
     this.societeService.assignAgentToVisite(v.id, agentId).subscribe({
       next: () => {
