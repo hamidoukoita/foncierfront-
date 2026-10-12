@@ -42,7 +42,7 @@
       }
     </div>
 
-    <!-- Droite : Menu utilisateur + Déconnexion. Les notifications restent accessibles depuis le menu du profil. -->
+    <!-- Droite : Menu utilisateur + Déconnexion. Menu utilisateur et déconnexion. -->
     <div class="d-flex align-items-center gap-2 gap-sm-3">
       <!-- Profil Utilisateur avec menu dropdown -->
       <div class="position-relative user-menu-container">
@@ -103,16 +103,7 @@
                 <span>Dossier Société & Agréments</span>
               </a>
             }
-
-            <a
-              [routerLink]="notificationRoute()"
-              (click)="isMenuOpen.set(false)"
-              class="dropdown-item d-flex align-items-center gap-2 px-3 py-2 text-xs text-dark hover-bg-light text-decoration-none">
-              <mat-icon class="text-secondary" style="font-size: 16px; width: 16px; height: 16px;">notifications</mat-icon>
-              <span>Notifications & Alertes</span>
-            </a>
-
-            <div class="border-top my-1" style="border-color: #E2DDD5 !important;"></div>
+<div class="border-top my-1" style="border-color: #E2DDD5 !important;"></div>
 
             <button
               type="button"

@@ -106,11 +106,6 @@ export class SidebarComponent {
       icon: 'engineering',
     },
     {
-      label: 'Notifications',
-      route: '/societe/notifications',
-      icon: 'notifications',
-    },
-    {
       label: 'Profil Société',
       route: '/societe/profil',
       icon: 'apartment',
