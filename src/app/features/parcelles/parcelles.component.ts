@@ -42,13 +42,15 @@ export class ParcellesComponent implements OnInit {
   readonly isLoading = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly isSaving = signal(false);
-  readonly isEditLoading = signal(false);
+  readonly isDetailsLoading = signal(false);
   readonly currentFilter = signal<ParcelleFilter>('TOUTES');
   readonly currentPage = signal(1);
   readonly isAddModalOpen = signal(false);
   readonly searchQuery = signal('');
   readonly editingParcelle = signal<ParcelleLot | null>(null);
   readonly editingParcelleData = signal<ParcelleIndividuelleBackend | null>(null);
+  readonly detailParcelle = signal<ParcelleLot | null>(null);
+  readonly detailData = signal<ParcelleIndividuelleBackend | null>(null);
 
   readonly parcelles = this.societeService.parcelles;
 
@@ -167,7 +169,7 @@ export class ParcellesComponent implements OnInit {
   }
 
   openEditModal(parcelle: ParcelleLot): void {
-    this.isEditLoading.set(true);
+    this.isDetailsLoading.set(true);
     this.societeService.getParcelleDetails(parcelle.id).subscribe({
       next: (details) => {
         this.editingParcelle.set(parcelle);
@@ -183,10 +185,10 @@ export class ParcellesComponent implements OnInit {
           statut: this.toUiStatus(details.statut),
         });
         this.isAddModalOpen.set(true);
-        this.isEditLoading.set(false);
+        this.isDetailsLoading.set(false);
       },
       error: (error: unknown) => {
-        this.isEditLoading.set(false);
+        this.isDetailsLoading.set(false);
         this.toast.error('Modification indisponible', this.errorMessage(error, 'Les détails de la parcelle ne peuvent pas être chargés.'));
       },
     });
@@ -246,6 +248,27 @@ export class ParcellesComponent implements OnInit {
         );
       },
     });
+  }
+
+  openDetails(parcelle: ParcelleLot): void {
+    this.detailParcelle.set(parcelle);
+    this.detailData.set(null);
+    this.isDetailsLoading.set(true);
+    this.societeService.getParcelleDetails(parcelle.id).subscribe({
+      next: (details) => {
+        this.detailData.set(details);
+        this.isDetailsLoading.set(false);
+      },
+      error: (error: unknown) => {
+        this.isDetailsLoading.set(false);
+        this.toast.error('Détails partiels', this.errorMessage(error, 'Certaines informations détaillées ne sont pas accessibles.'));
+      },
+    });
+  }
+
+  closeDetails(): void {
+    this.detailParcelle.set(null);
+    this.detailData.set(null);
   }
 
   closeForm(): void {

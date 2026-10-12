@@ -145,7 +145,7 @@
                 <p class="text-[11px] font-semibold text-brand-primary">{{ v.bienCible }}</p>
               </td>
 
-              <!-- Agent assigné -->
+              <!-- Agent assigné (affichage uniquement — attribution via Action) -->
               <td class="py-4 px-6">
                 @if (v.agentAssignNom) {
                   <div>
@@ -156,15 +156,7 @@
                     </p>
                   </div>
                 } @else {
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-400 font-medium">Non assigné</span>
-                    <button 
-                      type="button" 
-                      (click)="openAssignModal(v)"
-                      class="text-[11px] font-bold text-brand-primary hover:underline cursor-pointer">
-                      + Assigner
-                    </button>
-                  </div>
+                  <span class="text-xs text-gray-400 font-medium">Non assigné</span>
                 }
               </td>
 
@@ -173,15 +165,28 @@
                 <app-status-badge [status]="v.statut"></app-status-badge>
               </td>
 
-              <!-- Actions -->
+              <!-- Actions : attribution + détails -->
               <td class="py-4 px-6 text-right">
-                <button 
-                  type="button" 
-                  (click)="openAssignModal(v)"
-                  class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 inline-flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card" 
-                  title="Détails du rendez-vous">
-                  👁️
-                </button>
+                <div class="inline-flex items-center gap-1.5 justify-end">
+                  @if (!v.agentAssignNom && v.statut === 'EN_ATTENTE') {
+                    <button
+                      type="button"
+                      (click)="openAssignModal(v)"
+                      class="px-2.5 py-1.5 rounded-lg border border-brand-primary/30 bg-orange-50 hover:bg-orange-100 text-[11px] font-bold text-brand-primary cursor-pointer shadow-card"
+                      title="Attribuer un agent"
+                    >
+                      + Attribuer
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    (click)="openAssignModal(v)"
+                    class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 inline-flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card"
+                    title="Détails du rendez-vous"
+                  >
+                    👁️
+                  </button>
+                </div>
               </td>
 
             </tr>
@@ -215,7 +220,7 @@
         
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h3 class="text-base font-bold text-brand-secondary">
-            Déléguer la Visite Terrain
+            Attribuer un agent à la visite
           </h3>
           <button (click)="isAssignModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
         </div>
@@ -244,15 +249,16 @@
 
           <div>
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1.5">
-              Choisir l'agent commercial accompagnateur
+              Attribuer à un agent
             </label>
-            <select 
-              [ngModel]="selectedAgentNom()" 
-              (ngModelChange)="selectedAgentNom.set($event)"
+            <select
+              [ngModel]="selectedAgentId()"
+              (ngModelChange)="selectedAgentId.set(+$event)"
               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+              <option [ngValue]="null" [value]="''">Sélectionner un agent…</option>
               @for (ag of agents(); track ag.id) {
-                <option [value]="ag.prenom + ' ' + ag.nom[0] + '.'">
-                  {{ ag.prenom }} {{ ag.nom }} ({{ ag.fonctionDeleguee }})
+                <option [ngValue]="ag.id" [value]="ag.id">
+                  {{ ag.prenom }} {{ ag.nom }}
                 </option>
               }
             </select>
@@ -269,7 +275,7 @@
               type="button" 
               (click)="confirmAssign()" 
               class="px-5 py-2.5 text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-xl shadow-xs cursor-pointer transition-colors">
-              Confirmer la délégation
+              Confirmer l'attribution
             </button>
           </div>
         </div>

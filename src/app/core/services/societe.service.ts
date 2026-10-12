@@ -561,14 +561,16 @@ export class SocieteService {
           const initials = ((prenom[0] || '') + (nom[0] || '')).toUpperCase() || 'AG';
           return {
             id: a.id,
-            matricule: a.id.toString(),
+            matricule: 'AG-' + String(a.id).padStart(4, '0'),
             nom: nom,
             prenom: prenom,
             initiales: initials,
             telephone: a.telephone,
             fonctionDeleguee: a.typeFonctionLibelle || '',
-            rdvVisitesCount: 0,
-            reservationsCount: 0,
+            rdvVisitesCount: a.rdvVisitesCount ?? 0,
+            reservationsCount: a.reservationsCount ?? 0,
+            estResponsableSociete: !!a.estResponsableSociete,
+            dateAffectation: a.dateAffectation || undefined,
             statut: (a.statut === 'ACTIF' ? 'ACTIF' : 'SUSPENDU') as StatutAgent
           };
         });
@@ -599,6 +601,24 @@ export class SocieteService {
     );
   }
 
+  /**
+   * Suspend ou réactive un agent (persistant côté backend).
+   * Un agent SUSPENDU ne peut plus se connecter.
+   */
+  updateAgentStatut(agentId: number, statut: 'ACTIF' | 'SUSPENDU'): Observable<BackendApiResponse<AgentPromoteurBackend>> {
+    return this.http.patch<BackendApiResponse<AgentPromoteurBackend>>(
+      `${this.API_BASE}/agents-promoteurs/${agentId}/statut`,
+      {},
+      { params: { statut } }
+    ).pipe(
+      tap(() => this.getAgents().subscribe()),
+      catchError(err => {
+        console.error('[SocieteService] Changement de statut agent impossible:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
   // ==========================================
   // RÉSERVATIONS
   // ==========================================
@@ -618,12 +638,12 @@ export class SocieteService {
         prospectTelephone: r.acquereurTelephone || 'Non renseigné',
         montantFcfa: r.montant ?? 0,
         dateReservation: r.dateReservation ? new Date(r.dateReservation).toLocaleDateString('fr-FR') : 'Non renseignée',
-        delaiGel72h: r.statut === 'EN_ATTENTE' ? 'En attente de traitement' :
-          r.statut === 'CONFIRMER' ? 'Confirmée' : 'Refusée',
+        delaiGel72h: '',
         delaiExpire: false,
         agentAssignId: r.agentId,
         agentAssignNom: r.agentNom,
-        statut: (r.statut === 'CONFIRMER' ? 'CONFIRMEE' : (r.statut === 'REFUSER' ? 'ANNULEE' : 'EN_ATTENTE')) as Reservation['statut']
+        statut: (r.statut === 'CONFIRMER' ? 'CONFIRMEE'
+          : (r.statut === 'REFUSER' || r.statut === 'ANNULEE' ? 'ANNULEE' : 'EN_ATTENTE')) as Reservation['statut']
       }))),
       tap(mapped => this.reservations.set(mapped))
     );
@@ -641,8 +661,21 @@ export class SocieteService {
     );
   }
 
-  assignAgentToReservation(reservationId: number, agentNom: string): void {
-    this.reservations.update(list => list.map(r => r.id === reservationId ? { ...r, agentAssignNom: agentNom } : r));
+  /**
+   * Attribue réellement un agent à la demande (API).
+   * Le backend refuse si la demande a dépassé 72 h sans agent ou n'est plus EN_ATTENTE.
+   */
+  assignAgentToReservation(reservationId: number, agentId: number): Observable<BackendApiResponse<ReservationBackend>> {
+    return this.http.patch<BackendApiResponse<ReservationBackend>>(
+      `${this.API_BASE}/reservations/${reservationId}/agent/${agentId}`,
+      {}
+    ).pipe(
+      tap(() => this.getReservations().subscribe()),
+      catchError(err => {
+        console.error('[SocieteService] Attribution agent impossible:', err);
+        return throwError(() => err);
+      })
+    );
   }
 
   // ==========================================
@@ -682,8 +715,21 @@ export class SocieteService {
     );
   }
 
-  assignAgentToVisite(visiteId: number, agentNom: string): void {
-    this.visites.update(list => list.map(v => v.id === visiteId ? { ...v, agentAssignNom: agentNom, agentStatutConfirmation: 'Assigné' } : v));
+  /**
+   * Attribue un agent au rendez-vous côté API.
+   * Le backend passe automatiquement le statut à ACCEPTER (confirmé).
+   */
+  assignAgentToVisite(visiteId: number, agentId: number): Observable<BackendApiResponse<RendezVousBackend>> {
+    return this.http.patch<BackendApiResponse<RendezVousBackend>>(
+      `${this.API_BASE}/rendez-vous/${visiteId}/agent/${agentId}`,
+      {}
+    ).pipe(
+      tap(() => this.getVisites().subscribe()),
+      catchError(err => {
+        console.error('[SocieteService] Attribution agent RDV impossible:', err);
+        return throwError(() => err);
+      })
+    );
   }
 
   // ==========================================
