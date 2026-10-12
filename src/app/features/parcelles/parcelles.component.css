@@ -1,4 +1,123 @@
-/* Styles spécifiques pour ParcellesComponent */
+/* Parcelles : en-tête, actions et filtres alignés sur le système visuel de Programmes.
+   Les icônes existantes de la table et des modales sont conservées. */
 :host {
   display: block;
+}
+
+.parcelles-page {
+  padding-bottom: 24px;
+  color: var(--foncier-secondary);
+}
+
+.parcelles-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.parcelles-page-title {
+  margin: 0;
+  color: var(--foncier-secondary);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: -.025em;
+}
+
+.parcelles-page-subtitle {
+  max-width: 720px;
+  margin: 4px 0 0;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.parcelles-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--foncier-primary);
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
+  transition: background-color .15s, box-shadow .15s, transform .15s;
+}
+
+.parcelles-primary-btn:hover {
+  background: var(--foncier-primary-hover);
+}
+
+.parcelles-primary-btn:active {
+  transform: scale(.99);
+}
+
+.parcelles-primary-btn:focus-visible {
+  outline: 2px solid var(--foncier-primary);
+  outline-offset: 2px;
+}
+
+.parcelles-primary-btn mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+}
+
+.parcelles-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.parcelles-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  transition: background-color .15s;
+}
+.parcelles-filter-button:hover { background: #f9fafb; }
+.parcelles-filter-button.active { background: var(--foncier-secondary); border-color: var(--foncier-secondary); color: #fff; }
+.parcelles-filter-button:focus-visible { outline: 2px solid var(--foncier-primary); outline-offset: 2px; }
+.parcelles-filter-button b { font-weight: 700; }
+
+.parcelles-filter-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.parcelles-filter-button.active .parcelles-filter-count {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+}
+
+@media (min-width: 640px) {
+  .parcelles-header {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .parcelles-page-subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
 }
