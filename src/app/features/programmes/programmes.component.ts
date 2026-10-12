@@ -51,6 +51,7 @@ export class ProgrammesComponent implements OnInit {
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
   readonly currentFilter = signal<ProgrammeFilter>('TOUS');
+  readonly searchQuery = signal('');
   readonly isCreateModalOpen = signal(false);
   readonly isEditModalOpen = signal(false);
   readonly programmeToEdit = signal<Programme | null>(null);
@@ -118,9 +119,22 @@ export class ProgrammesComponent implements OnInit {
 
   readonly filteredProgrammes = computed(() => {
     const filter = this.currentFilter();
-    const list = this.programmes();
-    if (filter === 'PUBLIES') return list.filter((p) => p.statut === 'PUBLIE');
-    if (filter === 'BROUILLONS') return list.filter((p) => p.statut === 'BROUILLON');
+    const query = this.searchQuery().trim().toLocaleLowerCase('fr-FR');
+    let list = this.programmes();
+
+    if (filter === 'PUBLIES') {
+      list = list.filter((programme) => programme.statut === 'PUBLIE');
+    } else if (filter === 'BROUILLONS') {
+      list = list.filter((programme) => programme.statut === 'BROUILLON');
+    }
+
+    if (query) {
+      list = list.filter((programme) =>
+        [programme.nom, programme.localisation, programme.titreFoncierRef, programme.description]
+          .some((value) => (value ?? '').toLocaleLowerCase('fr-FR').includes(query)),
+      );
+    }
+
     return list;
   });
 
@@ -131,6 +145,11 @@ export class ProgrammesComponent implements OnInit {
 
   setFilter(filter: ProgrammeFilter): void {
     this.currentFilter.set(filter);
+    this.currentPage.set(1);
+  }
+
+  onSearchChange(value: string): void {
+    this.searchQuery.set(value);
     this.currentPage.set(1);
   }
 

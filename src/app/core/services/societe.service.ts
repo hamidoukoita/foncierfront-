@@ -441,16 +441,29 @@ export class SocieteService {
           delaiGelRestant: p.statut === 'RESERVER' ? 'Réservé (72h)' : undefined
         }));
       }),
-      tap(mapped => this.parcelles.set(mapped)),
-      catchError(err => {
-        console.error('[SocieteService] Erreur lors du chargement des parcelles réelles:', err);
-        return of([]);
+      tap(mapped => this.parcelles.set(mapped))
+    );
+  }
+
+  getParcelleDetails(id: number): Observable<ParcelleIndividuelleBackend> {
+    return this.http.get<BackendApiResponse<ParcelleIndividuelleBackend>>(
+      `${this.API_BASE}/parcelles-individuelles/${id}`
+    ).pipe(
+      map(response => {
+        if (!response.data) throw new Error('Le serveur n’a retourné aucun détail pour cette parcelle.');
+        return response.data;
       })
     );
   }
 
-  updateStatutParcelle(id: number, statut: 'DISPONIBLE' | 'RESERVE' | 'VENDU' | 'INDISPONIBLE_LITIGE'): void {
-    this.parcelles.update(list => list.map(p => p.id === id ? { ...p, statut } : p));
+  private mapStatutParcelleVersApi(statut?: string): string {
+    switch (statut) {
+      case 'RESERVE': return 'RESERVER';
+      case 'VENDU': return 'VENDUE';
+      case 'INDISPONIBLE_LITIGE':
+      case 'INDISPONIBLE': return 'INDISPONIBLE';
+      default: return 'DISPONIBLE';
+    }
   }
 
   createParcelle(request: {
@@ -466,13 +479,13 @@ export class SocieteService {
     if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
     if (!request.reference?.trim()) return throwError(() => new Error('La référence de la parcelle est obligatoire.'));
     const payload = {
-      numeroTitreFoncier: request.numeroTitreFoncier,
+      numeroTitreFoncier: request.numeroTitreFoncier.trim(),
       reference: request.reference.trim(),
       superficie: request.superficie,
       prix: request.prix,
       facade: request.facade,
       profondeur: request.profondeur,
-      statut: request.statut === 'RESERVE' ? 'RESERVER' : (request.statut === 'VENDU' ? 'VENDUE' : (request.statut === 'INDISPONIBLE_LITIGE' ? 'INDISPONIBLE' : (request.statut || 'DISPONIBLE'))),
+      statut: this.mapStatutParcelleVersApi(request.statut),
       societeId,
       murCloture: false,
       eauSomapep: false,
@@ -480,8 +493,45 @@ export class SocieteService {
       voieBitumee: false
     };
 
-    return this.http.post<BackendApiResponse<ParcelleIndividuelleBackend>>(`${this.API_BASE}/parcelles-individuelles`, payload).pipe(
-      tap(() => this.getParcelles().subscribe())
+    return this.http.post<BackendApiResponse<ParcelleIndividuelleBackend>>(
+      `${this.API_BASE}/parcelles-individuelles`, payload
+    );
+  }
+
+  updateParcelle(id: number, request: {
+    numeroTitreFoncier: string;
+    reference?: string;
+    superficie: number;
+    prix: number;
+    facade?: number;
+    profondeur?: number;
+    statut?: string;
+    societeId?: number;
+    geometryJson?: string;
+    murCloture?: boolean;
+    eauSomapep?: boolean;
+    electriciteEdm?: boolean;
+    voieBitumee?: boolean;
+  }): Observable<BackendApiResponse<ParcelleIndividuelleBackend>> {
+    if (!request.reference?.trim()) return throwError(() => new Error('La référence de la parcelle est obligatoire.'));
+    const payload = {
+      numeroTitreFoncier: request.numeroTitreFoncier.trim(),
+      reference: request.reference.trim(),
+      superficie: request.superficie,
+      prix: request.prix,
+      facade: request.facade,
+      profondeur: request.profondeur,
+      statut: this.mapStatutParcelleVersApi(request.statut),
+      societeId: request.societeId ?? this.getSocieteId() ?? undefined,
+      geometryJson: request.geometryJson,
+      murCloture: request.murCloture,
+      eauSomapep: request.eauSomapep,
+      electriciteEdm: request.electriciteEdm,
+      voieBitumee: request.voieBitumee,
+    };
+
+    return this.http.put<BackendApiResponse<ParcelleIndividuelleBackend>>(
+      `${this.API_BASE}/parcelles-individuelles/${id}`, payload
     );
   }
 
@@ -642,64 +692,96 @@ export class SocieteService {
 
   getNotifications(): Observable<NotificationItem[]> {
     const userId = this.getUserId();
-    const url = userId
-      ? `${this.API_BASE}/notifications/utilisateur/${userId}`
-      : `${this.API_BASE}/notifications`;
+    if (!userId) {
+      return throwError(() => new Error('Utilisateur connecté introuvable. Reconnectez-vous avant de consulter les notifications.'));
+    }
 
-    return this.http.get<BackendApiResponse<NotificationBackend[]>>(url).pipe(
+    return this.http.get<BackendApiResponse<NotificationBackend[]>>(
+      `${this.API_BASE}/notifications/utilisateur/${userId}`
+    ).pipe(
       map(res => {
         if (!res.data || !Array.isArray(res.data)) return [];
         return res.data.map(n => {
-          const rawType = (n.typeNotificationLibelle || '').toUpperCase();
+          const rawType = (n.typeNotificationLibelle || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
           const type: NotificationItem['type'] =
-            rawType.includes('VISITE') ? 'VISITE' :
+            rawType.includes('VISITE') || rawType.includes('RENDEZ') || rawType.includes('RDV') ? 'VISITE' :
             rawType.includes('CONSTRUCT') ? 'CONSTRUCTION' :
             rawType.includes('PAIEMENT') ? 'PAIEMENT' : 'RESERVATION';
+          const actionRoute = this.notificationRouteForType(rawType);
 
           return {
             id: n.id,
             titre: n.titre,
             message: n.message,
             prospectConcerne: n.utilisateurNom ? `${n.utilisateurPrenom || ''} ${n.utilisateurNom}`.trim() : undefined,
-            dateRelative: n.dateEnvoi ? new Date(n.dateEnvoi).toLocaleDateString('fr-FR') : 'Récemment',
+            dateRelative: n.dateEnvoi ? this.formatNotificationDate(n.dateEnvoi) : 'Date inconnue',
             type,
             nonLu: !n.lue,
             actionLabel: 'Consulter',
-            actionRoute: '/societe/reservations',
-            iconEmoji: '🔔'
+            actionRoute,
+            iconEmoji: this.notificationIconForType(type),
           };
         });
       }),
-      tap(mapped => this.notifications.set(mapped)),
-      catchError(err => {
-        console.error('[SocieteService] Erreur lors du chargement des notifications réelles:', err);
-        return of([]);
-      })
+      tap(mapped => this.notifications.set(mapped))
     );
   }
 
-  markAllNotificationsAsRead(): void {
+  markNotificationAsRead(id: number): Observable<void> {
+    return this.http.patch<BackendApiResponse<NotificationBackend>>(
+      `${this.API_BASE}/notifications/${id}/lire`, {}
+    ).pipe(
+      tap(() => this.notifications.update(list => list.map(item => item.id === id ? { ...item, nonLu: false } : item))),
+      map(() => void 0)
+    );
+  }
+
+  markAllNotificationsAsRead(): Observable<void> {
     const unreadIds = this.notifications()
       .filter(notification => notification.nonLu)
       .map(notification => notification.id);
 
-    if (unreadIds.length === 0) return;
+    if (unreadIds.length === 0) return of(void 0);
 
-    forkJoin(
-      unreadIds.map(id =>
-        this.http.patch<BackendApiResponse<NotificationBackend>>(
-          `${this.API_BASE}/notifications/${id}/lire`,
-          {}
-        )
+    return forkJoin(unreadIds.map(id =>
+      this.http.patch<BackendApiResponse<NotificationBackend>>(
+        `${this.API_BASE}/notifications/${id}/lire`, {}
       )
-    ).subscribe({
-      next: () => {
-        this.notifications.update(list => list.map(n => ({ ...n, nonLu: false })));
-      },
-      error: error => {
-        console.error('[SocieteService] Impossible de marquer les notifications comme lues :', error);
-      }
-    });
+    )).pipe(
+      tap(() => this.notifications.update(list => list.map(item => ({ ...item, nonLu: false })))),
+      map(() => void 0)
+    );
+  }
+
+  private notificationRouteForType(type: string): string {
+    if (type.includes('VISITE') || type.includes('RENDEZ') || type.includes('RDV')) return '/societe/visites';
+    if (type.includes('CONSTRUCT')) return '/societe/projets-construction';
+    if (type.includes('AGENT')) return '/societe/agents';
+    if (type.includes('KYC') || type.includes('AGREMENT') || type.includes('SOCIETE')) return '/societe/profil';
+    if (type.includes('PROGRAMME')) return '/societe/programmes';
+    if (type.includes('RESERV') || type.includes('PAIEMENT') || type.includes('LOT') || type.includes('PARCELLE')) return '/societe/reservations';
+    return '/societe/dashboard';
+  }
+
+  private notificationIconForType(type: NotificationItem['type']): string {
+    switch (type) {
+      case 'VISITE': return '📅';
+      case 'CONSTRUCTION': return '🏗️';
+      case 'PAIEMENT': return '💳';
+      default: return '📋';
+    }
+  }
+
+  private formatNotificationDate(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Date inconnue';
+    const diff = Date.now() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1 && diff >= 0) return 'À l’instant';
+    if (minutes < 60 && diff >= 0) return `Il y a ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24 && diff >= 0) return `Il y a ${hours} h`;
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   // ==========================================
@@ -923,7 +1005,10 @@ export class SocieteService {
           agents: this.getAgents(),
           reservations: this.getReservations(),
           visites: this.getVisites(),
-          notifications: this.getNotifications()
+          notifications: this.getNotifications().pipe(catchError(error => {
+            console.error('[SocieteService] Notifications indisponibles pour le dashboard:', error);
+            return of([] as NotificationItem[]);
+          }))
         });
       }),
       tap(result => {
