@@ -146,7 +146,7 @@
 
 <!-- Création / modification : les deux actions passent par le véritable endpoint API. -->
 @if (isAddModalOpen()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm" role="presentation" (click)="closeForm()">
+  <div class="fixed inset-0 z-[2000] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm" role="presentation" (click)="closeForm()">
     <section role="dialog" aria-modal="true" aria-labelledby="parcelle-form-title" class="my-6 w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl" (click)="$event.stopPropagation()">
       <header class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
         <div>
@@ -200,7 +200,7 @@
 
 <!-- Détails réels de la parcelle, chargés par GET /api/parcelles-individuelles/{id}. -->
 @if (detailParcelle(); as p) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm" role="presentation" (click)="closeDetails()">
+  <div class="fixed inset-0 z-[2000] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm" role="presentation" (click)="closeDetails()">
     <section role="dialog" aria-modal="true" aria-labelledby="parcelle-detail-title" class="my-6 w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl" (click)="$event.stopPropagation()">
       <header class="flex items-start justify-between gap-4 border-b border-gray-100 bg-gray-50/70 px-6 py-5">
         <div class="flex items-start gap-3">

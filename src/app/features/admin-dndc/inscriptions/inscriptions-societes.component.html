@@ -320,7 +320,7 @@
   <!-- MODALE DE REFUS AVEC MOTIF -->
   @if (isRefusModalOpen()) {
     <div 
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       (click)="isRefusModalOpen.set(false)">
@@ -383,7 +383,7 @@
   <!-- MODALE D'EXAMEN KYC -->
   @if (isKycModalOpen()) {
     <div 
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       (click)="fermerKycModal()">

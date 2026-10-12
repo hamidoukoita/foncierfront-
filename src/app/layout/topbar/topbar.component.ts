@@ -126,11 +126,6 @@ export class TopbarComponent {
       icon: 'engineering',
     },
     {
-      label: 'Notifications',
-      route: '/societe/notifications',
-      icon: 'notifications',
-    },
-    {
       label: 'Profil Société',
       route: '/societe/profil',
       icon: 'apartment',
@@ -139,11 +134,6 @@ export class TopbarComponent {
 
   readonly currentNavItems = computed(() => {
     return this.authService.isPlatformAdmin() ? this.superAdminNav() : this.societeNav;
-  });
-
-  readonly notificationRoute = computed(() => {
-    if (this.authService.isPlatformAdmin()) return '/admin/dashboard';
-    return '/societe/notifications';
   });
 
   toggleMenu(): void {

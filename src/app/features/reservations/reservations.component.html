@@ -208,7 +208,7 @@
   <!-- Modale d'assignation / détail de réservation -->
   @if (isAssignModalOpen() && activeReservation()) {
     <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       (click)="closeAssignModal()"
@@ -263,7 +263,7 @@
               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
             >
               <option [ngValue]="null" [value]="''">Sélectionner un agent…</option>
-              @for (ag of agents(); track ag.id) {
+              @for (ag of agentsActifs(); track ag.id) {
                 <option [ngValue]="ag.id" [value]="ag.id">
                   {{ ag.prenom }} {{ ag.nom }}
                 </option>
