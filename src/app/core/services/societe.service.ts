@@ -57,6 +57,8 @@ export class SocieteService {
   readonly reservations = signal<Reservation[]>([]);
   readonly visites = signal<VisiteRendezVous[]>([]);
   readonly agents = signal<AgentCollaborateur[]>([]);
+  /** Agents ACTIF uniquement (attribution réservations / RDV). */
+  readonly agentsActifs = computed(() => this.agents().filter(a => a.statut === 'ACTIF'));
   readonly projetsConstruction = signal<ProjetConstruction[]>([]);
   readonly notifications = signal<NotificationItem[]>([]);
   /**
@@ -497,6 +499,51 @@ export class SocieteService {
     );
   }
 
+
+  getParcelleDetails(id: number): Observable<ParcelleIndividuelleBackend> {
+    return this.http.get<BackendApiResponse<ParcelleIndividuelleBackend>>(
+      `${this.API_BASE}/parcelles-individuelles/${id}`
+    ).pipe(
+      map(res => {
+        if (!res.data) throw new Error('Parcelle introuvable');
+        return res.data;
+      })
+    );
+  }
+
+  updateParcelle(id: number, request: {
+    numeroTitreFoncier: string;
+    reference?: string;
+    superficie: number;
+    prix: number;
+    facade?: number;
+    profondeur?: number;
+    latitude?: number | null;
+    longitude?: number | null;
+    statut?: string;
+  }): Observable<BackendApiResponse<ParcelleIndividuelleBackend>> {
+    const societeId = this.getSocieteId();
+    if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
+    const payload = {
+      numeroTitreFoncier: request.numeroTitreFoncier,
+      reference: request.reference?.trim(),
+      superficie: request.superficie,
+      prix: request.prix,
+      facade: request.facade,
+      profondeur: request.profondeur,
+      latitude: request.latitude ?? null,
+      longitude: request.longitude ?? null,
+      statut: request.statut === 'RESERVE' ? 'RESERVER' : (request.statut === 'VENDU' ? 'VENDUE' : (request.statut === 'INDISPONIBLE_LITIGE' ? 'INDISPONIBLE' : (request.statut || 'DISPONIBLE'))),
+      societeId,
+    };
+    return this.http.put<BackendApiResponse<ParcelleIndividuelleBackend>>(
+      `${this.API_BASE}/parcelles-individuelles/${id}`,
+      payload
+    ).pipe(
+      tap(() => this.getParcelles().subscribe())
+    );
+  }
+
   deleteParcelle(id: number): Observable<BackendApiResponse<void>> {
     return this.http.delete<BackendApiResponse<void>>(`${this.API_BASE}/parcelles-individuelles/${id}`).pipe(
       tap(() => this.parcelles.update(list => list.filter(p => p.id !== id)))
@@ -529,8 +576,9 @@ export class SocieteService {
             initiales: initials,
             telephone: a.telephone,
             fonctionDeleguee: a.typeFonctionLibelle || '',
-            rdvVisitesCount: 0,
-            reservationsCount: 0,
+            rdvVisitesCount: a.rdvVisitesCount ?? 0,
+            reservationsCount: a.reservationsCount ?? 0,
+            estResponsableSociete: !!a.estResponsableSociete,
             statut: (a.statut === 'ACTIF' ? 'ACTIF' : 'SUSPENDU') as StatutAgent
           };
         });
@@ -558,6 +606,20 @@ export class SocieteService {
 
     return this.http.post<BackendApiResponse<AgentPromoteurBackend>>(`${this.API_BASE}/agents-promoteurs`, payload).pipe(
       tap(() => this.getAgents().subscribe())
+    );
+  }
+
+  updateAgentStatut(agentId: number, statut: 'ACTIF' | 'SUSPENDU'): Observable<BackendApiResponse<AgentPromoteurBackend>> {
+    return this.http.patch<BackendApiResponse<AgentPromoteurBackend>>(
+      `${this.API_BASE}/agents-promoteurs/${agentId}/statut`,
+      {},
+      { params: { statut } }
+    ).pipe(
+      tap(() => this.getAgents().subscribe()),
+      catchError(err => {
+        console.error('[SocieteService] Changement statut agent impossible:', err);
+        return throwError(() => err);
+      })
     );
   }
 
@@ -603,8 +665,17 @@ export class SocieteService {
     );
   }
 
-  assignAgentToReservation(reservationId: number, agentNom: string): void {
-    this.reservations.update(list => list.map(r => r.id === reservationId ? { ...r, agentAssignNom: agentNom } : r));
+  assignAgentToReservation(reservationId: number, agentId: number): Observable<BackendApiResponse<ReservationBackend>> {
+    return this.http.patch<BackendApiResponse<ReservationBackend>>(
+      `${this.API_BASE}/reservations/${reservationId}/agent/${agentId}`,
+      {}
+    ).pipe(
+      tap(() => this.getReservations().subscribe()),
+      catchError(err => {
+        console.error('[SocieteService] Attribution agent réservation impossible:', err);
+        return throwError(() => err);
+      })
+    );
   }
 
   // ==========================================
@@ -644,8 +715,17 @@ export class SocieteService {
     );
   }
 
-  assignAgentToVisite(visiteId: number, agentNom: string): void {
-    this.visites.update(list => list.map(v => v.id === visiteId ? { ...v, agentAssignNom: agentNom, agentStatutConfirmation: 'Assigné' } : v));
+  assignAgentToVisite(visiteId: number, agentId: number): Observable<BackendApiResponse<RendezVousBackend>> {
+    return this.http.patch<BackendApiResponse<RendezVousBackend>>(
+      `${this.API_BASE}/rendez-vous/${visiteId}/agent/${agentId}`,
+      {}
+    ).pipe(
+      tap(() => this.getVisites().subscribe()),
+      catchError(err => {
+        console.error('[SocieteService] Attribution agent RDV impossible:', err);
+        return throwError(() => err);
+      })
+    );
   }
 
   // ==========================================
@@ -690,28 +770,40 @@ export class SocieteService {
     );
   }
 
-  markAllNotificationsAsRead(): void {
+  markNotificationAsRead(id: number): Observable<BackendApiResponse<NotificationBackend>> {
+    return this.http.patch<BackendApiResponse<NotificationBackend>>(
+      `${this.API_BASE}/notifications/${id}/lire`,
+      {}
+    ).pipe(
+      tap(() => {
+        this.notifications.update(list =>
+          list.map(n => n.id === id ? { ...n, nonLu: false } : n)
+        );
+      })
+    );
+  }
+
+  markAllNotificationsAsRead(): Observable<unknown> {
     const unreadIds = this.notifications()
       .filter(notification => notification.nonLu)
       .map(notification => notification.id);
 
-    if (unreadIds.length === 0) return;
+    if (unreadIds.length === 0) {
+      return of(null);
+    }
 
-    forkJoin(
+    return forkJoin(
       unreadIds.map(id =>
         this.http.patch<BackendApiResponse<NotificationBackend>>(
           `${this.API_BASE}/notifications/${id}/lire`,
           {}
         )
       )
-    ).subscribe({
-      next: () => {
+    ).pipe(
+      tap(() => {
         this.notifications.update(list => list.map(n => ({ ...n, nonLu: false })));
-      },
-      error: error => {
-        console.error('[SocieteService] Impossible de marquer les notifications comme lues :', error);
-      }
-    });
+      })
+    );
   }
 
   // ==========================================

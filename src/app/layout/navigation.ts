@@ -32,6 +32,5 @@ export const NAV_SOCIETE: NavItem[] = [
   { label: 'Rendez-vous', route: '/societe/visites', icon: 'event' },
   { label: 'Gestion des Agents', route: '/societe/agents', icon: 'badge' },
   { label: 'Projets construction', route: '/societe/projets-construction', icon: 'engineering' },
-  { label: 'Notifications', route: '/societe/notifications', icon: 'notifications' },
   { label: 'Profil Société', route: '/societe/profil', icon: 'apartment' },
 ];

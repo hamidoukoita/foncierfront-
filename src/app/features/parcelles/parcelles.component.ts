@@ -60,6 +60,8 @@ export class ParcellesComponent implements OnInit {
     superficieM2: [0, [Validators.required, Validators.min(1)]],
     dimensions: [''],
     prixFcfa: [0, [Validators.required, Validators.min(1)]],
+    latitude: this.fb.control<number | null>(null),
+    longitude: this.fb.control<number | null>(null),
     statut: ['DISPONIBLE' as StatutLot, [Validators.required]],
   });
 
@@ -131,20 +133,13 @@ export class ParcellesComponent implements OnInit {
   readonly countVendues = computed(() => this.parcelles().filter((p) => p.statut === 'VENDU').length);
   readonly countIndisponibles = computed(() => this.parcelles().filter((p) => p.statut === 'INDISPONIBLE_LITIGE').length);
 
-  readonly parcelleForm = this.fb.nonNullable.group({
-    designation: ['', [Validators.required]],
-    titreFoncier: ['', [Validators.required]],
-    programmeNom: ['Parcelle individuelle'],
-    superficieM2: [0, [Validators.required, Validators.min(1)]],
-    dimensions: ['', [Validators.required]],
-    prixFcfa: [0, [Validators.required, Validators.min(1)]],
-    latitude: this.fb.control<number | null>(null, [Validators.min(-90), Validators.max(90)]),
-    longitude: this.fb.control<number | null>(null, [Validators.min(-180), Validators.max(180)]),
-    statut: ['DISPONIBLE' as StatutLot]
-  });
-
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
+    this.currentPage.set(1);
+  }
+
+  setFilter(filter: ParcelleFilter): void {
+    this.currentFilter.set(filter);
     this.currentPage.set(1);
   }
 
@@ -172,7 +167,7 @@ export class ParcellesComponent implements OnInit {
       prixFcfa: 0,
       latitude: null,
       longitude: null,
-      statut: 'DISPONIBLE'
+      statut: 'DISPONIBLE',
     });
     this.isAddModalOpen.set(true);
   }
@@ -180,25 +175,32 @@ export class ParcellesComponent implements OnInit {
   openEditModal(parcelle: ParcelleLot): void {
     this.isDetailsLoading.set(true);
     this.societeService.getParcelleDetails(parcelle.id).subscribe({
-      next: (details) => {
+      next: (details: ParcelleIndividuelleBackend) => {
         this.editingParcelle.set(parcelle);
         this.editingParcelleData.set(details);
+        const dims =
+          details.facade != null && details.profondeur != null
+            ? `${details.facade} x ${details.profondeur}`
+            : parcelle.dimensions || '';
         this.parcelleForm.reset({
           designation: details.reference || parcelle.designation,
-          titreFoncier: details.numeroTitreFoncier || parcelle.titreFoncier,
-          superficieM2: Number(details.superficie ?? parcelle.superficieM2 ?? 0),
-          dimensions: details.facade != null && details.profondeur != null
-            ? `${details.facade}x${details.profondeur}`
-            : parcelle.dimensions === '—' ? '' : parcelle.dimensions,
+          titreFoncier: details.numeroTitreFoncier || parcelle.titreFoncier || '',
+          superficieM2: details.superficie ?? parcelle.superficieM2 ?? 0,
+          dimensions: dims,
           prixFcfa: Number(details.prix ?? parcelle.prixFcfa ?? 0),
-          statut: this.toUiStatus(details.statut),
+          latitude: details.latitude ?? null,
+          longitude: details.longitude ?? null,
+          statut: this.toUiStatus(String(details.statut || parcelle.statut)),
         });
-        this.isAddModalOpen.set(true);
         this.isDetailsLoading.set(false);
+        this.isAddModalOpen.set(true);
       },
       error: (error: unknown) => {
         this.isDetailsLoading.set(false);
-        this.toast.error('Modification indisponible', this.errorMessage(error, 'Les détails de la parcelle ne peuvent pas être chargés.'));
+        this.toast.error(
+          'Modification indisponible',
+          this.errorMessage(error, 'Les détails de la parcelle ne peuvent pas être chargés.'),
+        );
       },
     });
   }
@@ -211,13 +213,11 @@ export class ParcellesComponent implements OnInit {
     }
 
     const val = this.parcelleForm.getRawValue();
-    this.isLoading.set(true);
-    const dimensions = val.dimensions
-      .split(/[x×*]/)
-      .map(value => Number(value.trim()))
-      .filter(value => Number.isFinite(value) && value > 0);
+    const editing = this.editingParcelle();
+    this.isSaving.set(true);
+    const dimensions = this.parseDimensions(val.dimensions || '');
 
-    this.societeService.createParcelle({
+    const payload = {
       numeroTitreFoncier: val.titreFoncier,
       reference: val.designation,
       superficie: val.superficieM2,
@@ -226,14 +226,20 @@ export class ParcellesComponent implements OnInit {
       profondeur: dimensions[1],
       latitude: val.latitude,
       longitude: val.longitude,
-      statut: val.statut
-    }).subscribe({
+      statut: val.statut,
+    };
+
+    const request$ = editing
+      ? this.societeService.updateParcelle(editing.id, payload)
+      : this.societeService.createParcelle(payload);
+
+    request$.subscribe({
       next: () => {
         this.isSaving.set(false);
         this.isAddModalOpen.set(false);
         this.toast.success(
           editing ? 'Parcelle modifiée' : 'Parcelle créée',
-          `${value.designation} a bien été ${editing ? 'mise à jour' : 'enregistrée'}.`,
+          `${val.designation} a bien été ${editing ? 'mise à jour' : 'enregistrée'}.`,
         );
         this.loadParcelles();
         this.editingParcelle.set(null);
@@ -254,13 +260,16 @@ export class ParcellesComponent implements OnInit {
     this.detailData.set(null);
     this.isDetailsLoading.set(true);
     this.societeService.getParcelleDetails(parcelle.id).subscribe({
-      next: (details) => {
+      next: (details: ParcelleIndividuelleBackend) => {
         this.detailData.set(details);
         this.isDetailsLoading.set(false);
       },
       error: (error: unknown) => {
         this.isDetailsLoading.set(false);
-        this.toast.error('Détails partiels', this.errorMessage(error, 'Certaines informations détaillées ne sont pas accessibles.'));
+        this.toast.error(
+          'Détails partiels',
+          this.errorMessage(error, 'Certaines informations détaillées ne sont pas accessibles.'),
+        );
       },
     });
   }
@@ -279,18 +288,26 @@ export class ParcellesComponent implements OnInit {
 
   private parseDimensions(value: string): number[] {
     if (!value.trim()) return [];
-    return value.split(/[x×*]/)
+    return value
+      .split(/[x×*]/)
       .map((part) => Number(part.trim()))
-      .filter((number) => Number.isFinite(number) && number > 0)
+      .filter((n) => Number.isFinite(n) && n > 0)
       .slice(0, 2);
   }
 
   private toUiStatus(status: string): StatutLot {
     switch (status) {
-      case 'RESERVER': return 'RESERVE';
-      case 'VENDUE': return 'VENDU';
-      case 'INDISPONIBLE': return 'INDISPONIBLE_LITIGE';
-      default: return 'DISPONIBLE';
+      case 'RESERVER':
+      case 'RESERVE':
+        return 'RESERVE';
+      case 'VENDUE':
+      case 'VENDU':
+        return 'VENDU';
+      case 'INDISPONIBLE':
+      case 'INDISPONIBLE_LITIGE':
+        return 'INDISPONIBLE_LITIGE';
+      default:
+        return 'DISPONIBLE';
     }
   }
 
