@@ -1,0 +1,188 @@
+<div class="space-y-6">
+  <!-- En-tête -->
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">Commodités de proximité</h1>
+    <p class="text-xs sm:text-sm text-gray-600 mt-1">
+      Écoles, centres de santé, marchés… autour de vos cités et parcelles. Les acquéreurs les retrouvent sur la
+      carte de l'application avec leur distance. Les équipements situés <em>dans</em> une cité se placent depuis
+      le studio de plan de masse.
+    </p>
+  </div>
+
+  <!-- 1. Commodités référencées -->
+  <section class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-sm font-bold text-brand-secondary">Commodités référencées</h2>
+        <p class="text-[11px] text-gray-500">Types définis par l'administration Foncier+.</p>
+      </div>
+      <button
+        type="button"
+        (click)="commoditeEnEdition.set(null)"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-sm cursor-pointer"
+      >
+        <span class="text-base leading-none">+</span> Nouvelle commodité
+      </button>
+    </div>
+    <table class="w-full text-left text-xs">
+      <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+        <tr>
+          <th class="py-3 px-6">COMMODITÉ</th>
+          <th class="py-3 px-6">TYPE</th>
+          <th class="py-3 px-6">POSITION GPS</th>
+          <th class="py-3 px-6 text-center">RATTACHEMENTS</th>
+          <th class="py-3 px-6 text-right">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        @for (c of commodites(); track c.id) {
+          <tr class="hover:bg-orange-50/20 transition-colors">
+            <td class="py-3.5 px-6">
+              <p class="font-bold text-gray-900">{{ c.nom }}</p>
+              @if (c.description) {
+                <p class="text-[11px] text-gray-500">{{ c.description }}</p>
+              }
+            </td>
+            <td class="py-3.5 px-6 text-gray-700">{{ c.typeCommoditeLibelle || '—' }}</td>
+            <td class="py-3.5 px-6 font-mono text-[11px]">
+              @if (aGps(c)) {
+                <span class="text-emerald-700">{{ c.latitude | number: '1.4-6' }}, {{ c.longitude | number: '1.4-6' }}</span>
+              } @else {
+                <span class="text-gray-400">Non renseignée</span>
+              }
+            </td>
+            <td class="py-3.5 px-6 text-center font-bold text-brand-primary">{{ usages().get(c.id) ?? 0 }}</td>
+            <td class="py-3.5 px-6 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" (click)="commoditeEnEdition.set(c)" title="Modifier"
+                  class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 flex items-center justify-center text-gray-600 cursor-pointer shadow-card">
+                  <mat-icon class="!text-base">edit</mat-icon>
+                </button>
+                <button type="button" (click)="commoditeASupprimer.set(c)" title="Supprimer"
+                  class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-red-50 hover:text-brand-danger flex items-center justify-center text-gray-500 cursor-pointer shadow-card">
+                  <mat-icon class="!text-base">delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="py-8 text-center text-gray-500">
+              {{ isLoading() ? 'Chargement…' : 'Aucune commodité référencée pour le moment.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2. Rattachements aux cités / parcelles -->
+  <section class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-sm font-bold text-brand-secondary">Distances aux cités et parcelles</h2>
+        <p class="text-[11px] text-gray-500">Les lots d'une cité héritent des commodités de la cité.</p>
+      </div>
+      <button
+        type="button"
+        (click)="ajouterRattachement()"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-secondary hover:opacity-90 text-white text-xs font-bold shadow-sm cursor-pointer"
+      >
+        <mat-icon class="!text-base">link</mat-icon> Rattacher
+      </button>
+    </div>
+    <table class="w-full text-left text-xs">
+      <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+        <tr>
+          <th class="py-3 px-6">CITÉ / PARCELLE</th>
+          <th class="py-3 px-6">COMMODITÉ</th>
+          <th class="py-3 px-6">DISTANCE</th>
+          <th class="py-3 px-6 text-right">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        @for (p of proximites(); track p.id) {
+          <tr class="hover:bg-orange-50/20 transition-colors">
+            <td class="py-3.5 px-6">
+              <div class="flex items-center gap-2">
+                <mat-icon class="!text-base" style="color: var(--foncier-primary)">
+                  {{ p.programmeId ? 'holiday_village' : 'grid_view' }}
+                </mat-icon>
+                <span class="font-bold text-gray-900">{{ p.programmeNom || p.bienReference }}</span>
+              </div>
+            </td>
+            <td class="py-3.5 px-6 text-gray-700">
+              {{ p.commodite.nom }}
+              <span class="text-[11px] text-gray-400">· {{ p.commodite.typeCommoditeLibelle }}</span>
+            </td>
+            <td class="py-3.5 px-6 font-bold">
+              @if (p.distanceKm != null) {
+                {{ p.distanceKm | number: '1.0-2' }} km
+              } @else {
+                <span class="font-normal text-gray-400">{{ aGps(p.commodite) ? 'Calculée (GPS)' : '—' }}</span>
+              }
+            </td>
+            <td class="py-3.5 px-6 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" (click)="proximiteEnEdition.set(p)" title="Modifier la distance"
+                  class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 flex items-center justify-center text-gray-600 cursor-pointer shadow-card">
+                  <mat-icon class="!text-base">straighten</mat-icon>
+                </button>
+                <button type="button" (click)="proximiteASupprimer.set(p)" title="Retirer"
+                  class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-red-50 hover:text-brand-danger flex items-center justify-center text-gray-500 cursor-pointer shadow-card">
+                  <mat-icon class="!text-base">link_off</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="py-8 text-center text-gray-500">
+              {{ isLoading() ? 'Chargement…' : 'Aucune commodité rattachée à vos cités ou parcelles.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  @if (commoditeEnEdition() !== undefined) {
+    <app-commodite-form-modal
+      [commodite]="commoditeEnEdition() ?? null"
+      [types]="types()"
+      (closed)="commoditeEnEdition.set(undefined)"
+    />
+  }
+
+  @if (proximiteEnEdition() !== undefined) {
+    <app-rattachement-form-modal
+      [proximite]="proximiteEnEdition() ?? null"
+      [commodites]="commodites()"
+      [programmes]="programmes()"
+      [parcelles]="parcelles()"
+      (closed)="proximiteEnEdition.set(undefined)"
+    />
+  }
+
+  <app-confirm-dialog
+    [isOpen]="commoditeASupprimer() !== null"
+    title="Supprimer cette commodité ?"
+    [message]="'« ' + (commoditeASupprimer()?.nom ?? '') + ' » et ses rattachements seront supprimés.'"
+    confirmText="Supprimer"
+    variant="danger"
+    (confirmed)="confirmerSuppressionCommodite()"
+    (cancelled)="commoditeASupprimer.set(null)"
+  >
+  </app-confirm-dialog>
+
+  <app-confirm-dialog
+    [isOpen]="proximiteASupprimer() !== null"
+    title="Retirer ce rattachement ?"
+    [message]="'La commodité ne sera plus affichée pour ce bien dans l\'application.'"
+    confirmText="Retirer"
+    variant="danger"
+    (confirmed)="confirmerSuppressionRattachement()"
+    (cancelled)="proximiteASupprimer.set(null)"
+  >
+  </app-confirm-dialog>
+</div>

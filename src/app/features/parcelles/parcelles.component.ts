@@ -113,6 +113,8 @@ export class ParcellesComponent implements OnInit {
     superficieM2: [0, [Validators.required, Validators.min(1)]],
     dimensions: ['', [Validators.required]],
     prixFcfa: [0, [Validators.required, Validators.min(1)]],
+    latitude: this.fb.control<number | null>(null, [Validators.min(-90), Validators.max(90)]),
+    longitude: this.fb.control<number | null>(null, [Validators.min(-180), Validators.max(180)]),
     statut: ['DISPONIBLE' as StatutLot]
   });
 
@@ -133,6 +135,8 @@ export class ParcellesComponent implements OnInit {
       superficieM2: 0,
       dimensions: '',
       prixFcfa: 0,
+      latitude: null,
+      longitude: null,
       statut: 'DISPONIBLE'
     });
     this.isAddModalOpen.set(true);
@@ -159,6 +163,8 @@ export class ParcellesComponent implements OnInit {
       prix: val.prixFcfa,
       facade: dimensions[0],
       profondeur: dimensions[1],
+      latitude: val.latitude,
+      longitude: val.longitude,
       statut: val.statut
     }).subscribe({
       next: () => {

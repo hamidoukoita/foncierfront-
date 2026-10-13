@@ -144,6 +144,8 @@ export class SocieteService {
       id: p.id,
       nom: p.nom,
       localisation: p.lieu ?? '',
+      latitude: p.latitude ?? null,
+      longitude: p.longitude ?? null,
       statut: p.statut === 'DISPONIBLE' ? 'PUBLIE' : (p.statut === 'COMPLETER' ? 'ARCHIVE' : 'BROUILLON'),
       lotsTotal: p.totalLots ?? 0,
       lotsDisponibles: 0, // nombre disponible non fourni par l'API actuelle
@@ -174,6 +176,8 @@ export class SocieteService {
   createProgramme(request: {
     nom: string;
     localisation: string;
+    latitude?: number | null;
+    longitude?: number | null;
     titreFoncierRef: string;
     lotsTotal?: number;
     superficieTotale?: number;
@@ -196,6 +200,8 @@ export class SocieteService {
       nom: request.nom.trim(),
       description: request.description?.trim() || '',
       lieu: request.localisation.trim(),
+      latitude: request.latitude ?? null,
+      longitude: request.longitude ?? null,
       numeroTitreMere: request.titreFoncierRef.trim(),
       superficieTotale: request.superficieTotale,
       statut: request.statut === 'PUBLIE' ? 'DISPONIBLE' : (request.statut === 'ARCHIVE' ? 'COMPLETER' : 'INDISPONIBLE'),
@@ -223,6 +229,8 @@ export class SocieteService {
       nom: request.nom?.trim(),
       description: request.description,
       lieu: request.localisation?.trim(),
+      latitude: request.latitude ?? null,
+      longitude: request.longitude ?? null,
       numeroTitreMere: request.titreFoncierRef?.trim(),
       superficieTotale: request.superficieTotale,
       statut: request.statut === 'PUBLIE' ? 'DISPONIBLE' : (request.statut === 'ARCHIVE' ? 'COMPLETER' : 'INDISPONIBLE'),
@@ -460,6 +468,8 @@ export class SocieteService {
     prix: number;
     facade?: number;
     profondeur?: number;
+    latitude?: number | null;
+    longitude?: number | null;
     statut?: string;
   }): Observable<BackendApiResponse<ParcelleIndividuelleBackend>> {
     const societeId = this.getSocieteId();
@@ -472,6 +482,8 @@ export class SocieteService {
       prix: request.prix,
       facade: request.facade,
       profondeur: request.profondeur,
+      latitude: request.latitude ?? null,
+      longitude: request.longitude ?? null,
       statut: request.statut === 'RESERVE' ? 'RESERVER' : (request.statut === 'VENDU' ? 'VENDUE' : (request.statut === 'INDISPONIBLE_LITIGE' ? 'INDISPONIBLE' : (request.statut || 'DISPONIBLE'))),
       societeId,
       murCloture: false,

@@ -1,0 +1,100 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+  role="dialog"
+  aria-modal="true"
+  (click)="fermer()"
+>
+  <div
+    class="bg-white rounded-2xl w-full max-w-lg overflow-hidden border border-gray-100 shadow-card"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-base font-bold text-brand-secondary">
+        {{ proximite() ? 'Modifier la distance' : 'Rattacher une commodité' }}
+      </h3>
+      <button (click)="fermer()" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="enregistrer()" class="p-6 space-y-4">
+      @if (!proximite()) {
+        <div>
+          <p class="text-xs font-semibold text-gray-700 uppercase mb-2">Rattacher à</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label
+              class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold cursor-pointer"
+              [class]="cible === 'CITE' ? 'border-brand-primary bg-orange-50 text-brand-secondary' : 'border-gray-200 text-gray-600'"
+            >
+              <input type="radio" formControlName="cible" value="CITE" class="accent-[var(--foncier-primary)]" />
+              Une cité / programme
+            </label>
+            <label
+              class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold cursor-pointer"
+              [class]="cible === 'PARCELLE' ? 'border-brand-primary bg-orange-50 text-brand-secondary' : 'border-gray-200 text-gray-600'"
+            >
+              <input type="radio" formControlName="cible" value="PARCELLE" class="accent-[var(--foncier-primary)]" />
+              Une parcelle individuelle
+            </label>
+          </div>
+        </div>
+
+        @if (cible === 'CITE') {
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Cité *</label>
+            <select formControlName="programmeId" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+              <option [ngValue]="null" disabled>Choisir une cité</option>
+              @for (prog of programmes(); track prog.id) {
+                <option [ngValue]="prog.id">{{ prog.nom }} — {{ prog.localisation }}</option>
+              }
+            </select>
+          </div>
+        } @else {
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Parcelle *</label>
+            <select formControlName="bienId" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+              <option [ngValue]="null" disabled>Choisir une parcelle</option>
+              @for (parc of parcelles(); track parc.id) {
+                <option [ngValue]="parc.id">{{ parc.designation }} — {{ parc.titreFoncier }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Commodité *</label>
+          <select formControlName="commoditeId" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+            <option [ngValue]="null" disabled>Choisir une commodité</option>
+            @for (c of commodites(); track c.id) {
+              <option [ngValue]="c.id">{{ c.nom }} ({{ c.typeCommoditeLibelle || 'Sans type' }})</option>
+            }
+          </select>
+        </div>
+      } @else {
+        <p class="text-xs text-gray-600">
+          <span class="font-bold text-gray-900">{{ proximite()!.commodite.nom }}</span>
+          → {{ proximite()!.programmeNom || proximite()!.bienReference }}
+        </p>
+      }
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Distance (km)</label>
+        <input type="number" step="0.01" min="0" formControlName="distanceKm" placeholder="Ex. 0.8" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card" />
+        <p class="text-[11px] text-gray-500 mt-1">
+          Laissez vide si la commodité a une position GPS : la distance sera calculée automatiquement.
+        </p>
+      </div>
+
+      <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+        <button type="button" (click)="fermer()" class="px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">
+          Annuler
+        </button>
+        <button
+          type="submit"
+          [disabled]="form.invalid || !cibleRenseignee || isSubmitting()"
+          class="px-5 py-2.5 text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs cursor-pointer transition-colors"
+        >
+          {{ isSubmitting() ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

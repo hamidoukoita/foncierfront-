@@ -4,6 +4,9 @@ export interface Programme {
   id: number;
   nom: string;
   localisation: string;
+  /** Coordonnées GPS de la cité (carte OpenStreetMap de l'application mobile). */
+  latitude?: number | null;
+  longitude?: number | null;
   statut: StatutProgramme;
   lotsTotal: number;
   lotsDisponibles: number;
