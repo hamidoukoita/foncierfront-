@@ -31,10 +31,12 @@ export class VisitesComponent implements OnInit {
 
   readonly isAssignModalOpen = signal<boolean>(false);
   readonly activeVisite = signal<VisiteRendezVous | null>(null);
-  readonly selectedAgentNom = signal<string>('');
+  readonly selectedAgentId = signal<number | null>(null);
 
   readonly visites = this.societeService.visites;
   readonly agents = this.societeService.agents;
+  /** Uniquement les agents actifs pour l'attribution. */
+  readonly agentsActifs = this.societeService.agentsActifs;
 
   ngOnInit(): void {
     this.isLoading.set(true);
@@ -83,19 +85,34 @@ export class VisitesComponent implements OnInit {
 
   openAssignModal(visite: VisiteRendezVous): void {
     this.activeVisite.set(visite);
-    this.selectedAgentNom.set(visite.agentAssignNom || (this.agents()[0]?.prenom + ' ' + this.agents()[0]?.nom[0] + '.') || '');
+    const actifs = this.agentsActifs();
+    const stillValid = visite.agentAssignId && actifs.some(a => a.id === visite.agentAssignId);
+    this.selectedAgentId.set(stillValid ? visite.agentAssignId! : (actifs[0]?.id ?? null));
     this.isAssignModalOpen.set(true);
   }
 
   confirmAssign(): void {
     const v = this.activeVisite();
-    if (v && this.selectedAgentNom()) {
-      this.societeService.assignAgentToVisite(v.id, this.selectedAgentNom());
-      this.toast.success(
-        'Agent affecté avec succès', 
-        `${this.selectedAgentNom()} prend en charge le RDV (${v.typeVisite === 'SIEGE' ? 'Au Siège' : 'Sur Chantier'}) de ${v.prospectNom}.`
-      );
+    const agentId = this.selectedAgentId();
+    if (!v || !agentId) {
+      this.toast.warning('Agent requis', 'Sélectionnez un agent avant de confirmer.');
+      return;
     }
-    this.isAssignModalOpen.set(false);
+    const agent = this.agentsActifs().find(a => a.id === agentId) ?? this.agents().find(a => a.id === agentId);
+    const agentLabel = agent ? `${agent.prenom} ${agent.nom}` : 'Agent';
+    this.societeService.assignAgentToVisite(v.id, agentId).subscribe({
+      next: () => {
+        this.toast.success(
+          'Rendez-vous confirmé',
+          `${agentLabel} prend en charge le RDV (${v.typeVisite === 'SIEGE' ? 'Au Siège' : 'Sur Chantier'}) de ${v.prospectNom}. Le statut est passé à Confirmé.`
+        );
+        this.isAssignModalOpen.set(false);
+      },
+      error: (err) => {
+        console.error(err);
+        const msg = err?.error?.message || err?.message || "Impossible d'attribuer ce rendez-vous.";
+        this.toast.error('Erreur', msg);
+      }
+    });
   }
 }

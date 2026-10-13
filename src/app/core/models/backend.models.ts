@@ -82,6 +82,8 @@ export interface AgentPromoteurBackend {
   societeNom?: string;
   typeFonctionId?: number;
   typeFonctionLibelle?: string;
+  reservationsCount?: number;
+  rdvVisitesCount?: number;
 }
 
 export interface UtilisateurBackend {
@@ -98,7 +100,7 @@ export interface UtilisateurBackend {
 }
 
 export type StatutParcelleBackend = 'DISPONIBLE' | 'RESERVER' | 'VENDUE' | 'INDISPONIBLE';
-export type StatutReservationBackend = 'EN_ATTENTE' | 'CONFIRMER' | 'REFUSER';
+export type StatutReservationBackend = 'EN_ATTENTE' | 'CONFIRMER' | 'REFUSER' | 'ANNULEE';
 export type StatutRendezVousBackend = 'EN_ATTENTE' | 'ACCEPTER' | 'REFUSER';
 
 export interface ReservationBackend {

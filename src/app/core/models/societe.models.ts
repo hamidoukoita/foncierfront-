@@ -98,6 +98,8 @@ export interface AgentCollaborateur {
   fonctionDeleguee: string;
   rdvVisitesCount: number;
   reservationsCount: number;
+  estResponsableSociete?: boolean;
+  dateAffectation?: string;
   statut: StatutAgent;
 }
 

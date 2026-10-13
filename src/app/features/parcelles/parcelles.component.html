@@ -1,246 +1,134 @@
-<div class="space-y-6">
-  <!-- En-tête -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div class="parcelles-page space-y-6">
+  <header class="parcelles-header">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">
-        Gestion des parcelles & lots cadastraux
-      </h1>
-      <p class="text-xs sm:text-sm text-gray-600 mt-1">
-        Inventaire des lots avec TF individuel direct garanti et pouvoir d'auto-régulation immédiate
-        des litiges.
+      <h1 class="parcelles-page-title">Parcelles individuelles</h1>
+      <p class="parcelles-page-subtitle">
+        Consultez et gérez les parcelles individuelles de votre société, leurs caractéristiques et leur statut.
       </p>
     </div>
-
     <button
       type="button"
       (click)="openAddModal()"
-      class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white text-xs font-bold shadow-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-primary"
+      class="parcelles-primary-btn"
     >
-      <span class="text-base leading-none">+</span>
+      <mat-icon>add</mat-icon>
       <span>Ajouter une parcelle</span>
     </button>
-  </div>
+  </header>
 
-  <!-- Barre de recherche active le cas échéant -->
   @if (searchQuery()) {
-    <div
-      class="flex items-center justify-between p-3 rounded-xl bg-orange-50/70 border border-orange-200 text-xs"
-    >
-      <div class="flex items-center gap-2">
-        <span class="font-bold text-brand-primary">Filtre recherche :</span>
-        <span class="font-mono bg-white px-2 py-0.5 rounded border border-orange-200 text-gray-800"
-          >"{{ searchQuery() }}"</span
-        >
+    <div class="flex items-center justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50/70 p-3 text-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-semibold text-brand-secondary">Recherche active :</span>
+        <span class="rounded-md border border-orange-200 bg-white px-2 py-1 text-gray-700">{{ searchQuery() }}</span>
       </div>
-      <button
-        type="button"
-        (click)="searchQuery.set('')"
-        class="text-brand-primary hover:underline font-bold cursor-pointer"
-      >
-        Effacer la recherche ✕
-      </button>
+      <button type="button" (click)="onSearchChange('')" class="font-semibold text-brand-primary hover:underline">Effacer</button>
     </div>
   }
 
-  <!-- Filtres Tabs -->
-  <div class="flex flex-wrap items-center gap-2">
-    <button
-      type="button"
-      (click)="setFilter('TOUTES')"
-      [class]="
-        currentFilter() === 'TOUTES'
-          ? 'bg-brand-secondary text-white shadow-xs'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >receipt </mat-icon>
+  <div class="relative max-w-xl">
+    <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</mat-icon>
+    <input
+      type="search"
+      [value]="searchQuery()"
+      (input)="onSearchChange($any($event.target).value)"
+      placeholder="Rechercher une référence, un titre foncier..."
+      aria-label="Rechercher une parcelle"
+      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+    />
+  </div>
 
-      <span> Toutes ({{ countToutes() }})</span>
+  <div class="parcelles-filter-row" aria-label="Filtrer les parcelles par statut">
+    <button type="button" (click)="setFilter('TOUTES')" [class.active]="currentFilter() === 'TOUTES'" class="parcelles-filter-button">
+      <mat-icon aria-hidden="true" style="color: var(--foncier-primary)">apps</mat-icon>
+      <span>Toutes <b>{{ countToutes() }}</b></span>
     </button>
-
-    <button
-      type="button"
-      (click)="setFilter('DISPONIBLES')"
-      [class]="
-        currentFilter() === 'DISPONIBLES'
-          ? 'bg-brand-secondary text-white shadow-xs'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >receipt </mat-icon>
-
-      <span>Disponibles ({{ countDisponibles() }})</span>
+    <button type="button" (click)="setFilter('DISPONIBLES')" [class.active]="currentFilter() === 'DISPONIBLES'" class="parcelles-filter-button">
+      <mat-icon aria-hidden="true" style="color: var(--foncier-primary)">filter_list</mat-icon>
+      <span>Disponibles <b>{{ countDisponibles() }}</b></span>
     </button>
-
-    <button
-      type="button"
-      (click)="setFilter('RESERVEES')"
-      [class]="
-        currentFilter() === 'RESERVEES'
-          ? 'bg-brand-secondary text-white shadow-xs'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  >receipt_long </mat-icon>
-      <span>Réservées 72h ({{ countReservees() }})</span>
+    <button type="button" (click)="setFilter('RESERVEES')" [class.active]="currentFilter() === 'RESERVEES'" class="parcelles-filter-button">
+      <mat-icon aria-hidden="true" style="color: var(--foncier-primary)">filter_list</mat-icon>
+      <span>Réservées <b>{{ countReservees() }}</b></span>
     </button>
-
-    <button
-      type="button"
-      (click)="setFilter('VENDUES')"
-      [class]="
-        currentFilter() === 'VENDUES'
-          ? 'bg-brand-secondary text-white shadow-xs'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  > sell</mat-icon>
-      <span>Vendues ({{ countVendues() }})</span>
+    <button type="button" (click)="setFilter('VENDUES')" [class.active]="currentFilter() === 'VENDUES'" class="parcelles-filter-button">
+      <mat-icon aria-hidden="true" style="color: var(--foncier-primary)">filter_list</mat-icon>
+      <span>Vendues <b>{{ countVendues() }}</b></span>
     </button>
-
-    <button
-      type="button"
-      (click)="setFilter('LITIGES')"
-      [class]="
-        currentFilter() === 'LITIGES'
-          ? 'bg-brand-secondary text-white shadow-xs'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'
-      "
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-    >
-      <mat-icon style="color: var(--foncier-primary)"  > warning</mat-icon>
-      <span>Litiges / Gelés ({{ countLitiges() }})</span>
+    <button type="button" (click)="setFilter('INDISPONIBLES')" [class.active]="currentFilter() === 'INDISPONIBLES'" class="parcelles-filter-button">
+      <mat-icon aria-hidden="true" style="color: var(--foncier-primary)">filter_list</mat-icon>
+      <span>Indisponibles <b>{{ countIndisponibles() }}</b></span>
     </button>
   </div>
 
-  <!-- État vide ou Tableau des Parcelles & Lots -->
-  @if (filteredParcelles().length === 0) {
+  @if (loadError()) {
+    <div role="alert" class="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-start gap-3">
+        <mat-icon class="text-red-600">error_outline</mat-icon>
+        <div>
+          <p class="font-bold text-red-800">Impossible de charger les parcelles</p>
+          <p class="mt-1 text-sm text-red-700">{{ loadError() }}</p>
+        </div>
+      </div>
+      <button type="button" (click)="loadParcelles()" class="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-800 hover:bg-red-100">Réessayer</button>
+    </div>
+  } @else if (isLoading()) {
+    <div class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500">
+      <mat-icon class="mb-2 animate-spin text-brand-primary">progress_activity</mat-icon>
+      <p>Chargement des parcelles...</p>
+    </div>
+  } @else if (filteredParcelles().length === 0) {
     <app-empty-state
       title="Aucune parcelle trouvée"
-      message="Aucune parcelle ou lot ne correspond au filtre ou critère de recherche actuel."
+      message="Aucune parcelle ne correspond à ce filtre. Essayez une autre recherche ou ajoutez une parcelle."
     >
-      <button
-        action
-        (click)="openAddModal()"
-        class="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold cursor-pointer"
-      >
-        + Ajouter une parcelle
-      </button>
+      <button action type="button" (click)="openAddModal()" class="rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white">Ajouter une parcelle</button>
     </app-empty-state>
   } @else {
-    <div class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-card">
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <!-- En-tête de tableau -->
-          <thead
-            class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100"
-          >
+        <table class="w-full min-w-[850px] text-left text-sm">
+          <thead class="border-b border-gray-100 bg-gray-50 text-[11px] font-bold uppercase tracking-wider text-gray-500">
             <tr>
-              <th class="py-3.5 px-6">LOT / PARCELLE</th>
-              <th class="py-3.5 px-6">PROGRAMME ASSOCIÉ</th>
-              <th class="py-3.5 px-6">SUPERFICIE</th>
-              <th class="py-3.5 px-6">PRIX HOMOLOGUÉ</th>
-              <th class="py-3.5 px-6 text-center">STATUT</th>
-              <th class="py-3.5 px-6 text-right">AUTO-RÉGULATION / ACTIONS</th>
+              <th class="px-6 py-4">Lot / parcelle</th>
+              <th class="px-6 py-4">Rattachement</th>
+              <th class="px-6 py-4">Superficie</th>
+              <th class="px-6 py-4">Prix</th>
+              <th class="px-6 py-4 text-center">Statut</th>
+              <th class="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
-
-          <!-- Corps de tableau -->
-          <tbody class="divide-y divide-gray-50">
-            @for (p of filteredParcelles(); track p.id) {
-              <tr class="hover:bg-orange-50/20 transition-colors">
-                <!-- Parcelle / Plan -->
-                <td class="py-4 px-6">
+          <tbody class="divide-y divide-gray-100">
+            @for (p of paginatedParcelles(); track p.id) {
+              <tr class="transition-colors hover:bg-orange-50/30">
+                <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
-                    <div
-                      class="w-11 h-11 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-base shrink-0 shadow-2xs"
-                    >
-                      <mat-icon style="color: var(--foncier-primary)">home</mat-icon>
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-orange-100 bg-orange-50 text-brand-primary">
+                      <mat-icon>landscape</mat-icon>
                     </div>
                     <div>
-                      <p class="font-bold text-gray-900 text-xs">{{ p.designation }}</p>
-                      <p class="text-[11px] text-gray-500 font-mono">{{ p.titreFoncier }}</p>
+                      <p class="font-bold text-gray-900">{{ p.designation }}</p>
+                      <p class="mt-1 text-xs text-gray-500">TF : {{ p.titreFoncier || 'Non renseigné' }}</p>
                     </div>
                   </div>
                 </td>
-
-                <!-- Programme Associé -->
-                <td class="py-4 px-6 text-gray-700 font-medium">
-                  {{ p.programmeNom }}
+                <td class="px-6 py-4 text-gray-600">{{ p.programmeNom || 'Parcelle individuelle' }}</td>
+                <td class="px-6 py-4">
+                  <p class="font-semibold text-gray-900">{{ p.superficieM2 | number:'1.0-2' }} m²</p>
+                  <p class="mt-1 text-xs text-gray-500">{{ p.dimensions === '—' ? 'Dimensions non renseignées' : p.dimensions }}</p>
                 </td>
-
-                <!-- Superficie -->
-                <td class="py-4 px-6">
-                  <span class="font-bold text-gray-900">{{ p.superficieM2 }} m²</span>
-                  <span class="text-gray-400 font-normal ml-1">({{ p.dimensions }})</span>
-                </td>
-
-                <!-- Prix FCFA -->
-                <td class="py-4 px-6 font-extrabold text-brand-primary text-xs">
-                  {{ formatPrice(p.prixFcfa) }} FCFA
-                </td>
-
-                <!-- Statut Badge -->
-                <td class="py-4 px-6 text-center">
-                  <app-status-badge
-                    [status]="p.statut"
-                    [label]="p.delaiGelRestant || ''"
-                  ></app-status-badge>
-                </td>
-
-                <!-- Actions -->
-                <td class="py-4 px-6 text-right">
-                  <div class="flex items-center justify-end gap-1.5">
-                    <!-- Bouton auto-régulation Litige -->
-                    <button
-                      type="button"
-                      (click)="requestToggleLitige(p)"
-                      [title]="
-                        p.statut === 'INDISPONIBLE_LITIGE'
-                          ? 'Lever le gel litige'
-                          : 'Geler immédiatement en litige'
-                      "
-                      [class]="
-                        p.statut === 'INDISPONIBLE_LITIGE'
-                          ? 'bg-brand-litige text-white border-black'
-                          : 'bg-white hover:bg-red-50 text-gray-600 hover:text-brand-danger border-gray-200'
-                      "
-                      class="w-8 h-8 rounded-lg border flex items-center justify-center text-xs cursor-pointer shadow-2xs transition-colors"
-                    >
-                      <mat-icon style="color: var(--foncier-primary)">warning</mat-icon>
+                <td class="px-6 py-4 font-bold text-brand-secondary">{{ formatPrice(p.prixFcfa) }} <span class="text-xs font-medium text-gray-500">FCFA</span></td>
+                <td class="px-6 py-4 text-center"><app-status-badge [status]="p.statut" [label]="statusLabel(p.statut)" /></td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-end gap-2">
+                    <button type="button" (click)="openDetails(p)" title="Voir les détails" [attr.aria-label]="'Voir les détails de ' + p.designation" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:border-brand-secondary hover:text-brand-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary">
+                      <mat-icon>visibility</mat-icon>
                     </button>
-
-                    <!-- Crayon Modifier -->
-                    <button
-                      type="button"
-                      class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card"
-                      title="Modifier"
-                    >
-                      <mat-icon style="color: var(--foncier-primary)">edit</mat-icon>
+                    <button type="button" (click)="openEditModal(p)" title="Modifier" [attr.aria-label]="'Modifier ' + p.designation" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:border-brand-primary hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary">
+                      <mat-icon>edit</mat-icon>
                     </button>
-
-                    <!-- Photos, panorama 360° et visite virtuelle -->
-                    <button
-                      type="button"
-                      (click)="openMedias(p)"
-                      class="h-8 px-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 flex items-center justify-center text-[11px] font-bold text-brand-secondary hover:text-brand-primary cursor-pointer shadow-card"
-                      title="Photos et visite 360°"
-                      aria-label="Photos et visite 360°"
-                    >
-                      <mat-icon style="color: var(--foncier-primary)">panorama_photosphere</mat-icon>
-                    </button>
-
-                    <!-- Oeil Voir -->
-                    <button
-                      type="button"
-                      class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card"
-                      title="Détails du lot"
-                    >
-                      <mat-icon style="color: var(--foncier-primary)">visibility</mat-icon>
+                    <button type="button" (click)="openMedias(p)" title="Photos et médias" [attr.aria-label]="'Afficher les médias de ' + p.designation" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:border-brand-primary hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary">
+                      <mat-icon>photo_library</mat-icon>
                     </button>
                   </div>
                 </td>
@@ -249,102 +137,102 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Pagination en pied de tableau -->
-      <div class="px-6 border-t border-gray-100">
-        <app-pagination
-          [currentPage]="currentPage()"
-          [pageSize]="5"
-          [totalItems]="countToutes()"
-          (pageChange)="currentPage.set($event)"
-        >
-        </app-pagination>
+      <div class="border-t border-gray-100 px-5 sm:px-6">
+        <app-pagination [currentPage]="currentPage()" [pageSize]="5" [totalItems]="filteredParcelles().length" (pageChange)="currentPage.set($event)" />
       </div>
     </div>
   }
+</div>
 
-  <!-- Modale d'ajout de Parcelle -->
-  @if (isAddModalOpen()) {
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
-      role="dialog"
-      aria-modal="true"
-      (click)="isAddModalOpen.set(false)"
-    >
-      <div
-        class="bg-white rounded-2xl w-full max-w-xl overflow-hidden border border-gray-100 shadow-card"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 class="text-base font-bold text-brand-secondary">Ajouter une Parcelle / Lot Cadastral</h3>
-          <button
-            (click)="isAddModalOpen.set(false)"
-            class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer"
-          >
-            ✕
+<!-- Création / modification : les deux actions passent par le véritable endpoint API. -->
+@if (isAddModalOpen()) {
+  <div class="fixed inset-0 z-[2000] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm" role="presentation" (click)="closeForm()">
+    <section role="dialog" aria-modal="true" aria-labelledby="parcelle-form-title" class="my-6 w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl" (click)="$event.stopPropagation()">
+      <header class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-primary">Gestion foncière</p>
+          <h2 id="parcelle-form-title" class="mt-1 text-lg font-bold text-brand-secondary">{{ editingParcelle() ? 'Modifier la parcelle' : 'Ajouter une parcelle' }}</h2>
+          <p class="mt-1 text-sm text-gray-500">Les informations saisies seront enregistrées dans la base de données.</p>
+        </div>
+        <button type="button" (click)="closeForm()" [disabled]="isSaving()" aria-label="Fermer" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"><mat-icon>close</mat-icon></button>
+      </header>
+      <form [formGroup]="parcelleForm" (ngSubmit)="submitAddParcelle()" class="space-y-5 p-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-semibold text-gray-700">Référence / désignation <span class="text-red-500">*</span>
+            <input type="text" formControlName="designation" placeholder="Ex. Parcelle KATI-024" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+            @if (parcelleForm.controls.designation.touched && parcelleForm.controls.designation.invalid) { <span class="mt-1 block text-xs text-red-600">La référence est obligatoire (100 caractères maximum).</span> }
+          </label>
+          <label class="block text-sm font-semibold text-gray-700">Numéro du titre foncier <span class="text-red-500">*</span>
+            <input type="text" formControlName="titreFoncier" placeholder="Ex. TF 1024 / Kati" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+            @if (parcelleForm.controls.titreFoncier.touched && parcelleForm.controls.titreFoncier.invalid) { <span class="mt-1 block text-xs text-red-600">Le titre foncier est obligatoire.</span> }
+          </label>
+          <label class="block text-sm font-semibold text-gray-700">Superficie (m²) <span class="text-red-500">*</span>
+            <input type="number" min="1" step="0.01" formControlName="superficieM2" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+            @if (parcelleForm.controls.superficieM2.touched && parcelleForm.controls.superficieM2.invalid) { <span class="mt-1 block text-xs text-red-600">La superficie doit être supérieure à 0.</span> }
+          </label>
+          <label class="block text-sm font-semibold text-gray-700">Dimensions (façade × profondeur, m)
+            <input type="text" formControlName="dimensions" placeholder="Ex. 15 x 25" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+          </label>
+          <label class="block text-sm font-semibold text-gray-700">Prix (FCFA) <span class="text-red-500">*</span>
+            <input type="number" min="1" step="1" formControlName="prixFcfa" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+            @if (parcelleForm.controls.prixFcfa.touched && parcelleForm.controls.prixFcfa.invalid) { <span class="mt-1 block text-xs text-red-600">Le prix doit être supérieur à 0.</span> }
+          </label>
+          <label class="block text-sm font-semibold text-gray-700">Statut
+            <select formControlName="statut" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15">
+              <option value="DISPONIBLE">Disponible</option>
+              <option value="RESERVE">Réservée</option>
+              <option value="VENDU">Vendue</option>
+              <option value="INDISPONIBLE_LITIGE">Indisponible</option>
+            </select>
+          </label>
+        </div>
+        <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+          <button type="button" (click)="closeForm()" [disabled]="isSaving()" class="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50">Annuler</button>
+          <button type="submit" [disabled]="isSaving() || parcelleForm.invalid" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+            @if (isSaving()) { <mat-icon class="animate-spin">progress_activity</mat-icon> }
+            {{ isSaving() ? 'Enregistrement...' : (editingParcelle() ? 'Enregistrer les modifications' : 'Créer la parcelle') }}
           </button>
         </div>
+      </form>
+    </section>
+  </div>
+}
 
-        <form [formGroup]="parcelleForm" (ngSubmit)="submitAddParcelle()" class="p-6 space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-gray-700 uppercase mb-1"
-                >Désignation *</label
-              >
-              <input
-                type="text"
-                formControlName="designation"
-                class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
-                placeholder="Ex: Lot 08"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-gray-700 uppercase mb-1"
-                >Titre Foncier (TF) *</label
-              >
-              <input
-                type="text"
-                formControlName="titreFoncier"
-                class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none uppercase shadow-card"
-                placeholder="TF N° 10842/Kati"
-              />
-            </div>
-          </div>
-
+<!-- Détails réels de la parcelle, chargés par GET /api/parcelles-individuelles/{id}. -->
+@if (detailParcelle(); as p) {
+  <div class="fixed inset-0 z-[2000] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm" role="presentation" (click)="closeDetails()">
+    <section role="dialog" aria-modal="true" aria-labelledby="parcelle-detail-title" class="my-6 w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl" (click)="$event.stopPropagation()">
+      <header class="flex items-start justify-between gap-4 border-b border-gray-100 bg-gray-50/70 px-6 py-5">
+        <div class="flex items-start gap-3">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-brand-primary"><mat-icon>landscape</mat-icon></div>
           <div>
-            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1"
-              >Rattachement</label
-            >
-            <div
-              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-100 text-gray-600"
-            >
-              Parcelle individuelle — hors programme foncier
-            </div>
+            <h2 id="parcelle-detail-title" class="text-lg font-bold text-brand-secondary">{{ p.designation }}</h2>
+            <p class="mt-1 text-sm text-gray-500">Titre foncier : {{ p.titreFoncier || 'Non renseigné' }}</p>
+            <div class="mt-2"><app-status-badge [status]="p.statut" [label]="statusLabel(p.statut)" /></div>
           </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-gray-700 uppercase mb-1"
-                >Superficie (m²) *</label
-              >
-              <input
-                type="number"
-                formControlName="superficieM2"
-                class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-gray-700 uppercase mb-1"
-                >Dimensions *</label
-              >
-              <input
-                type="text"
-                formControlName="dimensions"
-                class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
-                placeholder="15×20"
-              />
+        </div>
+        <button type="button" (click)="closeDetails()" aria-label="Fermer les détails" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"><mat-icon>close</mat-icon></button>
+      </header>
+      <div class="space-y-5 p-6">
+        @if (isDetailsLoading()) {
+          <div class="flex items-center gap-2 rounded-xl bg-gray-50 p-4 text-sm text-gray-500"><mat-icon class="animate-spin">progress_activity</mat-icon>Chargement des détails depuis le serveur...</div>
+        }
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div class="rounded-xl border border-gray-100 p-4"><p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Superficie</p><p class="mt-2 text-xl font-bold text-brand-secondary">{{ (detailData()?.superficie ?? p.superficieM2) | number:'1.0-2' }} m²</p></div>
+          <div class="rounded-xl border border-gray-100 p-4"><p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Prix affiché</p><p class="mt-2 text-xl font-bold text-brand-secondary">{{ formatPrice(detailData()?.prix ?? p.prixFcfa) }} FCFA</p></div>
+          <div class="rounded-xl border border-gray-100 p-4"><p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Façade</p><p class="mt-2 font-bold text-gray-900">{{ detailData()?.facade ?? p.facade ?? 'Non renseignée' }}{{ detailData()?.facade != null || p.facade != null ? ' m' : '' }}</p></div>
+          <div class="rounded-xl border border-gray-100 p-4"><p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Profondeur</p><p class="mt-2 font-bold text-gray-900">{{ detailData()?.profondeur ?? p.profondeur ?? 'Non renseignée' }}{{ detailData()?.profondeur != null || p.profondeur != null ? ' m' : '' }}</p></div>
+          <div class="rounded-xl border border-gray-100 p-4"><p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Rattachement</p><p class="mt-2 font-semibold text-gray-900">{{ p.programmeNom || 'Parcelle individuelle' }}</p></div>
+          <div class="rounded-xl border border-gray-100 p-4"><p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Position sur plan</p><p class="mt-2 font-semibold text-gray-900">{{ detailData()?.geometryJson || p.geometryJson ? 'Géométrie enregistrée' : 'Non positionnée' }}</p></div>
+        </div>
+        @if (detailData()) {
+          <section>
+            <h3 class="mb-3 text-sm font-bold text-brand-secondary">Viabilisation et équipements</h3>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Clôture</p><p class="mt-1 text-sm font-bold">{{ detailData()?.murCloture ? 'Oui' : 'Non' }}</p></div>
+              <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Eau</p><p class="mt-1 text-sm font-bold">{{ detailData()?.eauSomapep ? 'Oui' : 'Non' }}</p></div>
+              <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Électricité</p><p class="mt-1 text-sm font-bold">{{ detailData()?.electriciteEdm ? 'Oui' : 'Non' }}</p></div>
+              <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Voie bitumée</p><p class="mt-1 text-sm font-bold">{{ detailData()?.voieBitumee ? 'Oui' : 'Non' }}</p></div>
             </div>
           </div>
 
@@ -404,37 +292,9 @@
           </div>
         </form>
       </div>
-    </div>
-  }
-
-  <!-- Dialogue de confirmation de suspension/litige -->
-  <app-confirm-dialog
-    [isOpen]="parcelleToToggleLitige() !== null"
-    [title]="
-      parcelleToToggleLitige()?.statut === 'INDISPONIBLE_LITIGE'
-        ? 'Lever le gel litige ?'
-        : 'Geler ce lot en litige ?'
-    "
-    [message]="
-      parcelleToToggleLitige()?.statut === 'INDISPONIBLE_LITIGE'
-        ? 'Le lot ' +
-          parcelleToToggleLitige()?.designation +
-          ' sera remis en vente et immédiatement disponible aux acquéreurs.'
-        : 'Le lot ' +
-          parcelleToToggleLitige()?.designation +
-          ' sera immédiatement retiré de la vente et gelé dans le registre cadastral en attendant régularisation juridique.'
-    "
-    [confirmText]="
-      parcelleToToggleLitige()?.statut === 'INDISPONIBLE_LITIGE'
-        ? 'Remettre en disponibilité'
-        : 'Confirmer le gel conservatoire'
-    "
-    [variant]="parcelleToToggleLitige()?.statut === 'INDISPONIBLE_LITIGE' ? 'primary' : 'danger'"
-    (confirmed)="confirmToggleLitige()"
-    (cancelled)="cancelToggleLitige()"
-  >
-  </app-confirm-dialog>
-</div>
+    </section>
+  </div>
+}
 
 @if (mediaCible(); as cible) {
   <app-media-manager [cible]="cible" (closed)="mediaCible.set(null)" />

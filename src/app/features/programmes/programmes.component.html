@@ -13,6 +13,28 @@
     </button>
   </div>
 
+  @if (searchQuery()) {
+    <div class="flex items-center justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50/70 p-3 text-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-semibold text-brand-secondary">Recherche active :</span>
+        <span class="rounded-md border border-orange-200 bg-white px-2 py-1 text-gray-700">{{ searchQuery() }}</span>
+      </div>
+      <button type="button" (click)="onSearchChange('')" class="font-semibold text-brand-primary hover:underline">Effacer</button>
+    </div>
+  }
+
+  <div class="relative max-w-xl">
+    <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</mat-icon>
+    <input
+      type="search"
+      [value]="searchQuery()"
+      (input)="onSearchChange($any($event.target).value)"
+      placeholder="Rechercher une référence, un titre foncier..."
+      aria-label="Rechercher un programme foncier"
+      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+    />
+  </div>
+
   <div class="programme-filter-row">
 
     <button type="button" (click)="setFilter('TOUS')" [class.active]="currentFilter() === 'TOUS'">
@@ -49,12 +71,18 @@
     <app-loading-skeleton [rows]="3"></app-loading-skeleton>
   } @else if (filteredProgrammes().length === 0) {
     <app-empty-state
-      title="Aucun programme"
-      message="Créez votre premier programme foncier pour commencer la conception du lotissement."
+      [title]="searchQuery() ? 'Aucun programme trouvé' : 'Aucun programme'"
+      [message]="searchQuery() ? 'Aucun programme ne correspond à votre recherche. Essayez un autre terme.' : 'Créez votre premier programme foncier pour commencer la conception du lotissement.'"
     >
-      <button action type="button" (click)="openCreateModal()" class="create-empty-btn">
-        ＋ Créer un programme
-      </button>
+      @if (searchQuery()) {
+        <button action type="button" (click)="onSearchChange('')" class="create-empty-btn">
+          Effacer la recherche
+        </button>
+      } @else {
+        <button action type="button" (click)="openCreateModal()" class="create-empty-btn">
+          ＋ Créer un programme
+        </button>
+      }
     </app-empty-state>
   } @else {
     @if (selectedProgrammeForPlan()) {

@@ -6,19 +6,10 @@
         Suivi des réservations & options
       </h1>
       <p class="text-xs sm:text-sm text-gray-600 mt-1">
-        Gérez les demandes conservatoires (délai de gel 72h), les validations prospect et
-        l'assignation d'agents.
+        Gérez les demandes de réservation, les validations prospect et l'attribution aux agents.
       </p>
     </div>
-
-    <!-- Badge info Zéro paiement en ligne V1 -->
-    <div
-      class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-900 self-start sm:self-auto"
-    >
-      <span>ℹ️</span>
-      <span>Pas de paiement en ligne • Acte conclu physiquement au siège ou devant notaire</span>
-    </div>
-  </div>
+</div>
 
   <!-- Barre de filtres et sélection d'agent dynamique -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -112,7 +103,7 @@
             <th class="py-3.5 px-6">LOT / PARCELLE</th>
             <th class="py-3.5 px-6">PROSPECT / CONTACT</th>
             <th class="py-3.5 px-6">VALEUR DU BIEN</th>
-            <th class="py-3.5 px-6">DÉLAI GEL (72H)</th>
+            <th class="py-3.5 px-6">DATE DEMANDE</th>
             <th class="py-3.5 px-6">AGENT ASSIGNÉ</th>
             <th class="py-3.5 px-6 text-center">STATUT</th>
             <th class="py-3.5 px-6 text-right">ACTION</th>
@@ -148,27 +139,12 @@
                 {{ formatPrice(res.montantFcfa) }} FCFA
               </td>
 
-              <!-- Délai Gel 72h -->
+              <!-- Date demande -->
               <td class="py-4 px-6">
                 <p class="text-xs font-semibold text-gray-800">{{ res.dateReservation }}</p>
-                @if (res.statut === 'EN_ATTENTE') {
-                  <p class="text-[11px] text-brand-warning font-bold flex items-center gap-1 mt-0.5">
-                    <span>⏳</span>
-                    <span>{{ res.delaiGel72h }}</span>
-                  </p>
-                } @else if (res.statut === 'CONFIRMEE') {
-                  <p class="text-[11px] text-brand-success font-bold flex items-center gap-1 mt-0.5">
-                    <span>✓</span>
-                    <span>{{ res.delaiGel72h }}</span>
-                  </p>
-                } @else {
-                  <p class="text-[11px] text-brand-danger font-semibold mt-0.5">
-                    {{ res.delaiGel72h }}
-                  </p>
-                }
               </td>
 
-              <!-- Agent assigné -->
+              <!-- Agent assigné (affichage uniquement — attribution via Action) -->
               <td class="py-4 px-6">
                 @if (res.agentAssignNom) {
                   <div>
@@ -179,16 +155,7 @@
                     </p>
                   </div>
                 } @else {
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-400 font-medium">Non assigné</span>
-                    <button
-                      type="button"
-                      (click)="openAssignModal(res)"
-                      class="text-[11px] font-bold text-brand-primary hover:underline cursor-pointer"
-                    >
-                      + Attribuer
-                    </button>
-                  </div>
+                  <span class="text-xs text-gray-400 font-medium">Non assigné</span>
                 }
               </td>
 
@@ -197,16 +164,28 @@
                 <app-status-badge [status]="res.statut"></app-status-badge>
               </td>
 
-              <!-- Action -->
+              <!-- Action : attribution + détails -->
               <td class="py-4 px-6 text-right">
-                <button
-                  type="button"
-                  (click)="openAssignModal(res)"
-                  class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 inline-flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card"
-                  title="Détails du dossier"
-                >
-                  👁️
-                </button>
+                <div class="inline-flex items-center gap-1.5 justify-end">
+                  @if (!res.agentAssignNom && res.statut === 'EN_ATTENTE') {
+                    <button
+                      type="button"
+                      (click)="openAssignModal(res)"
+                      class="px-2.5 py-1.5 rounded-lg border border-brand-primary/30 bg-orange-50 hover:bg-orange-100 text-[11px] font-bold text-brand-primary cursor-pointer shadow-card"
+                      title="Attribuer un agent"
+                    >
+                      + Attribuer
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    (click)="openAssignModal(res)"
+                    class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 inline-flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card"
+                    title="Détails du dossier"
+                  >
+                    👁️
+                  </button>
+                </div>
               </td>
             </tr>
           }
@@ -229,10 +208,10 @@
   <!-- Modale d'assignation / détail de réservation -->
   @if (isAssignModalOpen() && activeReservation()) {
     <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
+      class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
       role="dialog"
       aria-modal="true"
-      (click)="isAssignModalOpen.set(false)"
+      (click)="closeAssignModal()"
     >
       <div
         class="bg-white rounded-2xl w-full max-w-lg overflow-hidden border border-gray-100 shadow-card"
@@ -241,7 +220,7 @@
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h3 class="text-base font-bold text-brand-secondary">Instruction du Dossier de Réservation</h3>
           <button
-            (click)="isAssignModalOpen.set(false)"
+            (click)="closeAssignModal()"
             class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer"
           >
             ✕
@@ -272,24 +251,21 @@
                 >{{ formatPrice(activeReservation()?.montantFcfa || 0) }} FCFA</span
               >
             </div>
-            <div class="flex justify-between">
-              <span class="text-gray-500">Délai conservatoire :</span>
-              <span class="font-bold text-amber-800">{{ activeReservation()?.delaiGel72h }}</span>
-            </div>
-          </div>
+</div>
 
           <div>
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1.5">
-              Déléguer à un Agent Collaborateur
+              Attribuer à un agent
             </label>
             <select
-              [ngModel]="selectedAgentNom()"
-              (ngModelChange)="selectedAgentNom.set($event)"
+              [ngModel]="selectedAgentId()"
+              (ngModelChange)="selectedAgentId.set(+$event)"
               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card"
             >
-              @for (ag of agents(); track ag.id) {
-                <option [value]="ag.prenom + ' ' + ag.nom[0] + '.'">
-                  {{ ag.prenom }} {{ ag.nom }} ({{ ag.fonctionDeleguee }})
+              <option [ngValue]="null" [value]="''">Sélectionner un agent…</option>
+              @for (ag of agentsActifs(); track ag.id) {
+                <option [ngValue]="ag.id" [value]="ag.id">
+                  {{ ag.prenom }} {{ ag.nom }}
                 </option>
               }
             </select>
@@ -302,7 +278,7 @@
             @if (activeReservation()?.statut === 'EN_ATTENTE') {
               <button
                 type="button"
-                (click)="validerCompromis(activeReservation()!)"
+                (click)="confirmerReservation(activeReservation()!)"
                 class="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-brand-success hover:bg-emerald-700 rounded-xl cursor-pointer transition-colors shadow-xs"
               >
                 ✓ Valider Acte / Notaire
@@ -311,17 +287,17 @@
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
               <button
                 type="button"
-                (click)="isAssignModalOpen.set(false)"
+                (click)="closeAssignModal()"
                 class="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer"
               >
                 Fermer
               </button>
               <button
                 type="button"
-                (click)="confirmAssign()"
+                (click)="confirmAssign()" [disabled]="isAssigning()"
                 class="px-4 py-2 text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-xl shadow-xs cursor-pointer transition-colors"
               >
-                Enregistrer l'agent
+                Confirmer l'attribution
               </button>
             </div>
           </div>

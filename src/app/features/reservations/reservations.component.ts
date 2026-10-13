@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SocieteService } from '../../core/services/societe.service';
 import { ToastService } from '../../core/services/toast.service';
-import { Reservation, StatutReservation } from '../../core/models/societe.models';
+import { Reservation } from '../../core/models/societe.models';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { MatIcon } from '@angular/material/icon';
@@ -29,16 +29,19 @@ export class ReservationsComponent implements OnInit {
 
   readonly isAssignModalOpen = signal<boolean>(false);
   readonly activeReservation = signal<Reservation | null>(null);
-  readonly selectedAgentNom = signal<string>('');
+  readonly selectedAgentId = signal<number | null>(null);
+  readonly isAssigning = signal<boolean>(false);
 
   readonly reservations = this.societeService.reservations;
   readonly agents = this.societeService.agents;
+  /** Uniquement les agents actifs pour l'attribution. */
+  readonly agentsActifs = this.societeService.agentsActifs;
 
   ngOnInit(): void {
     this.isLoading.set(true);
     this.societeService.getReservations().subscribe({
       next: () => this.isLoading.set(false),
-      error: () => this.isLoading.set(false)
+      error: () => this.isLoading.set(false),
     });
     this.societeService.getAgents().subscribe();
   }
@@ -48,21 +51,27 @@ export class ReservationsComponent implements OnInit {
     const filter = this.currentFilter();
     const agent = this.selectedAgentFilter();
 
-    if (filter === 'EN_ATTENTE') list = list.filter(r => r.statut === 'EN_ATTENTE');
-    if (filter === 'CONFIRMEES') list = list.filter(r => r.statut === 'CONFIRMEE');
-    if (filter === 'ANNULEES') list = list.filter(r => r.statut === 'ANNULEE');
+    if (filter === 'EN_ATTENTE') list = list.filter((r) => r.statut === 'EN_ATTENTE');
+    if (filter === 'CONFIRMEES') list = list.filter((r) => r.statut === 'CONFIRMEE');
+    if (filter === 'ANNULEES') list = list.filter((r) => r.statut === 'ANNULEE');
 
     if (agent !== 'TOUS') {
-      list = list.filter(r => r.agentAssignNom?.toLowerCase().includes(agent.toLowerCase()));
+      list = list.filter((r) => r.agentAssignNom?.toLowerCase().includes(agent.toLowerCase()));
     }
 
     return list;
   });
 
   readonly countToutes = computed(() => this.reservations().length);
-  readonly countEnAttente = computed(() => this.reservations().filter(r => r.statut === 'EN_ATTENTE').length);
-  readonly countConfirmees = computed(() => this.reservations().filter(r => r.statut === 'CONFIRMEE').length);
-  readonly countAnnulees = computed(() => this.reservations().filter(r => r.statut === 'ANNULEE').length);
+  readonly countEnAttente = computed(
+    () => this.reservations().filter((r) => r.statut === 'EN_ATTENTE').length,
+  );
+  readonly countConfirmees = computed(
+    () => this.reservations().filter((r) => r.statut === 'CONFIRMEE').length,
+  );
+  readonly countAnnulees = computed(
+    () => this.reservations().filter((r) => r.statut === 'ANNULEE').length,
+  );
 
   setFilter(f: ReservationFilter): void {
     this.currentFilter.set(f);
@@ -75,26 +84,59 @@ export class ReservationsComponent implements OnInit {
 
   openAssignModal(reservation: Reservation): void {
     this.activeReservation.set(reservation);
-    this.selectedAgentNom.set(reservation.agentAssignNom || (this.agents()[0]?.prenom + ' ' + this.agents()[0]?.nom[0] + '.') || '');
+    const actifs = this.agentsActifs();
+    const stillValid = reservation.agentAssignId && actifs.some(a => a.id === reservation.agentAssignId);
+    this.selectedAgentId.set(stillValid ? reservation.agentAssignId! : (actifs[0]?.id ?? null));
     this.isAssignModalOpen.set(true);
+  }
+
+  closeAssignModal(): void {
+    if (this.isAssigning()) return;
+    this.isAssignModalOpen.set(false);
   }
 
   confirmAssign(): void {
     const res = this.activeReservation();
-    if (res && this.selectedAgentNom()) {
-      this.societeService.assignAgentToReservation(res.id, this.selectedAgentNom());
-      this.toast.success(
-        'Dossier assigné', 
-        `Le suivi de ${res.lotDesignation} pour ${res.prospectNom} est confié à ${this.selectedAgentNom()}.`
-      );
+    const agentId = this.selectedAgentId();
+    if (!res || agentId == null) {
+      this.toast.error('Attribution', 'Sélectionnez un agent actif.');
+      return;
     }
-    this.isAssignModalOpen.set(false);
+
+    const agent = this.agentsActifs().find((a) => a.id === agentId) ?? this.agents().find((a) => a.id === agentId);
+    const agentLabel = agent ? `${agent.prenom} ${agent.nom}` : `Agent #${agentId}`;
+
+    this.isAssigning.set(true);
+    this.societeService.assignAgentToReservation(res.id, agentId).subscribe({
+      next: () => {
+        this.isAssigning.set(false);
+        this.isAssignModalOpen.set(false);
+        this.toast.success(
+          'Dossier attribué',
+          `La demande sur ${res.lotDesignation} (${res.prospectNom}) est confiée à ${agentLabel}.`,
+        );
+      },
+      error: (err) => {
+        this.isAssigning.set(false);
+        const msg =
+          err?.error?.message ||
+          err?.message ||
+          "Impossible d'attribuer cet agent (délai 72 h dépassé, ou agent hors société).";
+        this.toast.error('Attribution refusée', msg);
+      },
+    });
   }
 
-  validerCompromis(res: Reservation): void {
-    res.statut = 'CONFIRMEE';
-    res.delaiGel72h = 'Compromis notarié';
-    this.toast.success('Dossier validé', `La réservation sur ${res.lotDesignation} est confirmée suite à signature physique.`);
-    this.isAssignModalOpen.set(false);
+  confirmerReservation(res: Reservation): void {
+    this.societeService.confirmerReservation(res.id).subscribe({
+      next: () => {
+        this.toast.success('Confirmée', `La réservation sur ${res.lotDesignation} est confirmée.`);
+        this.isAssignModalOpen.set(false);
+      },
+      error: (err) => {
+        const msg = err?.error?.message || err?.message || 'Confirmation impossible.';
+        this.toast.error('Erreur', msg);
+      },
+    });
   }
 }

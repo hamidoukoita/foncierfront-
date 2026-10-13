@@ -65,11 +65,6 @@ export class TopbarComponent {
     return this.authService.isPlatformAdmin() ? this.superAdminNav() : this.societeNav;
   });
 
-  readonly notificationRoute = computed(() => {
-    if (this.authService.isPlatformAdmin()) return '/admin/dashboard';
-    return '/societe/notifications';
-  });
-
   toggleMenu(): void {
     this.isMenuOpen.update((v) => !v);
   }

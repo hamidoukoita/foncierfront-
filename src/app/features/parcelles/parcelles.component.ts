@@ -7,13 +7,13 @@ import { ActivatedRoute } from '@angular/router';
 import { SocieteService } from '../../core/services/societe.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ParcelleLot, StatutLot } from '../../core/models/societe.models';
+import { ParcelleIndividuelleBackend } from '../../core/models/backend.models';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatIcon } from '@angular/material/icon';
 
-type ParcelleFilter = 'TOUTES' | 'DISPONIBLES' | 'RESERVEES' | 'VENDUES' | 'LITIGES';
+type ParcelleFilter = 'TOUTES' | 'DISPONIBLES' | 'RESERVEES' | 'VENDUES' | 'INDISPONIBLES';
 
 @Component({
   selector: 'app-parcelles',
@@ -25,53 +25,68 @@ type ParcelleFilter = 'TOUTES' | 'DISPONIBLES' | 'RESERVEES' | 'VENDUES' | 'LITI
     StatusBadgeComponent,
     PaginationComponent,
     EmptyStateComponent,
-    ConfirmDialogComponent,
-    MatIcon
-],
+    MatIcon,
+  ],
   templateUrl: './parcelles.component.html',
   styleUrl: './parcelles.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ParcellesComponent implements OnInit {
-  /** Parcelle dont on ouvre les photos / panoramas 360° / visites virtuelles. */
-  readonly mediaCible = signal<MediaCible | null>(null);
-
-  openMedias(p: ParcelleLot): void {
-    this.mediaCible.set({ kind: 'bien', id: p.id, titre: p.designation });
-  }
-
   private readonly fb = inject(FormBuilder);
   private readonly societeService = inject(SocieteService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
+  private readonly pageSize = 5;
 
-  readonly isLoading = signal<boolean>(false);
+  readonly mediaCible = signal<MediaCible | null>(null);
+  readonly isLoading = signal(false);
+  readonly loadError = signal<string | null>(null);
+  readonly isSaving = signal(false);
+  readonly isDetailsLoading = signal(false);
   readonly currentFilter = signal<ParcelleFilter>('TOUTES');
-  readonly currentPage = signal<number>(1);
-  readonly isAddModalOpen = signal<boolean>(false);
-  readonly searchQuery = signal<string>('');
-
-  // Gestion du dialogue de confirmation de gel/litige
-  readonly parcelleToToggleLitige = signal<ParcelleLot | null>(null);
+  readonly currentPage = signal(1);
+  readonly isAddModalOpen = signal(false);
+  readonly searchQuery = signal('');
+  readonly editingParcelle = signal<ParcelleLot | null>(null);
+  readonly editingParcelleData = signal<ParcelleIndividuelleBackend | null>(null);
+  readonly detailParcelle = signal<ParcelleLot | null>(null);
+  readonly detailData = signal<ParcelleIndividuelleBackend | null>(null);
 
   readonly parcelles = this.societeService.parcelles;
 
+  readonly parcelleForm = this.fb.nonNullable.group({
+    designation: ['', [Validators.required, Validators.maxLength(100)]],
+    titreFoncier: ['', [Validators.required, Validators.maxLength(100)]],
+    superficieM2: [0, [Validators.required, Validators.min(1)]],
+    dimensions: [''],
+    prixFcfa: [0, [Validators.required, Validators.min(1)]],
+    statut: ['DISPONIBLE' as StatutLot, [Validators.required]],
+  });
+
   ngOnInit(): void {
     this.loadParcelles();
-
-    // Écoute d'éventuels paramètres de recherche globale passés depuis la topbar
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       if (params['q']) {
-        this.searchQuery.set(params['q']);
+        this.searchQuery.set(String(params['q']));
+        this.currentPage.set(1);
       }
     });
   }
 
+  openMedias(parcelle: ParcelleLot): void {
+    this.mediaCible.set({ kind: 'bien', id: parcelle.id, titre: parcelle.designation });
+  }
+
   loadParcelles(): void {
     this.isLoading.set(true);
+    this.loadError.set(null);
     this.societeService.getParcelles().subscribe({
       next: () => this.isLoading.set(false),
-      error: () => this.isLoading.set(false)
+      error: (error: unknown) => {
+        this.isLoading.set(false);
+        this.loadError.set(this.errorMessage(error, 'Impossible de charger les parcelles.'));
+        this.toast.error('Chargement impossible', this.loadError() ?? undefined);
+      },
     });
   }
 
@@ -80,31 +95,41 @@ export class ParcellesComponent implements OnInit {
     const filter = this.currentFilter();
     const q = this.searchQuery().toLowerCase().trim();
 
-    // Filtre statut
     switch (filter) {
-      case 'DISPONIBLES': list = list.filter(p => p.statut === 'DISPONIBLE'); break;
-      case 'RESERVEES': list = list.filter(p => p.statut === 'RESERVE'); break;
-      case 'VENDUES': list = list.filter(p => p.statut === 'VENDU'); break;
-      case 'LITIGES': list = list.filter(p => p.statut === 'INDISPONIBLE_LITIGE'); break;
+      case 'DISPONIBLES':
+        list = list.filter((p) => p.statut === 'DISPONIBLE');
+        break;
+      case 'RESERVEES':
+        list = list.filter((p) => p.statut === 'RESERVE');
+        break;
+      case 'VENDUES':
+        list = list.filter((p) => p.statut === 'VENDU');
+        break;
+      case 'INDISPONIBLES':
+        list = list.filter((p) => p.statut === 'INDISPONIBLE_LITIGE');
+        break;
     }
 
-    // Filtre recherche par mot-clé
     if (q) {
-      list = list.filter(p => 
-        p.designation.toLowerCase().includes(q) ||
-        p.titreFoncier.toLowerCase().includes(q) ||
-        p.programmeNom.toLowerCase().includes(q)
+      list = list.filter((p) =>
+        [p.designation, p.titreFoncier, p.programmeNom].some((value) =>
+          (value ?? '').toLowerCase().includes(q),
+        ),
       );
     }
-
     return list;
   });
 
+  readonly paginatedParcelles = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return this.filteredParcelles().slice(start, start + this.pageSize);
+  });
+
   readonly countToutes = computed(() => this.parcelles().length);
-  readonly countDisponibles = computed(() => this.parcelles().filter(p => p.statut === 'DISPONIBLE').length);
-  readonly countReservees = computed(() => this.parcelles().filter(p => p.statut === 'RESERVE').length);
-  readonly countVendues = computed(() => this.parcelles().filter(p => p.statut === 'VENDU').length);
-  readonly countLitiges = computed(() => this.parcelles().filter(p => p.statut === 'INDISPONIBLE_LITIGE').length);
+  readonly countDisponibles = computed(() => this.parcelles().filter((p) => p.statut === 'DISPONIBLE').length);
+  readonly countReservees = computed(() => this.parcelles().filter((p) => p.statut === 'RESERVE').length);
+  readonly countVendues = computed(() => this.parcelles().filter((p) => p.statut === 'VENDU').length);
+  readonly countIndisponibles = computed(() => this.parcelles().filter((p) => p.statut === 'INDISPONIBLE_LITIGE').length);
 
   readonly parcelleForm = this.fb.nonNullable.group({
     designation: ['', [Validators.required]],
@@ -118,20 +143,30 @@ export class ParcellesComponent implements OnInit {
     statut: ['DISPONIBLE' as StatutLot]
   });
 
-  setFilter(f: ParcelleFilter): void {
-    this.currentFilter.set(f);
+  onSearchChange(value: string): void {
+    this.searchQuery.set(value);
     this.currentPage.set(1);
   }
 
-  formatPrice(price: number): string {
-    return new Intl.NumberFormat('fr-FR').format(price);
+  formatPrice(price: number | null | undefined): string {
+    return new Intl.NumberFormat('fr-FR').format(Number(price ?? 0));
+  }
+
+  statusLabel(status: StatutLot): string {
+    switch (status) {
+      case 'DISPONIBLE': return 'Disponible';
+      case 'RESERVE': return 'Réservée';
+      case 'VENDU': return 'Vendue';
+      default: return 'Indisponible';
+    }
   }
 
   openAddModal(): void {
+    this.editingParcelle.set(null);
+    this.editingParcelleData.set(null);
     this.parcelleForm.reset({
       designation: '',
       titreFoncier: '',
-      programmeNom: 'Parcelle individuelle',
       superficieM2: 0,
       dimensions: '',
       prixFcfa: 0,
@@ -142,10 +177,36 @@ export class ParcellesComponent implements OnInit {
     this.isAddModalOpen.set(true);
   }
 
+  openEditModal(parcelle: ParcelleLot): void {
+    this.isDetailsLoading.set(true);
+    this.societeService.getParcelleDetails(parcelle.id).subscribe({
+      next: (details) => {
+        this.editingParcelle.set(parcelle);
+        this.editingParcelleData.set(details);
+        this.parcelleForm.reset({
+          designation: details.reference || parcelle.designation,
+          titreFoncier: details.numeroTitreFoncier || parcelle.titreFoncier,
+          superficieM2: Number(details.superficie ?? parcelle.superficieM2 ?? 0),
+          dimensions: details.facade != null && details.profondeur != null
+            ? `${details.facade}x${details.profondeur}`
+            : parcelle.dimensions === '—' ? '' : parcelle.dimensions,
+          prixFcfa: Number(details.prix ?? parcelle.prixFcfa ?? 0),
+          statut: this.toUiStatus(details.statut),
+        });
+        this.isAddModalOpen.set(true);
+        this.isDetailsLoading.set(false);
+      },
+      error: (error: unknown) => {
+        this.isDetailsLoading.set(false);
+        this.toast.error('Modification indisponible', this.errorMessage(error, 'Les détails de la parcelle ne peuvent pas être chargés.'));
+      },
+    });
+  }
+
   submitAddParcelle(): void {
     if (this.parcelleForm.invalid) {
       this.parcelleForm.markAllAsTouched();
-      this.toast.warning('Champs incomplets', 'Veuillez vérifier les informations de la parcelle.');
+      this.toast.warning('Champs incomplets', 'Vérifiez la référence, le titre foncier, la superficie et le prix.');
       return;
     }
 
@@ -168,40 +229,73 @@ export class ParcellesComponent implements OnInit {
       statut: val.statut
     }).subscribe({
       next: () => {
-        this.isLoading.set(false);
+        this.isSaving.set(false);
         this.isAddModalOpen.set(false);
-        this.toast.success('Parcelle enregistrée', `${val.designation} (${val.titreFoncier}) a été ajoutée.`);
+        this.toast.success(
+          editing ? 'Parcelle modifiée' : 'Parcelle créée',
+          `${value.designation} a bien été ${editing ? 'mise à jour' : 'enregistrée'}.`,
+        );
+        this.loadParcelles();
+        this.editingParcelle.set(null);
+        this.editingParcelleData.set(null);
       },
-      error: (err) => {
-        console.error('Erreur création parcelle:', err);
-        this.isLoading.set(false);
-        this.isAddModalOpen.set(false);
-        this.toast.error('Erreur', 'Impossible d’enregistrer la parcelle.');
-      }
+      error: (error: unknown) => {
+        this.isSaving.set(false);
+        this.toast.error(
+          editing ? 'Modification impossible' : 'Création impossible',
+          this.errorMessage(error, 'Le serveur n’a pas pu enregistrer cette parcelle.'),
+        );
+      },
     });
   }
 
-  requestToggleLitige(parcelle: ParcelleLot): void {
-    this.parcelleToToggleLitige.set(parcelle);
+  openDetails(parcelle: ParcelleLot): void {
+    this.detailParcelle.set(parcelle);
+    this.detailData.set(null);
+    this.isDetailsLoading.set(true);
+    this.societeService.getParcelleDetails(parcelle.id).subscribe({
+      next: (details) => {
+        this.detailData.set(details);
+        this.isDetailsLoading.set(false);
+      },
+      error: (error: unknown) => {
+        this.isDetailsLoading.set(false);
+        this.toast.error('Détails partiels', this.errorMessage(error, 'Certaines informations détaillées ne sont pas accessibles.'));
+      },
+    });
   }
 
-  confirmToggleLitige(): void {
-    const p = this.parcelleToToggleLitige();
-    if (!p) return;
+  closeDetails(): void {
+    this.detailParcelle.set(null);
+    this.detailData.set(null);
+  }
 
-    const nextStatut: StatutLot = p.statut === 'INDISPONIBLE_LITIGE' ? 'DISPONIBLE' : 'INDISPONIBLE_LITIGE';
-    this.societeService.updateStatutParcelle(p.id, nextStatut);
+  closeForm(): void {
+    if (this.isSaving()) return;
+    this.isAddModalOpen.set(false);
+    this.editingParcelle.set(null);
+    this.editingParcelleData.set(null);
+  }
 
-    if (nextStatut === 'INDISPONIBLE_LITIGE') {
-      this.toast.warning('Lot gelé en litige', `${p.designation} a été immédiatement retiré de la vente suite à contestation.`);
-    } else {
-      this.toast.success('Litige levé', `${p.designation} est à nouveau disponible à la réservation.`);
+  private parseDimensions(value: string): number[] {
+    if (!value.trim()) return [];
+    return value.split(/[x×*]/)
+      .map((part) => Number(part.trim()))
+      .filter((number) => Number.isFinite(number) && number > 0)
+      .slice(0, 2);
+  }
+
+  private toUiStatus(status: string): StatutLot {
+    switch (status) {
+      case 'RESERVER': return 'RESERVE';
+      case 'VENDUE': return 'VENDU';
+      case 'INDISPONIBLE': return 'INDISPONIBLE_LITIGE';
+      default: return 'DISPONIBLE';
     }
-
-    this.parcelleToToggleLitige.set(null);
   }
 
-  cancelToggleLitige(): void {
-    this.parcelleToToggleLitige.set(null);
+  private errorMessage(error: unknown, fallback: string): string {
+    const candidate = error as { error?: { message?: string; detail?: string }; message?: string };
+    return candidate?.error?.message || candidate?.error?.detail || candidate?.message || fallback;
   }
 }
