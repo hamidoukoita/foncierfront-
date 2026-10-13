@@ -83,6 +83,8 @@ export class ProgrammesComponent implements OnInit {
   readonly programmeForm = this.fb.nonNullable.group({
     nom: ['', [Validators.required, Validators.minLength(3)]],
     localisation: ['', [Validators.required, Validators.minLength(2)]],
+    latitude: this.fb.control<number | null>(null, [Validators.min(-90), Validators.max(90)]),
+    longitude: this.fb.control<number | null>(null, [Validators.min(-180), Validators.max(180)]),
     superficieTotale: [0, [Validators.required, Validators.min(100)]],
     titreFoncierRef: ['', [Validators.required, Validators.minLength(3)]],
     description: ['', [Validators.maxLength(500)]],
@@ -160,6 +162,8 @@ export class ProgrammesComponent implements OnInit {
     this.programmeForm.reset({
       nom: '',
       localisation: '',
+      latitude: null,
+      longitude: null,
       superficieTotale: 0,
       titreFoncierRef: '',
       description: '',
@@ -184,6 +188,8 @@ export class ProgrammesComponent implements OnInit {
     this.programmeForm.reset({
       nom: prog.nom ?? '',
       localisation: prog.localisation ?? '',
+      latitude: prog.latitude ?? null,
+      longitude: prog.longitude ?? null,
       superficieTotale: prog.superficieTotale ?? 0,
       titreFoncierRef: prog.titreFoncierRef ?? '',
       description: prog.description ?? '',
@@ -220,6 +226,8 @@ export class ProgrammesComponent implements OnInit {
     this.societeService.updateProgramme(prog.id, {
       nom: value.nom.trim(),
       localisation: value.localisation.trim(),
+      latitude: value.latitude,
+      longitude: value.longitude,
       titreFoncierRef: value.titreFoncierRef.trim(),
       superficieTotale: value.superficieTotale,
       description: value.description.trim(),
@@ -274,6 +282,8 @@ export class ProgrammesComponent implements OnInit {
     this.societeService.createProgramme({
       nom: value.nom.trim(),
       localisation: value.localisation.trim(),
+      latitude: value.latitude,
+      longitude: value.longitude,
       titreFoncierRef: value.titreFoncierRef.trim(),
       superficieTotale: value.superficieTotale,
       lotsTotal: 0,

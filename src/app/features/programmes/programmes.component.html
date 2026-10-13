@@ -249,6 +249,20 @@
               >Localisation *<input formControlName="localisation" placeholder="Ex. Kati, Bamako"
             /></label>
             <label
+              >Latitude GPS<input
+                type="number"
+                step="0.000001"
+                formControlName="latitude"
+                placeholder="Ex. 12.639200"
+            /></label>
+            <label
+              >Longitude GPS<input
+                type="number"
+                step="0.000001"
+                formControlName="longitude"
+                placeholder="Ex. -8.002900"
+            /></label>
+            <label
               >Superficie totale (m²) *<input
                 type="number"
                 min="100"
@@ -385,6 +399,12 @@
         <div class="form-grid-2">
           <label>Nom du programme *<input formControlName="nom" /></label>
           <label>Localisation *<input formControlName="localisation" /></label>
+          <label
+            >Latitude GPS<input type="number" step="0.000001" formControlName="latitude"
+          /></label>
+          <label
+            >Longitude GPS<input type="number" step="0.000001" formControlName="longitude"
+          /></label>
           <label
             >Superficie totale (m²) *<input
               type="number"

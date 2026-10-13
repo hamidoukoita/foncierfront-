@@ -33,6 +33,8 @@ export interface ProgrammeFoncierBackend {
   nom: string;
   description?: string;
   lieu: string;
+  latitude?: number | null;
+  longitude?: number | null;
   numeroTitreMere: string;
   superficieTotale: number;
   statut: StatutProgrammeBackend;

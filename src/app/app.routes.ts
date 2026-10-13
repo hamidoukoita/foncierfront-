@@ -82,6 +82,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'types-commodites',
+        loadComponent: () =>
+          import('./features/admin-dndc/types-commodites/types-commodites.component').then(
+            (m) => m.TypesCommoditesComponent,
+          ),
+      },
+      {
         path: 'controle-programmes',
         loadComponent: () =>
           import('./features/admin-dndc/programmes-controle/programmes-controle.component').then(
@@ -134,6 +141,12 @@ export const routes: Routes = [
         path: 'parcelles',
         loadComponent: () =>
           import('./features/parcelles/parcelles.component').then((m) => m.ParcellesComponent),
+        canActivate: [kycValideGuard],
+      },
+      {
+        path: 'commodites',
+        loadComponent: () =>
+          import('./features/commodites/commodites.component').then((m) => m.CommoditesComponent),
         canActivate: [kycValideGuard],
       },
       {

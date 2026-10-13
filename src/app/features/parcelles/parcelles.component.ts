@@ -131,10 +131,17 @@ export class ParcellesComponent implements OnInit {
   readonly countVendues = computed(() => this.parcelles().filter((p) => p.statut === 'VENDU').length);
   readonly countIndisponibles = computed(() => this.parcelles().filter((p) => p.statut === 'INDISPONIBLE_LITIGE').length);
 
-  setFilter(filter: ParcelleFilter): void {
-    this.currentFilter.set(filter);
-    this.currentPage.set(1);
-  }
+  readonly parcelleForm = this.fb.nonNullable.group({
+    designation: ['', [Validators.required]],
+    titreFoncier: ['', [Validators.required]],
+    programmeNom: ['Parcelle individuelle'],
+    superficieM2: [0, [Validators.required, Validators.min(1)]],
+    dimensions: ['', [Validators.required]],
+    prixFcfa: [0, [Validators.required, Validators.min(1)]],
+    latitude: this.fb.control<number | null>(null, [Validators.min(-90), Validators.max(90)]),
+    longitude: this.fb.control<number | null>(null, [Validators.min(-180), Validators.max(180)]),
+    statut: ['DISPONIBLE' as StatutLot]
+  });
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
@@ -163,7 +170,9 @@ export class ParcellesComponent implements OnInit {
       superficieM2: 0,
       dimensions: '',
       prixFcfa: 0,
-      statut: 'DISPONIBLE',
+      latitude: null,
+      longitude: null,
+      statut: 'DISPONIBLE'
     });
     this.isAddModalOpen.set(true);
   }
@@ -201,34 +210,24 @@ export class ParcellesComponent implements OnInit {
       return;
     }
 
-    const value = this.parcelleForm.getRawValue();
-    const dimensions = this.parseDimensions(value.dimensions);
-    const existing = this.editingParcelleData();
-    const commonRequest = {
-      numeroTitreFoncier: value.titreFoncier.trim(),
-      reference: value.designation.trim(),
-      superficie: Number(value.superficieM2),
-      prix: Number(value.prixFcfa),
-      facade: dimensions[0] ?? existing?.facade ?? undefined,
-      profondeur: dimensions[1] ?? existing?.profondeur ?? undefined,
-      statut: value.statut,
-    };
+    const val = this.parcelleForm.getRawValue();
+    this.isLoading.set(true);
+    const dimensions = val.dimensions
+      .split(/[x×*]/)
+      .map(value => Number(value.trim()))
+      .filter(value => Number.isFinite(value) && value > 0);
 
-    this.isSaving.set(true);
-    const editing = this.editingParcelle();
-    const request = editing
-      ? this.societeService.updateParcelle(editing.id, {
-          ...commonRequest,
-          societeId: existing?.societeId,
-          geometryJson: existing?.geometryJson,
-          murCloture: existing?.murCloture,
-          eauSomapep: existing?.eauSomapep,
-          electriciteEdm: existing?.electriciteEdm,
-          voieBitumee: existing?.voieBitumee,
-        })
-      : this.societeService.createParcelle(commonRequest);
-
-    request.subscribe({
+    this.societeService.createParcelle({
+      numeroTitreFoncier: val.titreFoncier,
+      reference: val.designation,
+      superficie: val.superficieM2,
+      prix: val.prixFcfa,
+      facade: dimensions[0],
+      profondeur: dimensions[1],
+      latitude: val.latitude,
+      longitude: val.longitude,
+      statut: val.statut
+    }).subscribe({
       next: () => {
         this.isSaving.set(false);
         this.isAddModalOpen.set(false);
