@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CommoditeService } from '../../core/services/commodite.service';
 import { SocieteService } from '../../core/services/societe.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -54,13 +55,18 @@ export class CommoditesComponent implements OnInit {
 
   ngOnInit(): void {
     this.isLoading.set(true);
-    forkJoin([
-      this.commoditeService.loadTypes(),
-      this.commoditeService.loadCommodites(),
-      this.commoditeService.loadProximites(),
-      this.societeService.getProgrammes(),
-      this.societeService.getParcelles(),
-    ]).subscribe({
+    forkJoin({
+      types: this.commoditeService.loadTypes().pipe(catchError(() => of([]))),
+      commodites: this.commoditeService.loadCommodites().pipe(
+        catchError((e) => {
+          this.toast.error('Chargement des commodités', messageErreurApi(e, 'Liste indisponible.'));
+          return of([]);
+        }),
+      ),
+      proximites: this.commoditeService.loadProximites().pipe(catchError(() => of([]))),
+      programmes: this.societeService.getProgrammes().pipe(catchError(() => of([]))),
+      parcelles: this.societeService.getParcelles().pipe(catchError(() => of([]))),
+    }).subscribe({
       next: () => this.isLoading.set(false),
       error: (e) => {
         this.isLoading.set(false);

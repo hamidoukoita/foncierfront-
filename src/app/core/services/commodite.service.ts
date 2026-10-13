@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { BackendApiResponse } from '../models/backend.models';
 import {
@@ -67,6 +67,11 @@ export class CommoditeService {
       .pipe(
         map((res) => res.data ?? []),
         tap((list) => this.commodites.set(list)),
+        catchError((err) => {
+          console.error('[CommoditeService] loadCommodites:', err);
+          this.commodites.set([]);
+          return throwError(() => err);
+        }),
       );
   }
 
@@ -104,6 +109,12 @@ export class CommoditeService {
       .pipe(
         map((res) => res.data ?? []),
         tap((list) => this.proximites.set(list)),
+        catchError((err) => {
+          console.error('[CommoditeService] loadProximites:', err);
+          this.proximites.set([]);
+          // Ne bloque pas toute la page : liste vide acceptable
+          return of([]);
+        }),
       );
   }
 
