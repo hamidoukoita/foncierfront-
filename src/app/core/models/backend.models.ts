@@ -1,3 +1,5 @@
+export type TypeBienBackend = 'LOT_PROGRAMME' | 'PARCELLE_INDIVIDUELLE' | 'MAISON_CLE_EN_MAIN' | 'BIEN_FONCIER';
+
 export interface BackendApiResponse<T> {
   success: boolean;
   message: string;
@@ -19,6 +21,9 @@ export interface SocietePromotriceBackend {
   logoUrl?: string;
   siteWeb?: string;
   description?: string;
+  /** Règles de réservation fixées par la société. */
+  delaiAttributionHeures?: number;
+  reservationMultiple?: boolean;
   // Métadonnées d'interface
   formeJuridique?: string;
   representantLegal?: string;
@@ -105,8 +110,10 @@ export type StatutRendezVousBackend = 'EN_ATTENTE' | 'ACCEPTER' | 'REFUSER';
 
 export interface ReservationBackend {
   id: number;
+  typeBien?: TypeBienBackend;
   numeroDossier: string;
   dateReservation: string;
+  dateExpiration?: string;
   statut: StatutReservationBackend;
   motifRefus?: string;
   dateTraitement?: string;
@@ -124,6 +131,7 @@ export interface ReservationBackend {
 
 export interface RendezVousBackend {
   id: number;
+  typeBien?: TypeBienBackend;
   dateRendezVous: string;
   statut: StatutRendezVousBackend;
   motifRefus?: string;
@@ -188,6 +196,24 @@ export interface ProjetConstructionBackend {
   societeNom?: string;
   agentId?: number;
   agentNom?: string;
+  modelePersonnalise?: boolean;
+  maisonReferenceId?: number;
+  maisonReferenceTitre?: string;
+  maisonReferenceImageUrl?: string;
+  descriptionModelePersonnalise?: string;
+  nombreChambresSouhaitees?: number;
+  nombreSallesBainSouhaitees?: number;
+  surfaceConstruiteSouhaitee?: number;
+  fichiers?: FichierProjetBackend[];
+}
+
+export interface FichierProjetBackend {
+  id: number;
+  type: 'TITRE_FONCIER' | 'PLAN' | 'PHOTO';
+  nomOriginal: string;
+  contentType?: string;
+  taille?: number;
+  dateAjout?: string;
 }
 
 export interface ModelMaisonBackend {

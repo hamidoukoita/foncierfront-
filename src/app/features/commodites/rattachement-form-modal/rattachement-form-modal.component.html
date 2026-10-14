@@ -19,7 +19,7 @@
       @if (!proximite()) {
         <div>
           <p class="text-xs font-semibold text-gray-700 uppercase mb-2">Rattacher à</p>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <label
               class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold cursor-pointer"
               [class]="cible === 'CITE' ? 'border-brand-primary bg-orange-50 text-brand-secondary' : 'border-gray-200 text-gray-600'"
@@ -34,6 +34,13 @@
               <input type="radio" formControlName="cible" value="PARCELLE" class="accent-[var(--foncier-primary)]" />
               Une parcelle individuelle
             </label>
+            <label
+              class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold cursor-pointer"
+              [class]="cible === 'MAISON' ? 'border-brand-primary bg-orange-50 text-brand-secondary' : 'border-gray-200 text-gray-600'"
+            >
+              <input type="radio" formControlName="cible" value="MAISON" class="accent-[var(--foncier-primary)]" />
+              Une maison clé en main
+            </label>
           </div>
         </div>
 
@@ -44,6 +51,16 @@
               <option [ngValue]="null" disabled>Choisir une cité</option>
               @for (prog of programmes(); track prog.id) {
                 <option [ngValue]="prog.id">{{ prog.nom }} — {{ prog.localisation }}</option>
+              }
+            </select>
+          </div>
+        } @else if (cible === 'MAISON') {
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Maison *</label>
+            <select formControlName="bienId" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
+              <option [ngValue]="null" disabled>Choisir une maison</option>
+              @for (m of maisons(); track m.id) {
+                <option [ngValue]="m.id">{{ m.titre }} — {{ m.adresse || m.reference }}</option>
               }
             </select>
           </div>

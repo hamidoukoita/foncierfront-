@@ -45,7 +45,10 @@ input[type='range'] { accent-color: var(--foncier-primary); }
 .dot.orange { background: var(--foncier-primary); }
 
 /* ---------- Cartes de programme ---------- */
-.programme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+/* 3 cartes par ligne ; 2 sur écran moyen, 1 sur mobile */
+.programme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 1180px) { .programme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .programme-grid { grid-template-columns: minmax(0, 1fr); } }
 .programme-card {
   background: #fff; border: 1px solid rgba(243,244,246,.9); border-radius: 16px; overflow: hidden;
   box-shadow: 0 1px 2px rgba(0,0,0,.05); display: flex; flex-direction: column; min-width: 0;
@@ -64,13 +67,13 @@ input[type='range'] { accent-color: var(--foncier-primary); }
 .programme-title-row p { margin: 4px 0 0; color: #6b7280; font-size: 12px; }
 .edit-circle { width: 32px; height: 32px; flex-shrink: 0; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; color: #6b7280; cursor: pointer; transition: all .15s; }
 .edit-circle:hover { color: var(--foncier-primary); border-color: rgba(229,128,26,.5); }
-.programme-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
-.programme-metrics > div { background: var(--foncier-bg); border-radius: 12px; padding: 10px; }
-.programme-metrics span { display: block; font-size: 11px; color: #6b7280; font-weight: 600; }
-.programme-metrics strong { display: block; font-size: 14px; color: var(--foncier-secondary); margin-top: 2px; }
-.programme-progress { height: 6px; background: #eceef0; border-radius: 999px; overflow: hidden; margin-top: 12px; }
+.programme-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.programme-metrics > div { background: var(--foncier-bg); border-radius: 12px; padding: 9px 10px; }
+.programme-metrics span { display: block; font-size: 10.5px; color: #6b7280; font-weight: 600; }
+.programme-metrics strong { display: block; font-size: 13.5px; color: var(--foncier-secondary); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.programme-progress { height: 5px; background: #eceef0; border-radius: 999px; overflow: hidden; }
 .programme-progress div { height: 100%; background: var(--foncier-primary); border-radius: 999px; }
-.programme-vrd { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.programme-vrd { display: flex; gap: 5px; flex-wrap: wrap; }
 .programme-vrd span { border-radius: 999px; padding: 4px 10px; background: #f3f4f6; color: #6b7280; font-size: 11px; font-weight: 600; }
 .programme-vrd span.on { background: #e8f5e9; color: var(--foncier-success); }
 .programme-description { font-size: 12px; color: #4b5563; line-height: 1.5; margin: 12px 0 0; }
@@ -156,9 +159,8 @@ input[type='range'] { accent-color: var(--foncier-primary); }
 .footer-primary span { margin-left: 4px; }
 .edit-bottom-grid { display: grid; grid-template-columns: 190px 1fr; gap: 12px; align-items: end; }
 
-@media (max-width: 1050px) { .programme-grid { grid-template-columns: repeat(2, 1fr); } }
+
 @media (max-width: 750px) {
-  .programme-grid { grid-template-columns: 1fr; }
   .form-grid-2, .check-grid, .edit-bottom-grid { grid-template-columns: 1fr; }
   .program-modal-footer { align-items: stretch; flex-direction: column; }
   .footer-primary-group { display: flex; justify-content: flex-end; }
@@ -166,3 +168,16 @@ input[type='range'] { accent-color: var(--foncier-primary); }
 }
 .media-btn { width: auto; padding: 0 10px; font-size: 11px; font-weight: 700; color: var(--foncier-secondary); }
 .media-btn:hover { color: var(--foncier-primary); border-color: rgba(229,128,26,.5); }
+
+/* Outils et actions des cartes (programmes) */
+.card-tool {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px;
+  border: none; background: transparent; color: #6B7280;
+  cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+}
+.card-tool mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.card-tool:hover { background: #FFF7ED; color: var(--foncier-primary); }
+.card-tool:focus-visible { outline: 2px solid var(--foncier-primary); outline-offset: 2px; }
+.card-tool:disabled { opacity: .5; cursor: not-allowed; }
+.card-tool-danger:hover { color: var(--foncier-danger); background: #FEF2F2; }

@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { SocieteService } from '../../core/services/societe.service';
 import { AuthService } from '../../core/services/auth.service';
-import { StatutLot } from '../../core/models/societe.models';
+import { Reservation, StatutLot } from '../../core/models/societe.models';
+import { delaiAttribution, DelaiAttribution } from '../reservations/reservation-delai';
+import { LIBELLES_STATUT } from '../reservations/reservation-detail/reservation-detail.component';
+import { ReservationLigneComponent } from '../reservations/reservation-ligne/reservation-ligne.component';
 import { StatsCardComponent } from '../../shared/components/stats-card/stats-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { LoadingSkeletonComponent } from '../../shared/components/loading-skeleton/loading-skeleton.component';
@@ -14,16 +17,20 @@ import { MatIconModule } from '@angular/material/icon';
 /** Couleurs de statut, identiques à celles du Studio plan de masse. */
 const COULEURS = { dispo: 'var(--foncier-success)', reserve: 'var(--foncier-primary)', vendu: 'var(--foncier-danger)', indispo: '#94A3B8' } as const;
 
+/** Le tableau de bord donne une vue d'ensemble : la totalité des données reste dans les pages dédiées. */
+const APERCU = { programmes: 4, notifications: 3, visites: 3, reservations: 3 } as const;
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, StatsCardComponent, StatusBadgeComponent, LoadingSkeletonComponent, MatIconModule],
+  imports: [CommonModule, RouterLink, StatsCardComponent, StatusBadgeComponent, LoadingSkeletonComponent, MatIconModule, ReservationLigneComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
   private readonly societeService = inject(SocieteService);
+  private readonly router = inject(Router);
   readonly authService = inject(AuthService);
 
   readonly isLoading = this.societeService.isLoading;
@@ -76,7 +83,7 @@ export class DashboardComponent implements OnInit {
   });
 
   /** Lots par statut pour chaque programme (barres empilées). */
-  readonly parProgramme = computed(() => this.programmes().map(p => {
+  readonly parProgramme = computed(() => [...this.programmes()].sort((a, b) => b.id - a.id).slice(0, APERCU.programmes).map(p => {
     const lots = this.societeService.lotsProgrammes().filter(l => l.programmeId === p.id);
     const n = (s: StatutLot) => lots.filter(l => l.statut === s).length;
     const total = lots.length;
@@ -86,7 +93,8 @@ export class DashboardComponent implements OnInit {
       wDispo: w(dispo), wReserve: w(reserve), wVendu: w(vendu), wIndispo: w(indispo) };
   }));
 
-  readonly derniersReservations = computed(() => [...this.reservations()].sort((a, b) => b.id - a.id).slice(0, 5));
+  readonly derniersReservations = computed(() => [...this.reservations()].sort((a, b) => b.id - a.id).slice(0, APERCU.reservations));
+  readonly libellesStatutReservation = LIBELLES_STATUT;
 
   /** Rendez-vous à honorer à partir d'aujourd'hui, du plus proche au plus lointain. */
   readonly visitesAVenir = computed(() => {
@@ -96,7 +104,9 @@ export class DashboardComponent implements OnInit {
       .sort((a, b) => (a.dateIso ?? '').localeCompare(b.dateIso ?? ''));
   });
 
-  readonly notificationsRecentes = computed(() => [...this.notifications()].sort((a, b) => b.id - a.id).slice(0, 4));
+  readonly prochainesVisites = computed(() => this.visitesAVenir().slice(0, APERCU.visites));
+
+  readonly notificationsRecentes = computed(() => [...this.notifications()].sort((a, b) => b.id - a.id).slice(0, APERCU.notifications));
   readonly notificationsNonLues = computed(() => this.notifications().filter(n => n.nonLu).length);
   readonly agentsActifs = computed(() => this.agents().filter(a => a.statut === 'ACTIF').length);
   readonly projetsEnEtude = computed(() => this.projets().filter(p => p.etatEtude === 'EN_ETUDE').length);
@@ -115,6 +125,15 @@ export class DashboardComponent implements OnInit {
     // Données complémentaires : un échec ici ne bloque pas le reste de la page.
     this.societeService.getProjetsConstruction().pipe(catchError(() => of([]))).subscribe();
     this.societeService.getProfilSociete().pipe(catchError(() => of(null))).subscribe();
+  }
+
+  delaiReservation(r: Reservation): DelaiAttribution | null {
+    return delaiAttribution(r, Date.now());
+  }
+
+  /** Le traitement d'un dossier se fait dans la page Réservations. */
+  ouvrirReservations(): void {
+    this.router.navigate(['/societe/reservations']);
   }
 
   formatFcfa(montant: number): string {

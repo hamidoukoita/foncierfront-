@@ -110,96 +110,55 @@
 
     <div class="programme-grid">
       @for (prog of filteredProgrammes(); track prog.id) {
-        <article class="programme-card">
-          <div class="programme-hero">
-            <div class="programme-status">
-              <app-status-badge [status]="prog.statut"></app-status-badge>
-            </div>
-            <div class="programme-visual-icon">{{ prog.iconEmoji || '⌂' }}</div>
-            <div class="programme-hero-caption">
-              <span>Programme foncier</span>
-              <strong>{{ prog.titreFoncierRef }}</strong>
-            </div>
-          </div>
+        <app-foncier-card
+          [titre]="prog.nom"
+          [sousTitre]="prog.localisation"
+          [couvertureUrl]="apercu.couverture(prog.id)"
+          icone="holiday_village"
+          surTitre="TF mère"
+          [reference]="prog.titreFoncierRef"
+          [nombrePanoramas]="apercu.panoramas(prog.id).length"
+          (couverture)="ouvrirCouverture(prog)"
+          (galerie)="openMedias(prog)"
+        >
+          <app-status-badge carte-statut [status]="prog.statut"></app-status-badge>
 
-          <div class="programme-body">
-            <div class="programme-title-row">
-              <div>
-                <h2>{{ prog.nom }}</h2>
-                <p>📍 {{ prog.localisation }}</p>
-              </div>
-              <button
-                type="button"
-                class="edit-circle"
-                (click)="openEditModal(prog)"
-                title="Modifier le programme"
-              >
-                ✎
-              </button>
-            </div>
-
-            <div class="programme-metrics">
-              <div>
-                <span>Surface</span
-                ><strong>{{ prog.superficieTotale || 0 | number: '1.0-0' }} m²</strong>
-              </div>
-              <div>
-                <span>Lots</span><strong>{{ prog.lotsTotal }}</strong>
-              </div>
-              <div>
-                <span>Avancement</span><strong>{{ getProgressionPercent(prog) }}%</strong>
-              </div>
-            </div>
-
-            <div class="programme-progress">
-              <div [style.width.%]="getProgressionPercent(prog)"></div>
-            </div>
-
-            <div class="programme-vrd">
-              <span [class.on]="prog.eauSomapep">Eau</span>
-              <span [class.on]="prog.electriciteEdm">Électricité</span>
-              <span [class.on]="prog.voirieBitumee">Voirie</span>
-            </div>
-
-            @if (prog.description) {
-              <p class="programme-description">{{ prog.description }}</p>
-            }
-          </div>
-
-          <div class="programme-actions">
-            <a [routerLink]="['/societe/programmes', prog.id, 'plan-masse']" class="studio-btn">
-              <span>⌁</span>
-              <span>Studio Plan de masse</span>
-            </a>
-            <button
-              type="button"
-              class="secondary-card-btn"
-              (click)="togglePlanMasse(prog)"
-              title="Aperçu rapide"
-            >
-              👁
+          <ng-container carte-outils>
+            <button type="button" class="card-tool" (click)="togglePlanMasse(prog)" title="Aperçu du plan" aria-label="Aperçu du plan">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button type="button" class="card-tool" (click)="openEditModal(prog)" title="Modifier le programme" aria-label="Modifier le programme">
+              <mat-icon>edit</mat-icon>
             </button>
             <button
               type="button"
-              class="secondary-card-btn media-btn"
-              (click)="openMedias(prog)"
-              title="Photos et visite 360°"
-              aria-label="Photos et visite 360°"
-            >
-              360°
-            </button>
-            <button
-              type="button"
-              class="danger-card-btn"
+              class="card-tool card-tool-danger"
               (click)="requestDeleteProgramme(prog)"
               [disabled]="isCheckingDelete()"
               title="Supprimer le programme"
               aria-label="Supprimer le programme"
             >
-              🗑
+              <mat-icon>delete_outline</mat-icon>
             </button>
+          </ng-container>
+
+          <div class="programme-metrics">
+            <div><span>Surface</span><strong>{{ prog.superficieTotale || 0 | number: '1.0-0' }} m²</strong></div>
+            <div><span>Lots</span><strong>{{ prog.lotsTotal }}</strong></div>
+            <div><span>Avancement</span><strong>{{ getProgressionPercent(prog) }}%</strong></div>
           </div>
-        </article>
+          <div class="programme-progress"><div [style.width.%]="getProgressionPercent(prog)"></div></div>
+          <div class="programme-vrd">
+            <span [class.on]="prog.eauSomapep">Eau</span>
+            <span [class.on]="prog.electriciteEdm">Électricité</span>
+            <span [class.on]="prog.voirieBitumee">Voirie</span>
+          </div>
+
+          <ng-container carte-actions>
+            <button appCarteAction icone="360" variante="primaire" type="button" (click)="ouvrir360(prog)">Visualisation 360°</button>
+            <a appCarteAction icone="architecture" variante="secondaire" [routerLink]="['/societe/programmes', prog.id, 'plan-masse']">Studio plan de masse</a>
+          </ng-container>
+        </app-foncier-card>
       }
     </div>
 
@@ -473,5 +432,13 @@
 </app-confirm-dialog>
 
 @if (mediaCible(); as cible) {
-  <app-media-manager [cible]="cible" (closed)="mediaCible.set(null)" />
+  <app-media-manager [cible]="cible" (closed)="fermerMedias()" />
+}
+
+@if (visite360(); as visite) {
+  <app-panorama-modal [titre]="visite.titre" [panoramas]="visite.panoramas" (closed)="visite360.set(null)" />
+}
+
+@if (couvertureCible(); as cible) {
+  <app-couverture-dialog [cible]="cible" (closed)="fermerCouverture($event)" />
 }

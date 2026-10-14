@@ -11,6 +11,7 @@ import {
   Programme,
   ProjetConstruction,
   ProfilSociete,
+  ReglesReservation,
   Reservation,
   VisiteRendezVous,
   StatutAgent,
@@ -112,6 +113,11 @@ export class SocieteService {
       visitesSubtext: visitesAConfirmer > 0 ? 'Rendez-vous à honorer' : 'Aucun rendez-vous à confirmer'
     };
   });
+
+  /** Libellé affiché à la place du programme pour un bien hors cité. */
+  private libelleHorsCite(typeBien?: string): string {
+    return typeBien === 'MAISON_CLE_EN_MAIN' ? 'Maison clé en main' : 'Parcelle individuelle';
+  }
 
   getSocieteId(): number | null {
     const user = this.authService.currentUser();
@@ -473,6 +479,10 @@ export class SocieteService {
     latitude?: number | null;
     longitude?: number | null;
     statut?: string;
+    eauSomapep?: boolean;
+    electriciteEdm?: boolean;
+    voieBitumee?: boolean;
+    murCloture?: boolean;
   }): Observable<BackendApiResponse<ParcelleIndividuelleBackend>> {
     const societeId = this.getSocieteId();
     if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
@@ -488,10 +498,10 @@ export class SocieteService {
       longitude: request.longitude ?? null,
       statut: request.statut === 'RESERVE' ? 'RESERVER' : (request.statut === 'VENDU' ? 'VENDUE' : (request.statut === 'INDISPONIBLE_LITIGE' ? 'INDISPONIBLE' : (request.statut || 'DISPONIBLE'))),
       societeId,
-      murCloture: false,
-      eauSomapep: false,
-      electriciteEdm: false,
-      voieBitumee: false
+      murCloture: request.murCloture ?? false,
+      eauSomapep: request.eauSomapep ?? false,
+      electriciteEdm: request.electriciteEdm ?? false,
+      voieBitumee: request.voieBitumee ?? false
     };
 
     return this.http.post<BackendApiResponse<ParcelleIndividuelleBackend>>(`${this.API_BASE}/parcelles-individuelles`, payload).pipe(
@@ -521,6 +531,10 @@ export class SocieteService {
     latitude?: number | null;
     longitude?: number | null;
     statut?: string;
+    eauSomapep?: boolean;
+    electriciteEdm?: boolean;
+    voieBitumee?: boolean;
+    murCloture?: boolean;
   }): Observable<BackendApiResponse<ParcelleIndividuelleBackend>> {
     const societeId = this.getSocieteId();
     if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
@@ -535,6 +549,11 @@ export class SocieteService {
       longitude: request.longitude ?? null,
       statut: request.statut === 'RESERVE' ? 'RESERVER' : (request.statut === 'VENDU' ? 'VENDUE' : (request.statut === 'INDISPONIBLE_LITIGE' ? 'INDISPONIBLE' : (request.statut || 'DISPONIBLE'))),
       societeId,
+      // Toujours envoyés : le backend remet à « non » tout équipement absent de la requête.
+      murCloture: request.murCloture ?? false,
+      eauSomapep: request.eauSomapep ?? false,
+      electriciteEdm: request.electriciteEdm ?? false,
+      voieBitumee: request.voieBitumee ?? false,
     };
     return this.http.put<BackendApiResponse<ParcelleIndividuelleBackend>>(
       `${this.API_BASE}/parcelles-individuelles/${id}`,
@@ -637,7 +656,8 @@ export class SocieteService {
       map(res => (Array.isArray(res.data) ? res.data : []).map(r => ({
         id: r.id,
         lotDesignation: r.bienDesignation || r.bienReference || 'Bien foncier',
-        programmeNom: r.programmeNom || 'Parcelle individuelle',
+        programmeNom: r.programmeNom || this.libelleHorsCite(r.typeBien),
+        typeBien: r.typeBien,
         prospectNom: r.acquereurNom || 'Acquéreur non renseigné',
         prospectTelephone: r.acquereurTelephone || 'Non renseigné',
         montantFcfa: r.montant ?? 0,
@@ -647,7 +667,11 @@ export class SocieteService {
         delaiExpire: false,
         agentAssignId: r.agentId,
         agentAssignNom: r.agentNom,
-        statut: (r.statut === 'CONFIRMER' ? 'CONFIRMEE' : (r.statut === 'REFUSER' ? 'ANNULEE' : 'EN_ATTENTE')) as Reservation['statut']
+        statut: (r.statut === 'CONFIRMER' ? 'CONFIRMEE' : (r.statut === 'REFUSER' ? 'ANNULEE' : 'EN_ATTENTE')) as Reservation['statut'],
+        numeroDossier: r.numeroDossier,
+        dateReservationIso: r.dateReservation,
+        dateExpirationIso: r.dateExpiration,
+        motifRefus: r.motifRefus
       }))),
       tap(mapped => this.reservations.set(mapped))
     );
@@ -703,15 +727,43 @@ export class SocieteService {
           dateComplete: Number.isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
           prospectNom: v.acquereurNom || 'Acquéreur non renseigné',
           prospectTelephone: v.acquereurTelephone || 'Non renseigné',
-          programmeNom: v.programmeNom || 'Parcelle individuelle',
+          programmeNom: v.programmeNom || this.libelleHorsCite(v.typeBien),
           bienCible: v.bienDesignation || v.bienReference || v.lieu || 'Bien foncier',
           agentAssignId: v.agentId,
           agentAssignNom: v.agentNom,
-          statut: (v.statut === 'ACCEPTER' ? 'CONFIRME' : (v.statut === 'REFUSER' ? 'ANNULE' : 'EN_ATTENTE')) as StatutVisite,
-          typeVisite: v.typeRDV
+          statut: this.statutVisite(v, dateObj),
+          typeVisite: v.typeRDV,
+          lieu: v.lieu,
+          compteRendu: v.compteRendu,
+          motifRefus: v.motifRefus
         };
       })),
       tap(mapped => this.visites.set(mapped))
+    );
+  }
+
+  /**
+   * Le backend ne connaît que EN_ATTENTE / ACCEPTER / REFUSER :
+   * une visite acceptée est « effectuée » quand elle est passée ou a un compte-rendu.
+   */
+  private statutVisite(v: RendezVousBackend, date: Date): StatutVisite {
+    if (v.statut === 'REFUSER') return 'ANNULE';
+    if (v.statut !== 'ACCEPTER') return 'EN_ATTENTE';
+    const passee = !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
+    return passee || !!v.compteRendu?.trim() ? 'EFFECTUE' : 'CONFIRME';
+  }
+
+  accepterVisite(id: number): Observable<BackendApiResponse<RendezVousBackend>> {
+    return this.http.patch<BackendApiResponse<RendezVousBackend>>(`${this.API_BASE}/rendez-vous/${id}/accepter`, {}).pipe(
+      tap(() => this.getVisites().subscribe())
+    );
+  }
+
+  refuserVisite(id: number, motif: string): Observable<BackendApiResponse<RendezVousBackend>> {
+    return this.http.patch<BackendApiResponse<RendezVousBackend>>(
+      `${this.API_BASE}/rendez-vous/${id}/refuser`, {}, { params: { motif } }
+    ).pipe(
+      tap(() => this.getVisites().subscribe())
     );
   }
 
@@ -817,7 +869,7 @@ export class SocieteService {
       map(res => (Array.isArray(res.data) ? res.data : []).map(p => ({
         id: p.id,
         numeroDossier: p.numeroDossier,
-        modeleVilla: p.modelMaisonLibeller ?? 'Modèle non sélectionné',
+        modeleVilla: p.modelePersonnalise ? 'Modèle personnalisé' : (p.maisonReferenceTitre ?? p.modelMaisonLibeller ?? 'Modèle non sélectionné'),
         modeleMaisonId: p.modelMaisonId,
         modeleMaisonImageUrl: p.modelMaisonImageUrl,
         modeleMaisonPlanUrl: p.modelMaisonPlanUrl,
@@ -838,10 +890,27 @@ export class SocieteService {
         commentaireAvancement: p.commentaireAvancement,
         dateDerniereMiseAJour: p.dateDerniereMiseAJour,
         delaiInfo: '',
-        description: p.description
+        description: p.description,
+        motifRefus: p.motifRefus,
+        dateDemande: p.dateDemande,
+        modelePersonnalise: p.modelePersonnalise ?? (!p.modelMaisonId && !p.maisonReferenceId),
+        maisonReferenceTitre: p.maisonReferenceTitre,
+        maisonReferenceImageUrl: p.maisonReferenceImageUrl,
+        descriptionModelePersonnalise: p.descriptionModelePersonnalise,
+        nombreChambresSouhaitees: p.nombreChambresSouhaitees,
+        nombreSallesBainSouhaitees: p.nombreSallesBainSouhaitees,
+        surfaceConstruiteSouhaitee: p.surfaceConstruiteSouhaitee,
+        fichiers: p.fichiers ?? []
       }))),
       tap(mapped => this.projetsConstruction.set(mapped))
     );
+  }
+
+  /** Pièce jointe d'un projet : servie par l'API avec contrôle d'accès, jamais en accès public. */
+  telechargerFichierProjet(projetId: number, fichierId: number): Observable<Blob> {
+    return this.http.get(`${this.API_BASE}/projets-construction/${projetId}/fichiers/${fichierId}`, {
+      responseType: 'blob'
+    });
   }
 
   getModelesMaison(societeId = this.getSocieteId()): Observable<ModelMaison[]> {
@@ -954,7 +1023,11 @@ export class SocieteService {
           documentKycNom: '',
           documentKycTaille: '',
           documentKycDate: '',
-          documentKycUrl: ''
+          documentKycUrl: '',
+          dateAgrement: s.dateAgrement ?? null,
+          description: s.description ?? '',
+          delaiAttributionHeures: s.delaiAttributionHeures,
+          reservationMultiple: s.reservationMultiple ?? false
         } satisfies ProfilSociete;
       }),
       tap(mapped => {
@@ -968,19 +1041,15 @@ export class SocieteService {
     if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
 
     const current = this.profilSociete();
+    // Seules les coordonnées sont modifiables par la société : les identifiants légaux
+    // et le statut d'agrément relèvent de l'administration (ignorés par le backend).
     const payload = {
       nom: data.raisonSociale ?? current.raisonSociale,
       adresse: data.siegeSocial ?? current.siegeSocial,
       telephone: data.telephoneFixe ?? current.telephoneFixe,
       email: data.emailOfficiel ?? current.emailOfficiel,
-      nif: current.nif || null,
-      numeroAgrement: current.numeroAgrement || null,
-      dateAgrement: null,
-      statutAgrement: current.agrementStatut === 'VALIDE_MINISTERE' ? 'VERIFIER' :
-        current.agrementStatut === 'REJETE' ? 'REFUSER' : 'EN_ATTENTE',
-      logoUrl: current.documentKycUrl || null,
       siteWeb: data.siteWeb ?? current.siteWeb,
-      description: null
+      description: data.description ?? current.description ?? ''
     };
 
     return this.http.put<BackendApiResponse<SocietePromotriceBackend>>(
@@ -999,10 +1068,30 @@ export class SocieteService {
             emailOfficiel: s.email ?? '',
             siteWeb: s.siteWeb ?? '',
             nif: s.nif ?? '',
-            numeroAgrement: s.numeroAgrement ?? ''
+            numeroAgrement: s.numeroAgrement ?? '',
+            dateAgrement: s.dateAgrement ?? null,
+            description: s.description ?? ''
           });
         }
       })
+    );
+  }
+
+  /** Délai d'attribution et réservation multiple, communs à tous les biens de la société. */
+  updateReglesReservation(regles: ReglesReservation): Observable<SocietePromotriceBackend> {
+    const societeId = this.getSocieteId();
+    if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
+
+    return this.http.patch<BackendApiResponse<SocietePromotriceBackend>>(
+      `${this.API_BASE}/societes-promotrices/${societeId}/regles-reservation`,
+      regles
+    ).pipe(
+      map(res => res.data),
+      tap(s => this.profilSociete.update(p => ({
+        ...p,
+        delaiAttributionHeures: s.delaiAttributionHeures,
+        reservationMultiple: s.reservationMultiple ?? false
+      })))
     );
   }
 

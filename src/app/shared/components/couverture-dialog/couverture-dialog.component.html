@@ -1,0 +1,100 @@
+<div class="fixed inset-0 z-[2100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" (click)="fermer()">
+  <section
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="couverture-titre"
+    class="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-primary">Photo de couverture</p>
+        <h2 id="couverture-titre" class="mt-1 text-lg font-bold text-brand-secondary">{{ cible().titre }}</h2>
+        <p class="mt-1 text-xs text-gray-500">Première image vue par les acquéreurs, sur le web et dans l’application.</p>
+      </div>
+      <button type="button" (click)="fermer()" aria-label="Fermer" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+
+    <div class="space-y-5 overflow-y-auto px-6 py-5">
+      <!-- Aperçu de la couverture actuelle -->
+      <div class="relative h-52 overflow-hidden rounded-2xl bg-brand-secondary">
+        @if (couverture(); as c) {
+          <img [src]="url(c)" [alt]="cible().titre" class="h-full w-full object-cover" />
+          <span class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold text-brand-success">
+            <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">check_circle</mat-icon> Couverture actuelle
+          </span>
+        } @else {
+          <div class="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#2A3D5C] to-[#1A2B4C] text-white/70">
+            <mat-icon class="!h-12 !w-12 !text-[48px] text-white/30">add_photo_alternate</mat-icon>
+            <p class="text-xs font-semibold">Aucune photo de couverture</p>
+          </div>
+        }
+      </div>
+
+      <!-- Import d'une nouvelle photo -->
+      <label
+        class="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed px-4 py-6 text-center transition-colors"
+        [class]="survolDepot() ? 'border-brand-primary bg-orange-50' : 'border-gray-200 hover:border-brand-primary hover:bg-orange-50/40'"
+        (dragover)="$event.preventDefault(); survolDepot.set(true)"
+        (dragleave)="survolDepot.set(false)"
+        (drop)="deposer($event)"
+      >
+        <input type="file" class="sr-only" accept="image/jpeg,image/png,image/webp" (change)="selectionner($event)" [disabled]="envoiEnCours()" />
+        @if (envoiEnCours()) {
+          <mat-icon class="text-brand-primary">cloud_upload</mat-icon>
+          <p class="text-xs font-bold text-brand-secondary">Envoi en cours… {{ progression() }} %</p>
+          <div class="mt-1 h-1.5 w-48 overflow-hidden rounded-full bg-orange-100">
+            <div class="h-full bg-brand-primary transition-all" [style.width.%]="progression()"></div>
+          </div>
+        } @else {
+          <mat-icon class="text-brand-primary">add_photo_alternate</mat-icon>
+          <p class="text-xs font-bold text-brand-secondary">Importer une nouvelle photo</p>
+          <p class="text-[11px] text-gray-500">Glissez-la ici ou cliquez · JPEG, PNG, WebP · 25 Mo max · format paysage conseillé</p>
+        }
+      </label>
+
+      <!-- Choix parmi la galerie -->
+      @if (photos().length > 1) {
+        <div>
+          <p class="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Ou choisir dans la galerie</p>
+          <div class="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            @for (photo of photos(); track photo.id; let premiere = $first) {
+              <button
+                type="button"
+                (click)="choisir(photo)"
+                [disabled]="premiere || enCoursId() !== null"
+                [attr.aria-label]="premiere ? 'Couverture actuelle' : 'Utiliser comme couverture'"
+                class="group relative aspect-[4/3] overflow-hidden rounded-xl border-2 transition-all"
+                [class]="premiere ? 'border-brand-primary' : 'border-transparent hover:border-orange-300'"
+              >
+                <img [src]="url(photo)" [alt]="photo.titre || 'Photo'" loading="lazy" class="h-full w-full object-cover" />
+                @if (premiere) {
+                  <span class="absolute inset-x-0 bottom-0 bg-brand-primary py-1 text-[10px] font-bold text-white">Couverture</span>
+                } @else if (enCoursId() === photo.id) {
+                  <span class="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-bold text-white">…</span>
+                } @else {
+                  <span class="absolute inset-0 flex items-center justify-center bg-black/0 text-[10px] font-bold text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+                    Utiliser
+                  </span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <footer class="flex justify-end border-t border-gray-100 px-6 py-4">
+      <button
+        type="button"
+        (click)="fermer()"
+        [disabled]="envoiEnCours()"
+        class="rounded-xl bg-brand-secondary px-5 py-2.5 text-xs font-bold text-white hover:opacity-90 disabled:opacity-50"
+      >
+        Terminé
+      </button>
+    </footer>
+  </section>
+</div>

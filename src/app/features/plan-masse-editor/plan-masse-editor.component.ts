@@ -58,9 +58,7 @@ export type StudioTool =
   | 'SELECT'
   | 'PLACE_PRESET'
   | 'DRAW_FREE'
-  | 'ADD_ROAD'
-  | 'ADD_GREEN'
-  | 'ADD_POI';
+  | 'ADD_ROAD';
 
 export type LotStatutType = StatutLot;
 
@@ -212,8 +210,6 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
 
   readonly layerLots = signal(true);
   readonly layerRoads = signal(true);
-  readonly layerGreen = signal(true);
-  readonly layerPois = signal(true);
 
   readonly historyStack = signal<EditorSnapshot[]>([]);
   readonly redoStack = signal<EditorSnapshot[]>([]);
@@ -422,15 +418,14 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
   );
 
   readonly visibleGreenElements = computed(() =>
-    this.elements().filter((e) => e.type === 'ESPACE_VERT' && this.layerGreen() && e.visible),
+    // Éléments existants seulement : le studio ne crée plus d'espaces verts.
+    this.elements().filter((e) => e.type === 'ESPACE_VERT' && e.visible),
   );
 
   readonly visiblePoiElements = computed(() =>
     this.elements().filter(
-      (e) =>
-        this.layerPois() &&
-        !['ROUTE_GOUDRONNEE', 'ROUTE_NON_GOUDRONNEE', 'ESPACE_VERT'].includes(e.type) &&
-        e.visible,
+      // Éléments existants seulement : les commodités se gèrent dans « Commodités ».
+      (e) => !['ROUTE_GOUDRONNEE', 'ROUTE_NON_GOUDRONNEE', 'ESPACE_VERT'].includes(e.type) && e.visible,
     ),
   );
 
@@ -531,8 +526,6 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
       PLACE_PRESET: 'Sélectionnez un lot à positionner puis glissez une forme préconçue sur le plan.',
       DRAW_FREE: 'Sélectionnez un lot puis dessinez librement son contour.',
       ADD_ROAD: 'Cliquez sur le plan pour tracer la route, puis double-cliquez pour terminer.',
-      ADD_GREEN: 'Cliquez pour dessiner une zone verte, puis double-cliquez pour terminer.',
-      ADD_POI: 'Cliquez sur le plan pour positionner un point d’intérêt.',
     };
 
     this.toolHint.set(messages[tool]);
@@ -899,13 +892,6 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
 
     const point = this.toCanvasPoint(event);
 
-    if (tool === 'ADD_POI') {
-      this.elementDraftGeometry.set({ type: 'POINT', x: point.x, y: point.y });
-      this.elementForm.reset({ type: 'ECOLE', nom: '', description: '' });
-      this.isElementModalOpen.set(true);
-      return;
-    }
-
     this.drawingPoints.update((points) => [...points, point]);
   }
 
@@ -943,19 +929,8 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
         return;
       }
       this.elementDraftGeometry.set({ type: 'LINE', points: [...points] });
-      // Respecte le « Type de route » choisi dans le panneau Aménagement.
+      // Respecte le « Type de route » choisi dans le panneau Voirie.
       this.elementForm.reset({ type: this.roadMode() === 'NON_GOUDRONNEE' ? 'ROUTE_NON_GOUDRONNEE' : 'ROUTE_GOUDRONNEE', nom: '', description: '' });
-      this.isElementModalOpen.set(true);
-      return;
-    }
-
-    if (this.activeTool() === 'ADD_GREEN') {
-      if (points.length < 3) {
-        this.toast.warning('Zone incomplète', 'Une zone verte doit comporter au moins trois points.');
-        return;
-      }
-      this.elementDraftGeometry.set({ type: 'POLYGON', points: [...points] });
-      this.elementForm.reset({ type: 'ESPACE_VERT', nom: '', description: '' });
       this.isElementModalOpen.set(true);
     }
   }
@@ -1648,11 +1623,6 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  openElementTypeModal(type: PlanElementTypeBackend): void {
-    this.activeTool.set('ADD_POI');
-    this.elementForm.patchValue({ type });
-  }
-
   confirmElement(): void {
     const programme = this.programme();
     const geometry = this.elementDraftGeometry();
@@ -2091,11 +2061,9 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
     return points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
   }
 
-  toggleLayer(layer: 'lots' | 'roads' | 'green' | 'pois'): void {
+  toggleLayer(layer: 'lots' | 'roads'): void {
     if (layer === 'lots') this.layerLots.update((value) => !value);
     if (layer === 'roads') this.layerRoads.update((value) => !value);
-    if (layer === 'green') this.layerGreen.update((value) => !value);
-    if (layer === 'pois') this.layerPois.update((value) => !value);
   }
 
   undo(): void {
@@ -2221,6 +2189,14 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
     ];
   }
 
+  /** Types proposés à la création : le studio ne trace plus que la voirie. */
+  getRoadTypeOptions(): Array<{ value: PlanElementTypeBackend; label: string }> {
+    return this.getElementTypeOptions().filter(
+      (o) => o.value === 'ROUTE_GOUDRONNEE' || o.value === 'ROUTE_NON_GOUDRONNEE',
+    );
+  }
+
+  /** Libellés de tous les types, y compris les éléments déjà enregistrés. */
   elementTypeLabel(type: PlanElementTypeBackend): string {
     return this.getElementTypeOptions().find((item) => item.value === type)?.label ?? 'Élément';
   }

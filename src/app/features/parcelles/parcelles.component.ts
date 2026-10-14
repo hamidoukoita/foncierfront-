@@ -1,6 +1,11 @@
+import { ApercuMediasService, PanoramaAffichable } from '../../core/services/apercu-medias.service';
+import { FoncierCardComponent } from '../../shared/components/foncier-card/foncier-card.component';
+import { PanoramaModalComponent } from '../../shared/components/panorama-modal/panorama-modal.component';
+import { CarteActionComponent } from '../../shared/components/carte-action/carte-action.component';
+import { CouvertureDialogComponent } from '../../shared/components/couverture-dialog/couverture-dialog.component';
 import { MediaCible } from '../../core/models/media.models';
 import { MediaManagerComponent } from '../../shared/components/media-manager/media-manager.component';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -26,7 +31,12 @@ type ParcelleFilter = 'TOUTES' | 'DISPONIBLES' | 'RESERVEES' | 'VENDUES' | 'INDI
     PaginationComponent,
     EmptyStateComponent,
     MatIcon,
+    FoncierCardComponent,
+    PanoramaModalComponent,
+    CarteActionComponent,
+    CouvertureDialogComponent,
   ],
+  providers: [ApercuMediasService],
   templateUrl: './parcelles.component.html',
   styleUrl: './parcelles.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,7 +46,7 @@ export class ParcellesComponent implements OnInit {
   private readonly societeService = inject(SocieteService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
-  private readonly pageSize = 5;
+  private readonly pageSize = 6;
 
   readonly mediaCible = signal<MediaCible | null>(null);
   readonly isLoading = signal(false);
@@ -63,7 +73,20 @@ export class ParcellesComponent implements OnInit {
     latitude: this.fb.control<number | null>(null),
     longitude: this.fb.control<number | null>(null),
     statut: ['DISPONIBLE' as StatutLot, [Validators.required]],
+    // Viabilisation (VRD) réalisée sur la parcelle
+    eauSomapep: [false],
+    electriciteEdm: [false],
+    voieBitumee: [false],
+    murCloture: [false],
   });
+
+  /** Équipements de viabilisation proposés dans le formulaire. */
+  readonly equipementsVrd = [
+    { cle: 'eauSomapep', libelle: 'Eau SOMAPEP', detail: 'Compteur ou borne-fontaine', icone: 'water_drop' },
+    { cle: 'electriciteEdm', libelle: 'Électricité EDM', detail: 'Poteau ou raccordement', icone: 'bolt' },
+    { cle: 'voieBitumee', libelle: 'Voie bitumée', detail: 'Accès goudronné', icone: 'add_road' },
+    { cle: 'murCloture', libelle: 'Clôture', detail: 'Mur ou soubassement', icone: 'fence' },
+  ] as const;
 
   ngOnInit(): void {
     this.loadParcelles();
@@ -77,6 +100,50 @@ export class ParcellesComponent implements OnInit {
 
   openMedias(parcelle: ParcelleLot): void {
     this.mediaCible.set({ kind: 'bien', id: parcelle.id, titre: parcelle.designation });
+  }
+
+  /** Photos de couverture et panoramas 360° des cartes. */
+  readonly apercu = inject(ApercuMediasService);
+  /** Visite 360° en cours d'affichage. */
+  readonly visite360 = signal<{ titre: string; panoramas: PanoramaAffichable[] } | null>(null);
+
+  private readonly chargementApercus = effect(() => {
+    const parcelles = this.parcelles();
+    untracked(() =>
+      this.apercu.charger(parcelles.map((p) => ({ kind: 'bien' as const, id: p.id, titre: p.designation }))),
+    );
+  });
+
+  /** Ouvre la visite 360° ; sans panorama, invite à en ajouter depuis la médiathèque. */
+  ouvrir360(parcelle: ParcelleLot): void {
+    const panoramas = this.apercu.panoramas(parcelle.id);
+    if (panoramas.length === 0) {
+      this.toast.info('Aucune vue 360°', 'Ajoutez un panorama 360° pour proposer la visite virtuelle de la parcelle.');
+      this.openMedias(parcelle);
+      return;
+    }
+    this.visite360.set({ titre: parcelle.designation, panoramas });
+  }
+
+
+  /** Cible dont on choisit la photo de couverture. */
+  readonly couvertureCible = signal<MediaCible | null>(null);
+
+  ouvrirCouverture(item: ParcelleLot): void {
+    this.couvertureCible.set({ kind: 'bien', id: item.id, titre: item.designation });
+  }
+
+  fermerCouverture(modifiee: boolean): void {
+    const cible = this.couvertureCible();
+    if (cible && modifiee) this.apercu.rafraichir(cible);
+    this.couvertureCible.set(null);
+  }
+
+  /** Ferme la médiathèque et met à jour la couverture / les panoramas de la carte. */
+  fermerMedias(): void {
+    const cible = this.mediaCible();
+    if (cible) this.apercu.rafraichir(cible);
+    this.mediaCible.set(null);
   }
 
   loadParcelles(): void {
@@ -168,6 +235,10 @@ export class ParcellesComponent implements OnInit {
       latitude: null,
       longitude: null,
       statut: 'DISPONIBLE',
+      eauSomapep: false,
+      electriciteEdm: false,
+      voieBitumee: false,
+      murCloture: false,
     });
     this.isAddModalOpen.set(true);
   }
@@ -191,6 +262,10 @@ export class ParcellesComponent implements OnInit {
           latitude: details.latitude ?? null,
           longitude: details.longitude ?? null,
           statut: this.toUiStatus(String(details.statut || parcelle.statut)),
+          eauSomapep: !!details.eauSomapep,
+          electriciteEdm: !!details.electriciteEdm,
+          voieBitumee: !!details.voieBitumee,
+          murCloture: !!details.murCloture,
         });
         this.isDetailsLoading.set(false);
         this.isAddModalOpen.set(true);
@@ -227,6 +302,10 @@ export class ParcellesComponent implements OnInit {
       latitude: val.latitude,
       longitude: val.longitude,
       statut: val.statut,
+      eauSomapep: val.eauSomapep,
+      electriciteEdm: val.electriciteEdm,
+      voieBitumee: val.voieBitumee,
+      murCloture: val.murCloture,
     };
 
     const request$ = editing
