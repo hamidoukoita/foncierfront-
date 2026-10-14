@@ -160,11 +160,9 @@
       </div>
 
       <div class="panel-block workflow-card">
-        <div class="panel-title-row"><div><span class="eyebrow">ÉTAPE 5</span><h2>Aménagement</h2></div><span class="step-badge">05</span></div>
+        <div class="panel-title-row"><div><span class="eyebrow">ÉTAPE 5</span><h2>Voirie</h2></div><span class="step-badge">05</span></div>
         <div class="quick-tools">
           <button class="tool-button" [class.active]="activeTool() === 'ADD_ROAD'" type="button" (click)="setTool('ADD_ROAD')"><span>━</span><span>Tracer une route</span></button>
-          <button class="tool-button" [class.active]="activeTool() === 'ADD_GREEN'" type="button" (click)="setTool('ADD_GREEN')"><span>▧</span><span>Espace vert</span></button>
-          <button class="tool-button" [class.active]="activeTool() === 'ADD_POI'" type="button" (click)="setTool('ADD_POI')"><span>⌖</span><span>Équipement</span></button>
         </div>
         <div class="road-builder">
           <div><span>Type de route</span><select [value]="roadMode()" (change)="roadMode.set($any($event.target).value)"><option value="GOUDRONNEE">Goudronnée</option><option value="NON_GOUDRONNEE">Non goudronnée</option></select></div>
@@ -179,8 +177,6 @@
         }
         <label class="layer-row"><span>Lots</span><input type="checkbox" [checked]="layerLots()" (change)="toggleLayer('lots')" /></label>
         <label class="layer-row"><span>Routes</span><input type="checkbox" [checked]="layerRoads()" (change)="toggleLayer('roads')" /></label>
-        <label class="layer-row"><span>Espaces verts</span><input type="checkbox" [checked]="layerGreen()" (change)="toggleLayer('green')" /></label>
-        <label class="layer-row"><span>Équipements</span><input type="checkbox" [checked]="layerPois()" (change)="toggleLayer('pois')" /></label>
       </div>
     </aside>
 
@@ -194,8 +190,6 @@
               @case ('PLACE_PRESET') { Placement d’un gabarit }
               @case ('DRAW_FREE') { Dessin libre du contour }
               @case ('ADD_ROAD') { Tracé d’une route }
-              @case ('ADD_GREEN') { Tracé d’un espace vert }
-              @case ('ADD_POI') { Placement d’un équipement }
             }
           </strong>
           <span>@if (selectedLot()) { Lot sélectionné : <b>{{ selectedLot()?.numeroLot }}</b> } @else { Créez ou sélectionnez un lot pour commencer. }</span>
@@ -256,7 +250,7 @@
             <text x="30" y="698">{{ scaleBar().meters }} m</text>
           </g>
 
-          <g *ngIf="layerGreen()">
+          <g>
             @for (element of visibleGreenElements(); track element.id) {
               <polygon *ngIf="element.geometry.type === 'POLYGON'" [attr.points]="getElementPath(element)" [attr.fill]="elementFill(element.type)" [attr.stroke]="elementStroke(element.type)" class="plan-element" [class.selected]="selectedElement()?.id === element.id" (pointerdown)="startElementBodyDrag($event, element)" (click)="selectElement(element, $event)" (dblclick)="addElementVertexAtEdge($event, element)"></polygon>
             }
@@ -268,7 +262,7 @@
             }
           </g>
 
-          <g *ngIf="layerPois()">
+          <g>
             @for (element of visiblePoiElements(); track element.id) {
               <g class="poi-marker plan-element" [class.selected]="selectedElement()?.id === element.id" [attr.transform]="'translate(' + getElementCenter(element).x + ' ' + getElementCenter(element).y + ')'" (pointerdown)="startElementBodyDrag($event, element)" (click)="selectElement(element, $event)">
                 <circle r="18" fill="#fff" stroke="#1A2B4C" stroke-width="3"></circle>
@@ -322,7 +316,7 @@
       </div>
 
       <div class="studio-save-strip">
-        <div><strong>{{ isDirty() ? 'Modifications en attente de sauvegarde' : 'Plan synchronisé avec le backend' }}</strong><span>« Enregistrer le plan » sauvegarde le Plan de masse, les géométries des lots et les équipements présents sur cette vue.</span></div>
+        <div><strong>{{ isDirty() ? 'Modifications en attente de sauvegarde' : 'Plan synchronisé avec le backend' }}</strong><span>« Enregistrer le plan » sauvegarde le Plan de masse, les géométries des lots et la voirie présente sur cette vue.</span></div>
         <button class="st-btn st-btn-primary" type="button" (click)="savePlan()" [disabled]="isSaving()">{{ isSaving() ? 'Sauvegarde…' : 'Enregistrer le plan' }}</button>
       </div>
     </main>
@@ -345,7 +339,7 @@
 
       <ng-template #rightElementInspector>
         <ng-container *ngIf="selectedElement() as element; else noSelection">
-          <div class="inspector-header"><div><span class="eyebrow">AMÉNAGEMENT</span><h2>{{ element.nom }}</h2><p>{{ elementTypeLabel(element.type) }}</p></div><span class="status-pill" [style.background]="elementStroke(element.type)">Plan</span></div>
+          <div class="inspector-header"><div><span class="eyebrow">ÉLÉMENT DU PLAN</span><h2>{{ element.nom }}</h2><p>{{ elementTypeLabel(element.type) }}</p></div><span class="status-pill" [style.background]="elementStroke(element.type)">Plan</span></div>
           <div class="inspector-actions"><button class="st-btn st-btn-danger full" type="button" (click)="deleteSelectedElement()">Supprimer l’élément</button></div>
           <div class="selection-tip">Glissez l’élément pour le déplacer. Les poignées permettent d’ajuster son contour lorsqu’il s’agit d’une route ou d’une zone.</div>
         </ng-container>
@@ -410,8 +404,8 @@
 
 @if (isElementModalOpen()) {
   <div class="studio-backdrop" (click)="isElementModalOpen.set(false)"><div class="studio-dialog modal-small" (click)="$event.stopPropagation()">
-    <div class="modal-head"><div><span class="eyebrow">AMÉNAGEMENT</span><h2>Configurer l’équipement</h2></div><button class="icon-btn" type="button" (click)="isElementModalOpen.set(false)">×</button></div>
-    <form [formGroup]="elementForm" (ngSubmit)="confirmElement()"><div class="form-grid one-col"><label>Type<select formControlName="type">@for(option of getElementTypeOptions(); track option.value){<option [value]="option.value">{{ option.label }}</option>}</select></label><label>Nom<input formControlName="nom" placeholder="Ex. École principale, marché central…" /></label><label>Description<textarea rows="3" formControlName="description"></textarea></label></div><div class="form-note">L’équipement sera enregistré sur le Plan de masse.</div><div class="modal-actions"><button class="st-btn st-btn-secondary" type="button" (click)="isElementModalOpen.set(false)">Annuler</button><button class="st-btn st-btn-primary" type="submit" [disabled]="isSaving() || elementForm.invalid">Enregistrer</button></div></form>
+    <div class="modal-head"><div><span class="eyebrow">VOIRIE</span><h2>Configurer la voie</h2></div><button class="icon-btn" type="button" (click)="isElementModalOpen.set(false)">×</button></div>
+    <form [formGroup]="elementForm" (ngSubmit)="confirmElement()"><div class="form-grid one-col"><label>Type<select formControlName="type">@for(option of getRoadTypeOptions(); track option.value){<option [value]="option.value">{{ option.label }}</option>}</select></label><label>Nom<input formControlName="nom" placeholder="Ex. Voie principale, rue 12…" /></label><label>Description<textarea rows="3" formControlName="description"></textarea></label></div><div class="form-note">La voie sera enregistrée sur le Plan de masse.</div><div class="modal-actions"><button class="st-btn st-btn-secondary" type="button" (click)="isElementModalOpen.set(false)">Annuler</button><button class="st-btn st-btn-primary" type="submit" [disabled]="isSaving() || elementForm.invalid">Enregistrer</button></div></form>
   </div></div>
 }
 

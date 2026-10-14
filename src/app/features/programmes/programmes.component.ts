@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -15,6 +15,12 @@ import { LoadingSkeletonComponent } from '../../shared/components/loading-skelet
 import { PlanMasseComponent } from '../../shared/components/plan-masse/plan-masse.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatIcon } from '@angular/material/icon';
+import { ApercuMediasService, PanoramaAffichable } from '../../core/services/apercu-medias.service';
+import { FoncierCardComponent } from '../../shared/components/foncier-card/foncier-card.component';
+import { PanoramaModalComponent } from '../../shared/components/panorama-modal/panorama-modal.component';
+import { CarteActionComponent } from '../../shared/components/carte-action/carte-action.component';
+import { CouvertureDialogComponent } from '../../shared/components/couverture-dialog/couverture-dialog.component';
+
 
 type ProgrammeFilter = 'TOUS' | 'PUBLIES' | 'BROUILLONS';
 
@@ -34,8 +40,13 @@ type ProgrammeStatutForm = 'PUBLIE' | 'BROUILLON' | 'ARCHIVE';
     PlanMasseComponent,
     MediaManagerComponent,
     ConfirmDialogComponent,
-    MatIcon
+    MatIcon,
+    FoncierCardComponent,
+    PanoramaModalComponent,
+    CarteActionComponent,
+    CouvertureDialogComponent,
 ],
+  providers: [ApercuMediasService],
   templateUrl: './programmes.component.html',
   styleUrl: './programmes.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,6 +76,50 @@ export class ProgrammesComponent implements OnInit {
 
   openMedias(prog: Programme): void {
     this.mediaCible.set({ kind: 'programme', id: prog.id, titre: prog.nom });
+  }
+
+  /** Photos de couverture et panoramas 360° des cartes. */
+  readonly apercu = inject(ApercuMediasService);
+  /** Visite 360° en cours d'affichage. */
+  readonly visite360 = signal<{ titre: string; panoramas: PanoramaAffichable[] } | null>(null);
+
+  private readonly chargementApercus = effect(() => {
+    const programmes = this.programmes();
+    untracked(() =>
+      this.apercu.charger(programmes.map((p) => ({ kind: 'programme' as const, id: p.id, titre: p.nom }))),
+    );
+  });
+
+  /** Ouvre la visite 360° ; sans panorama, invite à en ajouter depuis la médiathèque. */
+  ouvrir360(prog: Programme): void {
+    const panoramas = this.apercu.panoramas(prog.id);
+    if (panoramas.length === 0) {
+      this.toast.info('Aucune vue 360°', 'Ajoutez un panorama 360° pour proposer la visite virtuelle de la cité.');
+      this.openMedias(prog);
+      return;
+    }
+    this.visite360.set({ titre: prog.nom, panoramas });
+  }
+
+
+  /** Cible dont on choisit la photo de couverture. */
+  readonly couvertureCible = signal<MediaCible | null>(null);
+
+  ouvrirCouverture(item: Programme): void {
+    this.couvertureCible.set({ kind: 'programme', id: item.id, titre: item.nom });
+  }
+
+  fermerCouverture(modifiee: boolean): void {
+    const cible = this.couvertureCible();
+    if (cible && modifiee) this.apercu.rafraichir(cible);
+    this.couvertureCible.set(null);
+  }
+
+  /** Ferme la médiathèque et met à jour la couverture / les panoramas de la carte. */
+  fermerMedias(): void {
+    const cible = this.mediaCible();
+    if (cible) this.apercu.rafraichir(cible);
+    this.mediaCible.set(null);
   }
   /** Résumé affiché dans la confirmation de suppression (nom du programme et nombre de lots concernés). */
   readonly deleteSummary = signal<{ nom: string; lots: number } | null>(null);

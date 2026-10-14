@@ -44,40 +44,16 @@
   <!-- ========== VUE PROJETS ========== -->
   @if (viewMode() === 'PROJETS') {
 
-    <!-- Filtres statut -->
-    <div class="flex flex-wrap items-center gap-2">
-      <button type="button" (click)="setFilter('TOUS')"
-        [class]="currentFilter() === 'TOUS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
-      <span>Tous ({{ countTous() }})</span>
-    </button>
-      <button type="button" (click)="setFilter('EN_ETUDE')"
-        [class]="currentFilter() === 'EN_ETUDE' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >architecture</mat-icon>
-      <span>En étude ({{ countEnEtude() }})</span>
-    </button>
-      <button type="button" (click)="setFilter('ACCEPTER')"
-        [class]="currentFilter() === 'ACCEPTER' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >check_circle</mat-icon>
-      <span>Acceptés ({{ countAcceptes() }})</span>
-    </button>
-      <button type="button" (click)="setFilter('REFUSER')"
-        [class]="currentFilter() === 'REFUSER' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >cancel</mat-icon>
-      <span>Refusés ({{ countRefuses() }})</span>
-    </button>
-
-      <div class="ml-auto">
-        <input
-          [value]="searchTerm()"
-          (input)="searchTerm.set($any($event.target).value)"
-          placeholder="Rechercher…"
-          class="px-3.5 py-2 text-xs rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none w-44 sm:w-56 shadow-card" />
-      </div>
+    <!-- Recherche et filtres -->
+    <div class="space-y-3">
+      <app-champ-recherche
+        class="max-w-xl"
+        [valeur]="searchTerm()"
+        placeholder="Rechercher un dossier, un acquéreur, un Titre Foncier…"
+        libelle="Rechercher un projet"
+        (changement)="searchTerm.set($event)"
+      />
+      <app-filtre-onglets [onglets]="ongletsProjets()" [actif]="currentFilter()" (changement)="setFilter($event)" />
     </div>
 
     <!-- Tableau projets -->
@@ -86,71 +62,79 @@
         <table class="w-full text-left text-xs">
           <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
             <tr>
-              <th class="py-3.5 px-6">DOSSIER / ACQUÉREUR</th>
-              <th class="py-3.5 px-6">TERRAIN</th>
-              <th class="py-3.5 px-6">MODÈLE</th>
-              <th class="py-3.5 px-6">AVANCEMENT</th>
-              <th class="py-3.5 px-6 text-center">STATUT</th>
-              <th class="py-3.5 px-6 text-right">ACTIONS</th>
+              <th class="py-3.5 px-6">Dossier / acquéreur</th>
+              <th class="py-3.5 px-6">Terrain</th>
+              <th class="py-3.5 px-6">Maison</th>
+              <th class="py-3.5 px-6">Avancement</th>
+              <th class="py-3.5 px-6 text-center">Statut</th>
+              <th class="py-3.5 px-6"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            @if (isLoading()) {
+            @if (isLoading() && projets().length === 0) {
               <tr>
                 <td colspan="6" class="py-12 text-center text-gray-400 font-medium">Chargement…</td>
               </tr>
             } @else if (filteredProjets().length === 0) {
               <tr>
                 <td colspan="6" class="py-12 text-center text-gray-400 font-medium">
-                  Aucun projet de construction pour le moment.
+                  {{ searchTerm() || currentFilter() !== 'TOUS' ? 'Aucun projet ne correspond.' : 'Aucun projet de construction pour le moment.' }}
                 </td>
               </tr>
             } @else {
               @for (p of filteredProjets(); track p.id) {
-                <tr class="hover:bg-orange-50/20 transition-colors">
+                <tr (click)="ouvrirProjet(p)" class="group cursor-pointer hover:bg-orange-50/20 transition-colors">
                   <td class="py-4 px-6">
                     <div class="flex items-center gap-3">
                       <div class="w-10 h-10 rounded-full bg-brand-secondary text-white text-xs font-extrabold flex items-center justify-center shrink-0">
                         {{ (p.prospectNom || '?').slice(0, 2).toUpperCase() }}
                       </div>
                       <div>
-                        <p class="font-bold text-gray-900 text-xs">{{ p.numeroDossier || ('#' + p.id) }}</p>
-                        <p class="text-[10px] text-gray-500">{{ p.prospectNom }}</p>
+                        <p class="font-bold text-gray-900 text-xs font-mono">{{ p.numeroDossier || ('#' + p.id) }}</p>
+                        <p class="text-[11px] text-gray-600">{{ p.prospectNom }}</p>
                         <p class="text-[10px] text-gray-400 font-mono">{{ p.prospectTelephone || '—' }}</p>
                       </div>
                     </div>
                   </td>
                   <td class="py-4 px-6">
                     <p class="font-bold text-gray-900">{{ p.surfaceTerrainM2 }} m²</p>
-                    <p class="text-[11px] text-gray-500">{{ p.typeTerrain || 'Type —' }}</p>
-                    <p class="text-[10px] text-gray-400 mt-0.5 max-w-[140px] truncate" [title]="p.localisationTerrain">{{ p.localisationTerrain || '—' }}</p>
-                  </td>
-                  <td class="py-4 px-6 font-bold text-gray-900">
-                    {{ p.modeleVilla }}
-                  </td>
-                  <td class="py-4 px-6 min-w-[140px]">
-                    <p class="text-xs font-bold text-brand-primary">{{ p.progression || 0 }}%</p>
-                    <p class="text-[11px] text-gray-500 mb-1">{{ p.etapeAvancement || 'Non défini' }}</p>
-                    <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[120px]">
-                      <div class="h-full bg-brand-primary rounded-full" [style.width.%]="p.progression || 0"></div>
-                    </div>
-                  </td>
-                  <td class="py-4 px-6 text-center">
-                    <app-status-badge [status]="p.etatEtude"></app-status-badge>
+                    <p class="text-[11px] text-gray-500 font-mono">{{ p.titreFoncierNumero || 'TF —' }}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5 max-w-[160px] truncate" [title]="p.localisationTerrain">{{ p.localisationTerrain || '—' }}</p>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="flex items-center justify-end gap-1.5">
-                      <button type="button" (click)="openProjectDetail(p)" title="Détails"
-                        class="w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors shadow-card">👁</button>
-                      <button type="button" (click)="openProgressModal(p)" title="Avancement"
-                        class="w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors shadow-card">%</button>
-                      @if (p.etatEtude === 'EN_ETUDE') {
-                        <button type="button" [disabled]="isSaving()" (click)="validerProjet(p)" title="Accepter"
-                          class="w-8 h-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 flex items-center justify-center cursor-pointer disabled:opacity-50">✓</button>
-                        <button type="button" [disabled]="isSaving()" (click)="refuserProjet(p)" title="Refuser"
-                          class="w-8 h-8 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-card">✕</button>
-                      }
-                    </div>
+                    <p class="font-bold text-gray-900">{{ p.modeleVilla }}</p>
+                    <p class="text-[11px] text-gray-500 flex items-center gap-1">
+                      <mat-icon class="!h-3.5 !w-3.5 !text-[14px] text-brand-primary">attach_file</mat-icon>
+                      {{ p.fichiers.length }} pièce(s)
+                    </p>
+                  </td>
+                  <td class="py-4 px-6 min-w-[140px]">
+                    @if (p.etatEtude === 'ACCEPTER') {
+                      <p class="text-xs font-bold text-brand-primary">{{ p.progression || 0 }} %</p>
+                      <p class="text-[11px] text-gray-500 mb-1">{{ p.etapeAvancement || 'Non défini' }}</p>
+                      <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[120px]">
+                        <div class="h-full bg-brand-primary rounded-full" [style.width.%]="p.progression || 0"></div>
+                      </div>
+                    } @else {
+                      <p class="text-[11px] text-gray-400">{{ p.etatEtude === 'EN_ETUDE' ? 'En attente de votre décision' : '—' }}</p>
+                    }
+                  </td>
+                  <td class="py-4 px-6 text-center">
+                    <app-status-badge [status]="p.etatEtude" [label]="statusLabel(p.etatEtude)" />
+                  </td>
+                  <td class="py-4 px-6 text-right">
+                    @if (p.etatEtude === 'EN_ETUDE') {
+                      <span class="inline-flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-[11px] font-bold text-white shadow-xs">
+                        <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">rate_review</mat-icon> Étudier
+                      </span>
+                    } @else if (p.etatEtude === 'ACCEPTER') {
+                      <button type="button" (click)="$event.stopPropagation(); openProgressModal(p)"
+                        class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-secondary hover:bg-brand-bg">
+                        <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">trending_up</mat-icon> Avancement
+                      </button>
+                    } @else {
+                      <mat-icon class="text-gray-300 transition-colors group-hover:text-brand-primary">chevron_right</mat-icon>
+                    }
                   </td>
                 </tr>
               }
@@ -416,38 +400,61 @@
   </div>
 }
 
-<!-- Modal détail -->
-@if (isDetailModalOpen() && activeProject()) {
-  <div class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
-    (click)="isDetailModalOpen.set(false)">
-    <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden border border-gray-100 shadow-card"
-      (click)="$event.stopPropagation()">
-      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 class="text-base font-bold text-brand-secondary">Détails du projet</h3>
-        <button type="button" (click)="isDetailModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
+<!-- Dossier complet -->
+<app-panneau-lateral
+  [ouvert]="!!selection()"
+  [titre]="selection()?.prospectNom ?? ''"
+  [surTitre]="selection()?.numeroDossier ?? 'Projet de construction'"
+  (fermer)="fermerProjet()"
+>
+  @if (selection(); as p) {
+    <app-projet-detail [projet]="p" (ouvrirFichier)="ouvrirFichier($event)" />
+
+    @if (p.etatEtude === 'EN_ETUDE') {
+      <div panneau-actions class="flex flex-wrap items-center gap-2">
+        <button type="button" (click)="dialogue.set('refus')" class="cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-danger transition-colors hover:bg-red-50">
+          Refuser
+        </button>
+        <span class="flex-1"></span>
+        <button
+          type="button"
+          (click)="dialogue.set('acceptation')"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-brand-success px-3.5 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-emerald-700"
+        >
+          <mat-icon class="!h-4 !w-4 !text-[16px]">task_alt</mat-icon>
+          Accepter le projet
+        </button>
       </div>
-      <div class="p-6 space-y-3 text-xs">
-        <div class="grid grid-cols-2 gap-3">
-          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Dossier</p><p class="font-bold text-brand-secondary">{{ activeProject()?.numeroDossier || '—' }}</p></div>
-          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Statut</p><p class="font-bold text-brand-secondary">{{ statusLabel(activeProject()!.etatEtude) }}</p></div>
-          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Acquéreur</p><p class="font-bold text-brand-secondary">{{ activeProject()?.prospectNom }}</p></div>
-          <div><p class="text-[10px] uppercase text-gray-400 font-bold">Terrain</p><p class="font-bold text-brand-secondary">{{ activeProject()?.surfaceTerrainM2 }} m²</p></div>
-          <div class="col-span-2"><p class="text-[10px] uppercase text-gray-400 font-bold">Modèle</p><p class="font-bold text-brand-secondary">{{ activeProject()?.modeleVilla }}</p></div>
-          <div class="col-span-2">
-            <p class="text-[10px] uppercase text-gray-400 font-bold">Avancement</p>
-            <p class="font-bold text-brand-primary">{{ activeProject()?.progression }}% · {{ activeProject()?.etapeAvancement || '—' }}</p>
-          </div>
-          @if (activeProject()?.commentaireAvancement) {
-            <div class="col-span-2"><p class="text-[10px] uppercase text-gray-400 font-bold">Commentaire</p><p class="text-gray-600">{{ activeProject()?.commentaireAvancement }}</p></div>
-          }
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" (click)="isDetailModalOpen.set(false)"
-            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-gray-200 cursor-pointer shadow-card">Fermer</button>
-          <button type="button" (click)="isDetailModalOpen.set(false); openProgressModal(activeProject()!)"
-            class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-primary cursor-pointer">Mettre à jour</button>
-        </div>
+    } @else if (p.etatEtude === 'ACCEPTER') {
+      <div panneau-actions class="flex justify-end">
+        <button
+          type="button"
+          (click)="openProgressModal(p)"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-brand-primary-hover"
+        >
+          <mat-icon class="!h-4 !w-4 !text-[16px]">trending_up</mat-icon>
+          Mettre à jour l’avancement
+        </button>
       </div>
-    </div>
-  </div>
-}
+    }
+  }
+</app-panneau-lateral>
+
+<app-confirm-dialog
+  [isOpen]="dialogue() === 'acceptation'"
+  title="Accepter ce projet ?"
+  [message]="selection() ? 'Vous vous engagez à étudier et réaliser la construction pour ' + selection()!.prospectNom + '. Il pourra suivre l’avancement depuis son application.' : ''"
+  confirmText="Accepter le projet"
+  (confirmed)="accepterProjet()"
+  (cancelled)="fermerDialogue()"
+/>
+
+<app-motif-dialog
+  [isOpen]="dialogue() === 'refus'"
+  titre="Refuser le projet"
+  libelleConfirmation="Refuser le projet"
+  [suggestions]="suggestionsRefus"
+  [enCours]="isSaving()"
+  (valider)="refuserProjet($event)"
+  (annule)="fermerDialogue()"
+/>

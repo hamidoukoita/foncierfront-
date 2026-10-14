@@ -1,19 +1,73 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { Observable } from 'rxjs';
+import { MatIcon } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
 import { SocieteService } from '../../core/services/societe.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Reservation } from '../../core/models/societe.models';
-import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { messageErreurApi } from '../../core/utils/api-error';
+import { formaterDuree, formaterMontantCompact, normaliser } from '../../core/utils/format';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
-import { MatIcon } from '@angular/material/icon';
+import { StatsCardComponent } from '../../shared/components/stats-card/stats-card.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { MotifDialogComponent } from '../../shared/components/motif-dialog/motif-dialog.component';
+import { PanneauLateralComponent } from '../../shared/components/panneau-lateral/panneau-lateral.component';
+import { AttributionAgentDialogComponent } from '../../shared/components/attribution-agent-dialog/attribution-agent-dialog.component';
+import {
+  FiltreOngletsComponent,
+  OngletFiltre,
+} from '../../shared/components/filtre-onglets/filtre-onglets.component';
+import {
+  DELAI_ATTRIBUTION_PAR_DEFAUT_HEURES,
+  DelaiAttribution,
+  delaiAttribution,
+} from './reservation-delai';
+import { ReservationLigneComponent } from './reservation-ligne/reservation-ligne.component';
+import { ChampRechercheComponent } from '../../shared/components/champ-recherche/champ-recherche.component';
+import {
+  LIBELLES_STATUT,
+  ReservationDetailComponent,
+} from './reservation-detail/reservation-detail.component';
 
-type ReservationFilter = 'TOUTES' | 'EN_ATTENTE' | 'CONFIRMEES' | 'ANNULEES';
+type FiltreStatut = 'TOUTES' | Reservation['statut'];
+type Dialogue = 'attribution' | 'confirmation' | 'refus' | null;
+
+const TAILLE_PAGE = 8;
+const RAFRAICHISSEMENT_DELAIS_MS = 60_000;
+
+/** Ordre de traitement : demandes en attente d'abord (la plus ancienne, donc la plus urgente, en tête). */
+function comparer(a: Reservation, b: Reservation): number {
+  const poids = (r: Reservation) => (r.statut === 'EN_ATTENTE' ? 0 : 1);
+  if (poids(a) !== poids(b)) return poids(a) - poids(b);
+  const date = (r: Reservation) => new Date(r.dateReservationIso ?? 0).getTime();
+  return a.statut === 'EN_ATTENTE' ? date(a) - date(b) : date(b) - date(a);
+}
 
 @Component({
   selector: 'app-reservations',
   standalone: true,
-  imports: [CommonModule, FormsModule, StatusBadgeComponent, PaginationComponent, MatIcon],
+  imports: [
+    MatIcon,
+    RouterLink,
+    PaginationComponent,
+    StatsCardComponent,
+    ConfirmDialogComponent,
+    MotifDialogComponent,
+    PanneauLateralComponent,
+    AttributionAgentDialogComponent,
+    FiltreOngletsComponent,
+    ReservationLigneComponent,
+    ChampRechercheComponent,
+    ReservationDetailComponent,
+  ],
   templateUrl: './reservations.component.html',
   styleUrl: './reservations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,120 +76,235 @@ export class ReservationsComponent implements OnInit {
   private readonly societeService = inject(SocieteService);
   private readonly toast = inject(ToastService);
 
-  readonly isLoading = signal<boolean>(false);
-  readonly currentFilter = signal<ReservationFilter>('TOUTES');
-  readonly selectedAgentFilter = signal<string>('TOUS');
-  readonly currentPage = signal<number>(1);
-
-  readonly isAssignModalOpen = signal<boolean>(false);
-  readonly activeReservation = signal<Reservation | null>(null);
-  readonly selectedAgentId = signal<number | null>(null);
-  readonly isAssigning = signal<boolean>(false);
-
   readonly reservations = this.societeService.reservations;
   readonly agents = this.societeService.agents;
-  /** Uniquement les agents actifs pour l'attribution. */
   readonly agentsActifs = this.societeService.agentsActifs;
 
+  /** Règles fixées par la société dans son profil. */
+  readonly regles = computed(() => {
+    const profil = this.societeService.profilSociete();
+    return {
+      delai: formaterDuree(profil.delaiAttributionHeures ?? DELAI_ATTRIBUTION_PAR_DEFAUT_HEURES),
+      multiple: profil.reservationMultiple ?? false,
+    };
+  });
+
+  readonly isLoading = signal(false);
+  readonly filtreStatut = signal<FiltreStatut>('TOUTES');
+  /** 'TOUS', 'SANS_AGENT' ou l'identifiant d'un agent. */
+  readonly filtreAgent = signal('TOUS');
+  readonly recherche = signal('');
+  readonly page = signal(1);
+  readonly taillePage = TAILLE_PAGE;
+
+  /** Horloge des comptes à rebours, rafraîchie chaque minute. */
+  readonly maintenant = signal(Date.now());
+
+  readonly selectionId = signal<number | null>(null);
+  readonly selection = computed(
+    () => this.reservations().find((r) => r.id === this.selectionId()) ?? null,
+  );
+  readonly dialogue = signal<Dialogue>(null);
+  readonly enCours = signal(false);
+
+  readonly libellesStatut = LIBELLES_STATUT;
+  readonly suggestionsRefus = [
+    'Bien déjà réservé par un autre acquéreur',
+    'Dossier incomplet',
+    'Acquéreur injoignable',
+  ];
+
+  constructor() {
+    const minuterie = setInterval(() => this.maintenant.set(Date.now()), RAFRAICHISSEMENT_DELAIS_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(minuterie));
+  }
+
   ngOnInit(): void {
+    this.actualiser();
+    this.societeService.getAgents().subscribe();
+    this.societeService.getProfilSociete().subscribe({ error: () => undefined });
+  }
+
+  actualiser(): void {
     this.isLoading.set(true);
     this.societeService.getReservations().subscribe({
       next: () => this.isLoading.set(false),
-      error: () => this.isLoading.set(false),
+      error: (err) => {
+        this.isLoading.set(false);
+        this.toast.error('Réservations', messageErreurApi(err, 'Chargement impossible.'));
+      },
     });
-    this.societeService.getAgents().subscribe();
   }
 
-  readonly filteredReservations = computed(() => {
-    let list = this.reservations();
-    const filter = this.currentFilter();
-    const agent = this.selectedAgentFilter();
+  // ---------- Indicateurs ----------
 
-    if (filter === 'EN_ATTENTE') list = list.filter((r) => r.statut === 'EN_ATTENTE');
-    if (filter === 'CONFIRMEES') list = list.filter((r) => r.statut === 'CONFIRMEE');
-    if (filter === 'ANNULEES') list = list.filter((r) => r.statut === 'ANNULEE');
-
-    if (agent !== 'TOUS') {
-      list = list.filter((r) => r.agentAssignNom?.toLowerCase().includes(agent.toLowerCase()));
-    }
-
-    return list;
+  readonly kpis = computed(() => {
+    const attente = this.reservations().filter((r) => r.statut === 'EN_ATTENTE');
+    const sansAgent = attente.filter((r) => !r.agentAssignId);
+    const maintenant = this.maintenant();
+    return {
+      aTraiter: attente.length,
+      sansAgent: sansAgent.length,
+      urgentes: sansAgent.filter((r) => delaiAttribution(r, maintenant)?.niveau === 'urgent').length,
+      confirmees: this.reservations().filter((r) => r.statut === 'CONFIRMEE').length,
+      valeurOption: formaterMontantCompact(attente.reduce((s, r) => s + r.montantFcfa, 0)),
+    };
   });
 
-  readonly countToutes = computed(() => this.reservations().length);
-  readonly countEnAttente = computed(
-    () => this.reservations().filter((r) => r.statut === 'EN_ATTENTE').length,
+  readonly onglets = computed<OngletFiltre[]>(() => {
+    const liste = this.reservations();
+    const compte = (s: Reservation['statut']) => liste.filter((r) => r.statut === s).length;
+    return [
+      { valeur: 'TOUTES', libelle: 'Toutes', compte: liste.length },
+      { valeur: 'EN_ATTENTE', libelle: 'À traiter', icone: 'hourglass_top', compte: compte('EN_ATTENTE') },
+      { valeur: 'CONFIRMEE', libelle: 'Confirmées', icone: 'task_alt', compte: compte('CONFIRMEE') },
+      { valeur: 'ANNULEE', libelle: 'Annulées', icone: 'block', compte: compte('ANNULEE') },
+    ];
+  });
+
+  // ---------- Liste ----------
+
+  readonly filtrees = computed(() => {
+    const statut = this.filtreStatut();
+    const agent = this.filtreAgent();
+    const terme = normaliser(this.recherche().trim());
+
+    return this.reservations()
+      .filter((r) => statut === 'TOUTES' || r.statut === statut)
+      .filter((r) =>
+        agent === 'TOUS'
+          ? true
+          : agent === 'SANS_AGENT'
+            ? !r.agentAssignId
+            : String(r.agentAssignId) === agent,
+      )
+      .filter(
+        (r) =>
+          !terme ||
+          [r.numeroDossier, r.prospectNom, r.prospectTelephone, r.lotDesignation, r.programmeNom].some(
+            (v) => normaliser(v).includes(terme),
+          ),
+      )
+      .sort(comparer);
+  });
+
+  readonly pageCourante = computed(() => {
+    const debut = (this.page() - 1) * TAILLE_PAGE;
+    return this.filtrees().slice(debut, debut + TAILLE_PAGE);
+  });
+
+  readonly filtresActifs = computed(
+    () =>
+      this.filtreStatut() !== 'TOUTES' || this.filtreAgent() !== 'TOUS' || !!this.recherche().trim(),
   );
-  readonly countConfirmees = computed(
-    () => this.reservations().filter((r) => r.statut === 'CONFIRMEE').length,
-  );
-  readonly countAnnulees = computed(
-    () => this.reservations().filter((r) => r.statut === 'ANNULEE').length,
-  );
 
-  setFilter(f: ReservationFilter): void {
-    this.currentFilter.set(f);
-    this.currentPage.set(1);
+  changerStatut(valeur: string): void {
+    this.filtreStatut.set(valeur as FiltreStatut);
+    this.page.set(1);
   }
 
-  formatPrice(montant: number): string {
-    return new Intl.NumberFormat('fr-FR').format(montant);
+  changerAgent(valeur: string): void {
+    this.filtreAgent.set(valeur);
+    this.page.set(1);
   }
 
-  openAssignModal(reservation: Reservation): void {
-    this.activeReservation.set(reservation);
-    const actifs = this.agentsActifs();
-    const stillValid = reservation.agentAssignId && actifs.some(a => a.id === reservation.agentAssignId);
-    this.selectedAgentId.set(stillValid ? reservation.agentAssignId! : (actifs[0]?.id ?? null));
-    this.isAssignModalOpen.set(true);
+  rechercher(terme: string): void {
+    this.recherche.set(terme);
+    this.page.set(1);
   }
 
-  closeAssignModal(): void {
-    if (this.isAssigning()) return;
-    this.isAssignModalOpen.set(false);
+  reinitialiserFiltres(): void {
+    this.filtreStatut.set('TOUTES');
+    this.filtreAgent.set('TOUS');
+    this.recherche.set('');
+    this.page.set(1);
   }
 
-  confirmAssign(): void {
-    const res = this.activeReservation();
-    const agentId = this.selectedAgentId();
-    if (!res || agentId == null) {
-      this.toast.error('Attribution', 'Sélectionnez un agent actif.');
-      return;
-    }
+  /** Raccourci depuis un indicateur : demandes en attente sans agent. */
+  voirSansAgent(): void {
+    this.filtreStatut.set('EN_ATTENTE');
+    this.filtreAgent.set('SANS_AGENT');
+    this.page.set(1);
+  }
 
-    const agent = this.agentsActifs().find((a) => a.id === agentId) ?? this.agents().find((a) => a.id === agentId);
-    const agentLabel = agent ? `${agent.prenom} ${agent.nom}` : `Agent #${agentId}`;
+  delai(r: Reservation): DelaiAttribution | null {
+    return delaiAttribution(r, this.maintenant());
+  }
 
-    this.isAssigning.set(true);
-    this.societeService.assignAgentToReservation(res.id, agentId).subscribe({
-      next: () => {
-        this.isAssigning.set(false);
-        this.isAssignModalOpen.set(false);
-        this.toast.success(
-          'Dossier attribué',
-          `La demande sur ${res.lotDesignation} (${res.prospectNom}) est confiée à ${agentLabel}.`,
-        );
-      },
-      error: (err) => {
-        this.isAssigning.set(false);
-        const msg =
-          err?.error?.message ||
-          err?.message ||
-          "Impossible d'attribuer cet agent (délai 72 h dépassé, ou agent hors société).";
-        this.toast.error('Attribution refusée', msg);
-      },
+  // ---------- Panneau et actions ----------
+
+  ouvrir(r: Reservation): void {
+    this.selectionId.set(r.id);
+  }
+
+  fermer(): void {
+    // Échap ferme d'abord le dialogue ouvert par-dessus le panneau.
+    if (!this.enCours() && !this.dialogue()) this.selectionId.set(null);
+  }
+
+  /** Action principale d'une ligne, selon l'étape du dossier. */
+  actionPrincipale(r: Reservation): void {
+    this.selectionId.set(r.id);
+    this.dialogue.set(r.agentAssignId ? 'confirmation' : 'attribution');
+  }
+
+  ouvrirDialogue(d: Exclude<Dialogue, null>): void {
+    this.dialogue.set(d);
+  }
+
+  fermerDialogue(): void {
+    if (!this.enCours()) this.dialogue.set(null);
+  }
+
+  attribuer(agentId: number): void {
+    const r = this.selection();
+    if (!r) return;
+    const agent = this.agents().find((a) => a.id === agentId);
+    const nomAgent = agent ? `${agent.prenom} ${agent.nom}` : 'l’agent choisi';
+    this.executer(this.societeService.assignAgentToReservation(r.id, agentId), {
+      titre: 'Dossier attribué',
+      message: `${r.lotDesignation} (${r.prospectNom}) est confié à ${nomAgent}.`,
+      echec: 'Attribution impossible.',
     });
   }
 
-  confirmerReservation(res: Reservation): void {
-    this.societeService.confirmerReservation(res.id).subscribe({
+  confirmer(): void {
+    const r = this.selection();
+    if (!r) return;
+    this.executer(this.societeService.confirmerReservation(r.id), {
+      titre: 'Réservation confirmée',
+      message: `${r.lotDesignation} est désormais réservé à ${r.prospectNom}.`,
+      echec: 'Confirmation impossible.',
+    });
+  }
+
+  refuser(motif: string): void {
+    const r = this.selection();
+    if (!r) return;
+    this.executer(this.societeService.refuserReservation(r.id, motif), {
+      titre: 'Demande refusée',
+      message: `La demande de ${r.prospectNom} sur ${r.lotDesignation} est annulée.`,
+      echec: 'Refus impossible.',
+    });
+  }
+
+  private executer(
+    action: Observable<unknown>,
+    textes: { titre: string; message: string; echec: string },
+  ): void {
+    this.enCours.set(true);
+    action.subscribe({
       next: () => {
-        this.toast.success('Confirmée', `La réservation sur ${res.lotDesignation} est confirmée.`);
-        this.isAssignModalOpen.set(false);
+        this.enCours.set(false);
+        this.dialogue.set(null);
+        this.toast.success(textes.titre, textes.message);
       },
       error: (err) => {
-        const msg = err?.error?.message || err?.message || 'Confirmation impossible.';
-        this.toast.error('Erreur', msg);
+        this.enCours.set(false);
+        this.dialogue.set(null);
+        this.toast.error('Action refusée', messageErreurApi(err, textes.echec));
+        // Le backend a pu annuler la demande (délai d'attribution dépassé) : on resynchronise.
+        this.actualiser();
       },
     });
   }

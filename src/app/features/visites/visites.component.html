@@ -1,287 +1,183 @@
 <div class="space-y-6">
-
   <!-- En-tête -->
-  <div>
-    <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">
-      Planning des rendez-vous & visites terrain
-    </h1>
-    <p class="text-xs sm:text-sm text-gray-600 mt-1">
-      Coordonnez les rendez-vous d'information au siège et les visites guidées sur chantier avec les acquéreurs.
-    </p>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">Rendez-vous & visites</h1>
+      <p class="mt-1 text-xs text-gray-600 sm:text-sm">
+        Planning des rendez-vous au siège et des visites sur chantier demandés par les acquéreurs.
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="actualiser()"
+      [disabled]="isLoading()"
+      class="inline-flex cursor-pointer items-center gap-1.5 self-start rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-brand-secondary shadow-card transition-colors hover:bg-brand-bg disabled:opacity-50 sm:self-auto"
+    >
+      <mat-icon class="!h-4 !w-4 !text-[16px]" [class.animate-spin]="isLoading()">refresh</mat-icon>
+      Actualiser
+    </button>
   </div>
 
-  <!-- Barre de filtres doubles : Statuts + Modalité Bimodale (Siège vs Chantier) -->
-  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-    
-    <!-- Filtres Tabs Statut -->
-    <div class="flex flex-wrap items-center gap-2">
-      <button 
-        type="button" 
-        (click)="setFilter('TOUS')" 
-        [class]="currentFilter() === 'TOUS' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >apps</mat-icon>
-      <span>Tous ({{ countTous() }})</span>
+  <!-- Indicateurs -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <app-stats-card label="Aujourd’hui" [value]="kpis().aujourdhui" subtext="rendez-vous prévus" accent="blue">
+      <mat-icon icon class="text-brand-secondary">today</mat-icon>
+    </app-stats-card>
+    <app-stats-card label="7 prochains jours" [value]="kpis().semaine" subtext="au planning" accent="green">
+      <mat-icon icon class="text-brand-success">date_range</mat-icon>
+    </app-stats-card>
+    <button type="button" (click)="voirAConfirmer()" class="cursor-pointer text-left" title="Afficher les rendez-vous à confirmer">
+      <app-stats-card
+        label="À confirmer"
+        [value]="kpis().aConfirmer"
+        subtext="demandes en attente"
+        [subtextBadge]="kpis().aConfirmer > 0"
+        accent="orange"
+      >
+        <mat-icon icon class="text-brand-primary">pending_actions</mat-icon>
+      </app-stats-card>
     </button>
-
-      <button 
-        type="button" 
-        (click)="setFilter('EN_ATTENTE')" 
-        [class]="currentFilter() === 'EN_ATTENTE' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >hourglass_empty</mat-icon>
-      <span>En attente ({{ countEnAttente() }})</span>
-    </button>
-
-      <button 
-        type="button" 
-        (click)="setFilter('CONFIRMEES')" 
-        [class]="currentFilter() === 'CONFIRMEES' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >check_circle</mat-icon>
-      <span>Confirmées ({{ countConfirmees() }})</span>
-    </button>
-
-      <button 
-        type="button" 
-        (click)="setFilter('EFFECTUEES')" 
-        [class]="currentFilter() === 'EFFECTUEES' ? 'bg-brand-secondary text-white shadow-xs' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 cursor-pointer transition-colors'"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5">
-      <mat-icon style="color: var(--foncier-primary)"  >done_all</mat-icon>
-      <span>Effectuées ({{ countEffectuees() }})</span>
-    </button>
-    </div>
-
-    <!-- Filtre Bimodal : Type de Rendez-vous -->
-    <div class="flex items-center gap-2">
-      <div class="bg-gray-200/70 p-1 rounded-xl flex items-center gap-1 text-xs">
-        <button 
-          type="button"
-          (click)="setTypeFilter('TOUS')"
-          [class]="selectedTypeVisite() === 'TOUS' ? 'bg-white font-bold text-brand-secondary shadow-xs' : 'text-gray-600 hover:text-gray-900'"
-          class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">
-          Tous lieux
-        </button>
-        <button 
-          type="button"
-          (click)="setTypeFilter('CHANTIER')"
-          [class]="selectedTypeVisite() === 'CHANTIER' ? 'bg-white font-bold text-brand-primary shadow-xs' : 'text-gray-600 hover:text-gray-900'"
-          class="px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer">
-          <span>🚜</span>
-          <span>Sur Chantier</span>
-        </button>
-        <button 
-          type="button"
-          (click)="setTypeFilter('SIEGE')"
-          [class]="selectedTypeVisite() === 'SIEGE' ? 'bg-white font-bold text-brand-secondary shadow-xs' : 'text-gray-600 hover:text-gray-900'"
-          class="px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer">
-          <span>🏢</span>
-          <span>Au Siège</span>
-        </button>
-      </div>
-    </div>
-
+    <app-stats-card label="Sans agent" [value]="kpis().sansAgent" subtext="à venir, à attribuer" accent="gray">
+      <mat-icon icon class="text-slate-500">person_search</mat-icon>
+    </app-stats-card>
   </div>
 
-  <!-- Tableau Planning des Visites -->
-  <div class="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-card">
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-xs">
-        
-        <thead class="bg-brand-bg text-gray-500 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
-          <tr>
-            <th class="py-3.5 px-6">DATE & CRÉNEAU</th>
-            <th class="py-3.5 px-6">MODALITÉ / LIEU</th>
-            <th class="py-3.5 px-6">PROSPECT / CONTACT</th>
-            <th class="py-3.5 px-6">PROGRAMME & LOT</th>
-            <th class="py-3.5 px-6">AGENT ASSIGNÉ</th>
-            <th class="py-3.5 px-6 text-center">STATUT</th>
-            <th class="py-3.5 px-6 text-right">ACTIONS</th>
-          </tr>
-        </thead>
-
-        <tbody class="divide-y divide-gray-50">
-          @for (v of filteredVisites(); track v.id) {
-            <tr class="hover:bg-orange-50/20 transition-colors">
-              
-              <!-- Date & Créneau -->
-              <td class="py-4 px-6">
-                <div class="flex items-center gap-3">
-                  <div class="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex flex-col items-center justify-center shrink-0 leading-tight">
-                    <span class="text-[9px] font-extrabold text-brand-primary uppercase tracking-wider">{{ v.jourSemaine }}</span>
-                    <span class="text-sm font-extrabold text-brand-secondary">{{ v.jourMois }}</span>
-                  </div>
-                  <div>
-                    <p class="font-extrabold text-gray-900 text-xs">{{ v.heureDebut }} - {{ v.heureFin }}</p>
-                    <p class="text-[11px] text-gray-500">{{ v.dateComplete }}</p>
-                  </div>
-                </div>
-              </td>
-
-              <!-- Modalité Bimodale : Siège vs Chantier -->
-              <td class="py-4 px-6">
-                @if (v.typeVisite === 'SIEGE') {
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-brand-secondary font-bold text-[11px] border border-slate-200">
-                    <span>🏢</span>
-                    <span>Au Siège</span>
-                  </span>
-                } @else {
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 text-brand-primary font-bold text-[11px] border border-orange-200">
-                    <span>🚜</span>
-                    <span>Sur Chantier</span>
-                  </span>
-                }
-              </td>
-
-              <!-- Prospect / Contact -->
-              <td class="py-4 px-6">
-                <p class="font-bold text-gray-900 text-xs">{{ v.prospectNom }}</p>
-                <p class="text-[11px] text-gray-600 font-mono">{{ v.prospectTelephone }}</p>
-              </td>
-
-              <!-- Programme & Lot ciblé -->
-              <td class="py-4 px-6">
-                <p class="font-bold text-gray-900 text-xs">{{ v.programmeNom }}</p>
-                <p class="text-[11px] font-semibold text-brand-primary">{{ v.bienCible }}</p>
-              </td>
-
-              <!-- Agent assigné (affichage uniquement — attribution via Action) -->
-              <td class="py-4 px-6">
-                @if (v.agentAssignNom) {
-                  <div>
-                    <p class="font-bold text-gray-900 text-xs">{{ v.agentAssignNom }}</p>
-                    <p class="text-[11px] text-brand-success flex items-center gap-1 font-semibold">
-                      <span class="w-1.5 h-1.5 rounded-full bg-brand-success"></span>
-                      <span>{{ v.agentStatutConfirmation || 'Confirmé' }}</span>
-                    </p>
-                  </div>
-                } @else {
-                  <span class="text-xs text-gray-400 font-medium">Non assigné</span>
-                }
-              </td>
-
-              <!-- Statut -->
-              <td class="py-4 px-6 text-center">
-                <app-status-badge [status]="v.statut"></app-status-badge>
-              </td>
-
-              <!-- Actions : attribution + détails -->
-              <td class="py-4 px-6 text-right">
-                <div class="inline-flex items-center gap-1.5 justify-end">
-                  @if (!v.agentAssignNom && v.statut === 'EN_ATTENTE') {
-                    <button
-                      type="button"
-                      (click)="openAssignModal(v)"
-                      class="px-2.5 py-1.5 rounded-lg border border-brand-primary/30 bg-orange-50 hover:bg-orange-100 text-[11px] font-bold text-brand-primary cursor-pointer shadow-card"
-                      title="Attribuer un agent"
-                    >
-                      + Attribuer
-                    </button>
-                  }
-                  <button
-                    type="button"
-                    (click)="openAssignModal(v)"
-                    class="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 inline-flex items-center justify-center text-xs text-gray-700 cursor-pointer shadow-card"
-                    title="Détails du rendez-vous"
-                  >
-                    👁️
-                  </button>
-                </div>
-              </td>
-
-            </tr>
-          }
-        </tbody>
-
-      </table>
+  <!-- Recherche et filtres -->
+  <div class="space-y-3">
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <app-champ-recherche
+        class="flex-1 sm:max-w-xl"
+        [valeur]="recherche()"
+        placeholder="Rechercher un acquéreur, un téléphone, un bien…"
+        libelle="Rechercher un rendez-vous"
+        (changement)="rechercher($event)"
+      />
+      <select
+        [value]="filtreAgent()"
+        (change)="changerAgent($any($event.target).value)"
+        aria-label="Filtrer par agent"
+        class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+      >
+        <option value="TOUS">Tous les agents</option>
+        <option value="SANS_AGENT">Sans agent</option>
+        @for (ag of agents(); track ag.id) {
+          <option [value]="ag.id">{{ ag.prenom }} {{ ag.nom }}</option>
+        }
+      </select>
     </div>
-
-    <!-- Pagination -->
-    <div class="px-6 border-t border-gray-100">
-      <app-pagination 
-        [currentPage]="currentPage()" 
-        [pageSize]="5" 
-        [totalItems]="countTous()"
-        (pageChange)="currentPage.set($event)">
-      </app-pagination>
+    <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <app-filtre-onglets [onglets]="ongletsStatut()" [actif]="filtreStatut()" (changement)="changerStatut($event)" />
+      <app-filtre-onglets [onglets]="ongletsModalite" [actif]="filtreModalite()" (changement)="changerModalite($event)" />
     </div>
   </div>
 
-  <!-- Modale d'assignation de visite accessible -->
-  @if (isAssignModalOpen() && activeVisite()) {
-    <div 
-      class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn"
-      role="dialog"
-      aria-modal="true"
-      (click)="isAssignModalOpen.set(false)">
-      <div 
-        class="bg-white rounded-2xl w-full max-w-lg overflow-hidden border border-gray-100 shadow-card"
-        (click)="$event.stopPropagation()">
-        
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 class="text-base font-bold text-brand-secondary">
-            Attribuer un agent à la visite
-          </h3>
-          <button (click)="isAssignModalOpen.set(false)" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">✕</button>
-        </div>
-
-        <div class="p-6 space-y-4">
-          <div class="bg-brand-bg p-4 rounded-xl border border-gray-200 space-y-2 text-xs">
-            <div class="flex justify-between">
-              <span class="text-gray-500">Date & Heure :</span>
-              <span class="font-bold text-gray-900">{{ activeVisite()?.jourSemaine }} {{ activeVisite()?.jourMois }} • {{ activeVisite()?.heureDebut }} - {{ activeVisite()?.heureFin }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-500">Lieu de RDV :</span>
-              <span class="font-bold text-brand-secondary">
-                {{ activeVisite()?.typeVisite === 'SIEGE' ? '🏢 Siège de la Société Promotrice' : '🚜 Sur Site / Chantier du Lotissement' }}
-              </span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-500">Programme & Bien :</span>
-              <span class="font-bold text-gray-900">{{ activeVisite()?.programmeNom }} ({{ activeVisite()?.bienCible }})</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-500">Prospect :</span>
-              <span class="font-bold text-gray-900">{{ activeVisite()?.prospectNom }} ({{ activeVisite()?.prospectTelephone }})</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1.5">
-              Attribuer à un agent
-            </label>
-            <select
-              [ngModel]="selectedAgentId()"
-              (ngModelChange)="selectedAgentId.set(+$event)"
-              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-card">
-              <option [ngValue]="null" [value]="''">Sélectionner un agent…</option>
-              @for (ag of agentsActifs(); track ag.id) {
-                <option [ngValue]="ag.id" [value]="ag.id">
-                  {{ ag.prenom }} {{ ag.nom }}
-                </option>
+  <!-- Planning -->
+  @if (isLoading() && visites().length === 0) {
+    <div class="space-y-3">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="h-20 animate-pulse rounded-2xl bg-white shadow-card"></div>
+      }
+    </div>
+  } @else if (filtrees().length === 0) {
+    <div class="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center">
+      <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
+        <mat-icon>{{ filtresActifs() ? 'filter_alt_off' : 'event' }}</mat-icon>
+      </span>
+      <p class="mt-3 text-sm font-bold text-brand-secondary">
+        {{ filtresActifs() ? 'Aucun rendez-vous ne correspond' : 'Aucun rendez-vous planifié' }}
+      </p>
+      <p class="mx-auto mt-1 max-w-sm text-xs text-gray-500">
+        {{ filtresActifs() ? 'Modifiez la recherche ou les filtres.' : 'Les demandes de visite des acquéreurs apparaîtront ici.' }}
+      </p>
+      @if (filtresActifs()) {
+        <button type="button" (click)="reinitialiserFiltres()" class="mt-4 cursor-pointer rounded-xl border border-gray-200 px-4 py-2 text-xs font-bold text-brand-secondary hover:bg-brand-bg">
+          Réinitialiser les filtres
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="space-y-6">
+      @for (jour of jours(); track jour.cle) {
+        <section class="space-y-3">
+          <div class="flex items-center gap-3">
+            <h2 class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider" [class]="jour.estAujourdhui ? 'text-brand-primary' : 'text-brand-secondary'">
+              @if (jour.estAujourdhui) {
+                <span class="h-2 w-2 rounded-full bg-brand-primary"></span>
               }
-            </select>
+              {{ jour.libelle }}
+            </h2>
+            <span class="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-gray-500 shadow-2xs">{{ jour.visites.length }} rendez-vous</span>
+            <span class="h-px flex-1 bg-gray-200"></span>
           </div>
-
-          <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-            <button 
-              type="button" 
-              (click)="isAssignModalOpen.set(false)" 
-              class="px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">
-              Annuler
-            </button>
-            <button 
-              type="button" 
-              (click)="confirmAssign()" 
-              class="px-5 py-2.5 text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-xl shadow-xs cursor-pointer transition-colors">
-              Confirmer l'attribution
-            </button>
-          </div>
-        </div>
-
-      </div>
+          @for (v of jour.visites; track v.id) {
+            <app-visite-ligne [visite]="v" (ouvrir)="ouvrir(v)" (action)="actionPrincipale(v)" />
+          }
+        </section>
+      }
     </div>
+    <app-pagination [currentPage]="page()" [pageSize]="taillePage" [totalItems]="filtrees().length" (pageChange)="page.set($event)" />
   }
-
 </div>
+
+<!-- Détail du rendez-vous -->
+<app-panneau-lateral
+  [ouvert]="!!selection()"
+  [titre]="selection()?.prospectNom ?? ''"
+  surTitre="Rendez-vous"
+  (fermer)="fermer()"
+>
+  @if (selection(); as v) {
+    <app-visite-detail [visite]="v" />
+
+    @if (v.statut === 'EN_ATTENTE' || v.statut === 'CONFIRME') {
+      <div panneau-actions class="flex flex-wrap items-center gap-2">
+        <button type="button" (click)="ouvrirDialogue('refus')" class="cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-danger transition-colors hover:bg-red-50">
+          {{ v.statut === 'EN_ATTENTE' ? 'Refuser' : 'Annuler le RDV' }}
+        </button>
+        <span class="flex-1"></span>
+        <button
+          type="button"
+          (click)="ouvrirDialogue('attribution')"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-colors"
+          [class]="v.statut === 'EN_ATTENTE' && !v.agentAssignId ? 'bg-brand-primary text-white shadow-xs hover:bg-brand-primary-hover' : 'border border-gray-200 bg-white text-brand-secondary hover:bg-brand-bg'"
+        >
+          <mat-icon class="!h-4 !w-4 !text-[16px]">person_add</mat-icon>
+          {{ v.agentAssignId ? 'Changer d’agent' : 'Attribuer et confirmer' }}
+        </button>
+        @if (v.statut === 'EN_ATTENTE' && v.agentAssignId) {
+          <button
+            type="button"
+            (click)="confirmer()"
+            [disabled]="enCours()"
+            class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-brand-success px-3.5 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-emerald-700 disabled:opacity-50"
+          >
+            <mat-icon class="!h-4 !w-4 !text-[16px]">event_available</mat-icon>
+            Confirmer
+          </button>
+        }
+      </div>
+    }
+  }
+</app-panneau-lateral>
+
+<app-attribution-agent-dialog
+  [isOpen]="dialogue() === 'attribution'"
+  [titre]="selection()?.agentAssignId ? 'Changer d’agent' : 'Attribuer et confirmer'"
+  [contexte]="selection() ? selection()!.prospectNom + ' · ' + selection()!.jourSemaine + ' ' + selection()!.jourMois + ' à ' + selection()!.heureDebut : ''"
+  [agents]="agentsActifs()"
+  [agentActuelId]="selection()?.agentAssignId ?? null"
+  libelleConfirmation="Attribuer"
+  [enCours]="enCours()"
+  (valider)="attribuer($event)"
+  (annule)="fermerDialogue()"
+/>
+
+<app-motif-dialog
+  [isOpen]="dialogue() === 'refus'"
+  [titre]="selection()?.statut === 'CONFIRME' ? 'Annuler le rendez-vous' : 'Refuser la demande de visite'"
+  [libelleConfirmation]="selection()?.statut === 'CONFIRME' ? 'Annuler le RDV' : 'Refuser'"
+  [suggestions]="suggestionsRefus"
+  [enCours]="enCours()"
+  (valider)="refuser($event)"
+  (annule)="fermerDialogue()"
+/>

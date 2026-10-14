@@ -44,6 +44,13 @@ export class MediaService {
       .pipe(map((res) => res.data));
   }
 
+  /** Fait de cette photo la couverture de sa cité ou de son bien. */
+  definirCouverture(id: number): Observable<MediaFoncier> {
+    return this.http
+      .patch<ApiResponse<MediaFoncier>>(`${this.API_BASE}/medias/${id}/couverture`, {})
+      .pipe(map((res) => res.data));
+  }
+
   supprimer(id: number): Observable<void> {
     return this.http.delete<ApiResponse<void>>(`${this.API_BASE}/medias/${id}`).pipe(map(() => undefined));
   }

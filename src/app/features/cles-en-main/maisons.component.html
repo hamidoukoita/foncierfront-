@@ -1,0 +1,169 @@
+<div class="space-y-6">
+  <!-- En-tête -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">Maisons clés en main</h1>
+      <p class="mt-1 text-xs text-gray-600 sm:text-sm">
+        Maisons prêtes à habiter : les acquéreurs les découvrent sur l’application, les visitent en 360° et les réservent.
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="enEdition.set(null)"
+      class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-brand-primary-hover active:scale-[0.99]"
+    >
+      <mat-icon class="!h-[18px] !w-[18px] !text-[18px]">add_home</mat-icon>
+      Publier une maison
+    </button>
+  </div>
+
+  <!-- Indicateurs -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <app-stats-card label="Maisons publiées" [value]="kpis().total" subtext="au catalogue" accent="blue">
+      <mat-icon icon class="text-brand-secondary">home_work</mat-icon>
+    </app-stats-card>
+    <app-stats-card label="Disponibles" [value]="kpis().disponibles" subtext="réservables" accent="green">
+      <mat-icon icon class="text-brand-success">key</mat-icon>
+    </app-stats-card>
+    <app-stats-card label="Réservées · vendues" [value]="kpis().reservees + ' · ' + kpis().vendues" subtext="engagées" accent="orange">
+      <mat-icon icon class="text-brand-primary">handshake</mat-icon>
+    </app-stats-card>
+    <app-stats-card label="Valeur disponible" [value]="kpis().valeur" subtext="FCFA à vendre" accent="gray">
+      <mat-icon icon class="text-slate-500">payments</mat-icon>
+    </app-stats-card>
+  </div>
+
+  <!-- Recherche et filtres -->
+  <div class="space-y-3">
+    <app-champ-recherche
+      class="max-w-xl"
+      [valeur]="recherche()"
+      placeholder="Rechercher un titre, une adresse, un Titre Foncier…"
+      libelle="Rechercher une maison"
+      (changement)="rechercher($event)"
+    />
+    <app-filtre-onglets [onglets]="onglets()" [actif]="filtre()" (changement)="changerFiltre($event)" />
+  </div>
+
+  @if (isLoading() && maisons().length === 0) {
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="h-96 animate-pulse rounded-2xl bg-white shadow-card"></div>
+      }
+    </div>
+  } @else if (filtrees().length === 0) {
+    <div class="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center">
+      <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
+        <mat-icon>{{ maisons().length ? 'filter_alt_off' : 'home_work' }}</mat-icon>
+      </span>
+      <p class="mt-3 text-sm font-bold text-brand-secondary">
+        {{ maisons().length ? 'Aucune maison ne correspond' : 'Aucune maison clé en main' }}
+      </p>
+      <p class="mx-auto mt-1 max-w-sm text-xs text-gray-500">
+        {{ maisons().length ? 'Modifiez la recherche ou le filtre.' : 'Publiez votre première maison prête à habiter : elle apparaîtra dans l’onglet « Clés en main » de l’application.' }}
+      </p>
+      @if (!maisons().length) {
+        <button type="button" (click)="enEdition.set(null)" class="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-primary-hover">
+          <mat-icon class="!h-4 !w-4 !text-[16px]">add_home</mat-icon> Publier une maison
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      @for (m of pageCourante(); track m.id) {
+        <app-foncier-card
+          [titre]="m.titre"
+          [sousTitre]="m.adresse || 'Adresse non renseignée'"
+          [couvertureUrl]="apercu.couverture(m.id)"
+          icone="home_work"
+          surTitre="Référence"
+          [reference]="m.reference"
+          [nombrePanoramas]="apercu.panoramas(m.id).length"
+          (couverture)="ouvrirCouverture(m)"
+          (galerie)="ouvrirGalerie(m)"
+        >
+          <app-status-badge carte-statut [status]="m.statut" [label]="libelleStatut(m)" />
+
+          <ng-container carte-outils>
+            <button type="button" (click)="enEdition.set(m)" title="Modifier" [attr.aria-label]="'Modifier ' + m.titre" class="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-gray-500 transition hover:bg-orange-50 hover:text-brand-primary">
+              <mat-icon class="!text-[19px] !w-[19px] !h-[19px]">edit</mat-icon>
+            </button>
+            <button type="button" (click)="aSupprimer.set(m)" title="Supprimer" [attr.aria-label]="'Supprimer ' + m.titre" class="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-gray-500 transition hover:bg-red-50 hover:text-brand-danger">
+              <mat-icon class="!text-[19px] !w-[19px] !h-[19px]">delete</mat-icon>
+            </button>
+          </ng-container>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-[10px] bg-brand-bg px-2.5 py-2">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pièces</p>
+              <p class="mt-0.5 truncate text-[13.5px] font-bold text-gray-900">{{ m.nombreChambres ?? '—' }} ch. · {{ m.nombreSallesBain ?? '—' }} sdb</p>
+            </div>
+            <div class="rounded-[10px] bg-brand-bg px-2.5 py-2">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Habitable</p>
+              <p class="mt-0.5 truncate text-[13.5px] font-bold text-gray-900">{{ m.surfaceHabitable ?? '—' }} m²</p>
+            </div>
+            <div class="rounded-[10px] bg-brand-primary/10 px-2.5 py-2">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Prix</p>
+              <p class="mt-0.5 truncate text-[13.5px] font-bold text-brand-primary">{{ prix(m) }}</p>
+            </div>
+          </div>
+
+          <ng-container carte-actions>
+            <button appCarteAction icone="360" variante="primaire" type="button" (click)="ouvrir360(m)">Visualisation 360°</button>
+            <button appCarteAction icone="description" variante="secondaire" type="button" (click)="selectionId.set(m.id)">Fiche détaillée</button>
+          </ng-container>
+        </app-foncier-card>
+      }
+    </div>
+    <app-pagination [currentPage]="page()" [pageSize]="taillePage" [totalItems]="filtrees().length" (pageChange)="page.set($event)" />
+  }
+</div>
+
+<app-panneau-lateral
+  [ouvert]="!!selection()"
+  [titre]="selection()?.titre ?? ''"
+  surTitre="Maison clé en main"
+  (fermer)="fermerFiche()"
+>
+  @if (selection(); as m) {
+    <app-maison-detail [maison]="m" />
+  }
+  @if (selection(); as m) {
+    <div panneau-actions class="flex flex-wrap items-center gap-2">
+      <button type="button" (click)="aSupprimer.set(m)" class="cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-danger transition-colors hover:bg-red-50">Supprimer</button>
+      <span class="flex-1"></span>
+      <button type="button" (click)="ouvrirGalerie(m)" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-bold text-brand-secondary hover:bg-brand-bg">
+        <mat-icon class="!h-4 !w-4 !text-[16px]">collections</mat-icon> Photos et 360°
+      </button>
+      <button type="button" (click)="enEdition.set(m)" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-brand-primary-hover">
+        <mat-icon class="!h-4 !w-4 !text-[16px]">edit</mat-icon> Modifier
+      </button>
+    </div>
+  }
+</app-panneau-lateral>
+
+@if (enEdition() !== undefined) {
+  <app-maison-form [maison]="enEdition() ?? null" (fermer)="enEdition.set(undefined)" />
+}
+
+<app-confirm-dialog
+  [isOpen]="!!aSupprimer()"
+  title="Supprimer cette maison ?"
+  [message]="aSupprimer() ? aSupprimer()!.titre + ' sera retirée du catalogue des acquéreurs, avec ses photos et visites 360°.' : ''"
+  confirmText="Supprimer"
+  variant="danger"
+  (confirmed)="confirmerSuppression()"
+  (cancelled)="aSupprimer.set(null)"
+/>
+
+@if (mediaCible(); as cible) {
+  <app-media-manager [cible]="cible" (closed)="fermerGalerie()" />
+}
+
+@if (visite360(); as visite) {
+  <app-panorama-modal [titre]="visite.titre" [panoramas]="visite.panoramas" (closed)="visite360.set(null)" />
+}
+
+@if (couvertureCible(); as cible) {
+  <app-couverture-dialog [cible]="cible" (closed)="fermerCouverture($event)" />
+}

@@ -17,9 +17,22 @@ import {
 } from '../../core/models/societe.models';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { MatIcon } from '@angular/material/icon';
+import { ToastService } from '../../core/services/toast.service';
+import { messageErreurApi } from '../../core/utils/api-error';
+import { FichierProjet } from '../../core/models/societe.models';
+import { PanneauLateralComponent } from '../../shared/components/panneau-lateral/panneau-lateral.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { MotifDialogComponent } from '../../shared/components/motif-dialog/motif-dialog.component';
+import { ChampRechercheComponent } from '../../shared/components/champ-recherche/champ-recherche.component';
+import {
+  FiltreOngletsComponent,
+  OngletFiltre,
+} from '../../shared/components/filtre-onglets/filtre-onglets.component';
+import { ProjetDetailComponent } from './projet-detail/projet-detail.component';
 
 type ConstructionFilter = 'TOUS' | 'EN_ETUDE' | 'ACCEPTER' | 'REFUSER';
 type ViewMode = 'PROJETS' | 'MODELES';
+type Dialogue = 'acceptation' | 'refus' | null;
 
 const ETAPES = [
   'Dossier reçu',
@@ -34,7 +47,19 @@ const ETAPES = [
 @Component({
   selector: 'app-projets-construction',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, StatusBadgeComponent, MatIcon],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    StatusBadgeComponent,
+    MatIcon,
+    PanneauLateralComponent,
+    ConfirmDialogComponent,
+    MotifDialogComponent,
+    ChampRechercheComponent,
+    FiltreOngletsComponent,
+    ProjetDetailComponent,
+  ],
   templateUrl: './projets-construction.component.html',
   styleUrl: './projets-construction.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +68,7 @@ export class ProjetsConstructionComponent implements OnInit {
   private readonly societeService = inject(SocieteService);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly toast = inject(ToastService);
 
   readonly viewMode = signal<ViewMode>('PROJETS');
   readonly isLoading = signal(false);
@@ -56,7 +82,15 @@ export class ProjetsConstructionComponent implements OnInit {
 
   readonly isModelModalOpen = signal(false);
   readonly isProgressModalOpen = signal(false);
-  readonly isDetailModalOpen = signal(false);
+  /** Dossier ouvert dans le panneau latéral. */
+  readonly selectionId = signal<number | null>(null);
+  readonly selection = computed(() => this.projets().find((p) => p.id === this.selectionId()) ?? null);
+  readonly dialogue = signal<Dialogue>(null);
+  readonly suggestionsRefus = [
+    'Titre Foncier illisible ou non fourni',
+    'Terrain hors de notre zone d’intervention',
+    'Projet incompatible avec la superficie du terrain',
+  ];
   readonly isSaving = signal(false);
   readonly activeProject = signal<ProjetConstruction | null>(null);
   readonly activeModel = signal<ModelMaison | null>(null);
@@ -162,8 +196,15 @@ export class ProjetsConstructionComponent implements OnInit {
     () => this.projets().filter((p) => p.etatEtude === 'REFUSER').length,
   );
 
-  setFilter(f: ConstructionFilter): void {
-    this.currentFilter.set(f);
+  readonly ongletsProjets = computed<OngletFiltre[]>(() => [
+    { valeur: 'TOUS', libelle: 'Tous', icone: 'apps', compte: this.countTous() },
+    { valeur: 'EN_ETUDE', libelle: 'À étudier', icone: 'architecture', compte: this.countEnEtude() },
+    { valeur: 'ACCEPTER', libelle: 'Acceptés', icone: 'check_circle', compte: this.countAcceptes() },
+    { valeur: 'REFUSER', libelle: 'Refusés', icone: 'cancel', compte: this.countRefuses() },
+  ]);
+
+  setFilter(f: string): void {
+    this.currentFilter.set(f as ConstructionFilter);
   }
   setView(m: ViewMode): void {
     this.viewMode.set(m);
@@ -315,9 +356,36 @@ export class ProjetsConstructionComponent implements OnInit {
     this.clearMessagesSoon();
   }
 
-  openProjectDetail(p: ProjetConstruction): void {
-    this.activeProject.set(p);
-    this.isDetailModalOpen.set(true);
+  ouvrirProjet(p: ProjetConstruction): void {
+    this.selectionId.set(p.id);
+  }
+
+  fermerProjet(): void {
+    // Échap ferme d'abord le dialogue ouvert par-dessus le panneau.
+    if (!this.isSaving() && !this.dialogue() && !this.isProgressModalOpen()) this.selectionId.set(null);
+  }
+
+  fermerDialogue(): void {
+    if (!this.isSaving()) this.dialogue.set(null);
+  }
+
+  /** Les pièces sont privées : téléchargées avec le jeton puis ouvertes dans un nouvel onglet. */
+  ouvrirFichier(f: FichierProjet): void {
+    const projet = this.selection();
+    if (!projet) return;
+    const onglet = window.open('', '_blank');
+    this.societeService.telechargerFichierProjet(projet.id, f.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        if (onglet) onglet.location.href = url;
+        else window.location.assign(url);
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      },
+      error: (e) => {
+        onglet?.close();
+        this.toast.error('Pièce jointe', messageErreurApi(e, 'Ouverture impossible.'));
+      },
+    });
   }
 
   openProgressModal(p: ProjetConstruction): void {
@@ -364,27 +432,42 @@ export class ProjetsConstructionComponent implements OnInit {
       });
   }
 
-  validerProjet(p: ProjetConstruction): void {
+  accepterProjet(): void {
+    const p = this.selection();
+    if (!p) return;
     this.isSaving.set(true);
     this.societeService.validerProjetConstruction(p.id).subscribe({
-      next: () => this.afterProjectUpdate('Projet accepté.'),
-      error: (e) => this.handleSaveError(e),
+      next: () => {
+        this.toast.success('Projet accepté', `${p.prospectNom} est informé et peut suivre l’avancement.`);
+        this.afterProjectUpdate('Projet accepté.');
+      },
+      error: (e) => this.echecAction(e),
     });
   }
 
-  refuserProjet(p: ProjetConstruction): void {
-    const motif = prompt('Motif du refus (optionnel) :') ?? undefined;
+  refuserProjet(motif: string): void {
+    const p = this.selection();
+    if (!p) return;
     this.isSaving.set(true);
-    this.societeService.refuserProjetConstruction(p.id, motif || undefined).subscribe({
-      next: () => this.afterProjectUpdate('Projet refusé.'),
-      error: (e) => this.handleSaveError(e),
+    this.societeService.refuserProjetConstruction(p.id, motif).subscribe({
+      next: () => {
+        this.toast.success('Projet refusé', `${p.prospectNom} recevra le motif du refus.`);
+        this.afterProjectUpdate('Projet refusé.');
+      },
+      error: (e) => this.echecAction(e),
     });
+  }
+
+  private echecAction(e: unknown): void {
+    this.isSaving.set(false);
+    this.dialogue.set(null);
+    this.toast.error('Action refusée', messageErreurApi(e, 'Le traitement du projet a échoué.'));
   }
 
   private afterProjectUpdate(message: string): void {
     this.isSaving.set(false);
     this.isProgressModalOpen.set(false);
-    this.isDetailModalOpen.set(false);
+    this.dialogue.set(null);
     this.successMessage.set(message);
     this.loadProjects();
     this.clearMessagesSoon();

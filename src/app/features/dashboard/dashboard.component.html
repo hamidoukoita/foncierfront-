@@ -144,7 +144,7 @@
           <a
             routerLink="/societe/notifications"
             class="text-xs font-bold text-brand-primary hover:underline"
-            >Tout voir ›</a
+            >Voir tout ({{ notifications().length }}) ›</a
           >
         </div>
         <div class="mt-2 flex-1 space-y-1">
@@ -309,6 +309,14 @@
               >
             </div>
           }
+          @if (programmes().length > parProgramme().length) {
+            <a
+              routerLink="/societe/programmes"
+              class="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-200 py-2.5 text-xs font-bold text-gray-500 transition-colors hover:border-brand-primary/50 hover:text-brand-primary"
+            >
+              + {{ programmes().length - parProgramme().length }} autre(s) programme(s) dans la page Programmes
+            </a>
+          }
         </div>
       </section>
 
@@ -319,16 +327,16 @@
               <mat-icon style="font-size: 18px; width: 18px; height: 18px; color: var(--foncier-primary)"
                 >event</mat-icon
               >
-              Rendez-vous à venir ({{ visitesAVenir().length }})
+              Rendez-vous à venir
             </h2>
             <a
               routerLink="/societe/visites"
               class="text-xs font-bold text-brand-primary hover:underline"
-              >Planning ›</a
+              >Voir tout ({{ visitesAVenir().length }}) ›</a
             >
           </div>
           <div class="space-y-2.5">
-            @for (visite of visitesAVenir().slice(0, 4); track visite.id) {
+            @for (visite of prochainesVisites(); track visite.id) {
               <div class="p-3 rounded-xl bg-brand-bg flex items-center gap-3">
                 <div
                   class="w-11 h-11 rounded-xl bg-white border border-gray-200 flex flex-col items-center justify-center shrink-0 text-brand-secondary shadow-card"
@@ -415,60 +423,23 @@
         <a
           routerLink="/societe/reservations"
           class="text-xs font-bold text-brand-primary hover:underline"
-          >Historique ({{ reservations().length }}) ›</a
+          >Voir tout ({{ reservations().length }}) ›</a
         >
       </div>
-      <div class="overflow-x-auto mt-2">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr
-              class="border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[11px] font-bold bg-brand-bg"
-            >
-              <th class="py-2.5 px-3">Lot & programme</th>
-              <th class="py-2.5 px-3">Acquéreur</th>
-              <th class="py-2.5 px-3">Délai</th>
-              <th class="py-2.5 px-3 text-right">Prix</th>
-              <th class="py-2.5 px-3 text-center">Statut</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            @for (res of derniersReservations(); track res.id) {
-              <tr class="hover:bg-[#FAF8F5] transition-colors">
-                <td class="py-3 px-3">
-                  <div class="font-bold text-brand-secondary">{{ res.lotDesignation }}</div>
-                  <div class="text-[11px] text-gray-500">{{ res.programmeNom }}</div>
-                </td>
-                <td class="py-3 px-3">
-                  <div class="font-semibold text-gray-900">{{ res.prospectNom }}</div>
-                  <div class="text-[11px] text-gray-500 font-mono">{{ res.prospectTelephone }}</div>
-                </td>
-                <td class="py-3 px-3">
-                  <span
-                    class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border"
-                    [class]="
-                      res.delaiExpire
-                        ? 'bg-rose-50 text-rose-700 border-rose-200'
-                        : 'bg-amber-50 text-amber-800 border-amber-200'
-                    "
-                    >{{ res.delaiGel72h }}</span
-                  >
-                </td>
-                <td class="py-3 px-3 text-right font-mono font-bold text-brand-secondary">
-                  {{ formatFcfa(res.montantFcfa) }}
-                </td>
-                <td class="py-3 px-3 text-center">
-                  <app-status-badge [status]="res.statut"></app-status-badge>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="5" class="py-8 text-center text-gray-500">
-                  Aucune réservation pour le moment.
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="mt-3 space-y-3">
+        @for (res of derniersReservations(); track res.id) {
+          <app-reservation-ligne
+            [reservation]="res"
+            [delai]="delaiReservation(res)"
+            [libelleStatut]="libellesStatutReservation[res.statut]"
+            (ouvrir)="ouvrirReservations()"
+            (action)="ouvrirReservations()"
+          />
+        } @empty {
+          <div class="p-8 text-center text-xs text-gray-500 border border-dashed border-gray-200 rounded-xl">
+            Aucune réservation pour le moment.
+          </div>
+        }
       </div>
     </section>
   }

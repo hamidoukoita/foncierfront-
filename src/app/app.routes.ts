@@ -144,6 +144,12 @@ export const routes: Routes = [
         canActivate: [kycValideGuard],
       },
       {
+        path: 'cles-en-main',
+        loadComponent: () =>
+          import('./features/cles-en-main/maisons.component').then((m) => m.MaisonsComponent),
+        canActivate: [kycValideGuard],
+      },
+      {
         path: 'commodites',
         loadComponent: () =>
           import('./features/commodites/commodites.component').then((m) => m.CommoditesComponent),

@@ -1,14 +1,16 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommoditeService } from '../../../core/services/commodite.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Commodite, ProximiteCommodite } from '../../../core/models/commodite.models';
 import { ParcelleLot, Programme } from '../../../core/models/societe.models';
 import { messageErreurApi } from '../../../core/utils/api-error';
+import { MaisonCleEnMain } from '../../../core/models/maison.models';
 
-export type CibleRattachement = 'CITE' | 'PARCELLE';
+export type CibleRattachement = 'CITE' | 'PARCELLE' | 'MAISON';
 
-/** Rattache une commodité à une cité ou à une parcelle, avec sa distance en km. */
+/** Rattache une commodité à une cité, une parcelle ou une maison clé en main, avec sa distance en km. */
 @Component({
   selector: 'app-rattachement-form-modal',
   standalone: true,
@@ -26,6 +28,7 @@ export class RattachementFormModalComponent {
   readonly commodites = input.required<Commodite[]>();
   readonly programmes = input.required<Programme[]>();
   readonly parcelles = input.required<ParcelleLot[]>();
+  readonly maisons = input<MaisonCleEnMain[]>([]);
   readonly closed = output<void>();
 
   readonly isSubmitting = signal(false);
@@ -42,13 +45,22 @@ export class RattachementFormModalComponent {
     effect(() => {
       const p = this.proximite();
       this.form.reset({
-        cible: p?.bienId ? 'PARCELLE' : 'CITE',
+        cible: this.cibleDe(p),
         programmeId: p?.programmeId ?? null,
         bienId: p?.bienId ?? null,
         commoditeId: p?.commodite.id ?? null,
         distanceKm: p?.distanceKm ?? null,
-      });
+      }, { emitEvent: false });
     });
+    // Parcelle et maison partagent bienId : changer de cible efface le bien choisi.
+    this.form.controls.cible.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.form.controls.bienId.setValue(null));
+  }
+
+  private cibleDe(p: ProximiteCommodite | null): CibleRattachement {
+    if (!p?.bienId) return 'CITE';
+    return untracked(this.maisons).some((m) => m.id === p.bienId) ? 'MAISON' : 'PARCELLE';
   }
 
   get cible(): CibleRattachement {
@@ -77,7 +89,7 @@ export class RattachementFormModalComponent {
         {
           commoditeId: v.commoditeId!,
           programmeId: v.cible === 'CITE' ? v.programmeId : null,
-          bienId: v.cible === 'PARCELLE' ? v.bienId : null,
+          bienId: v.cible === 'CITE' ? null : v.bienId,
           distanceKm: v.distanceKm,
         },
         enEdition?.id,

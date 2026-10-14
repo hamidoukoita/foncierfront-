@@ -1,60 +1,53 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SocieteService } from '../../core/services/societe.service';
-import { MatIcon } from '@angular/material/icon';
+import { KycService } from '../../core/services/kyc.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
+import { DocumentKycResponse } from '../../core/models/kyc.models';
+import { messageErreurApi } from '../../core/utils/api-error';
+import { StatutAgrementBannerComponent } from './components/statut-agrement-banner.component';
+import { IdentiteFormComponent } from './components/identite-form.component';
+import { ReferencesLegalesComponent } from './components/references-legales.component';
+import { DossierKycComponent } from './components/dossier-kyc.component';
+import { ResponsableLegalComponent } from './components/responsable-legal.component';
+import { ReglesReservationComponent } from './components/regles-reservation.component';
 
+/** Profil de la société promotrice : statut, coordonnées et règles de réservation modifiables, références légales, KYC. */
 @Component({
   selector: 'app-profil-societe',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIcon],
+  imports: [
+    StatutAgrementBannerComponent,
+    IdentiteFormComponent,
+    ReferencesLegalesComponent,
+    DossierKycComponent,
+    ResponsableLegalComponent,
+    ReglesReservationComponent,
+  ],
   templateUrl: './profil-societe.component.html',
-  styleUrl: './profil-societe.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfilSocieteComponent implements OnInit {
-  private readonly fb = inject(FormBuilder);
   private readonly societeService = inject(SocieteService);
+  private readonly kycService = inject(KycService);
+  private readonly authService = inject(AuthService);
+  private readonly toast = inject(ToastService);
 
   readonly profil = this.societeService.profilSociete;
-  readonly isSavedSuccess = signal<boolean>(false);
-
-  readonly profilForm = this.fb.nonNullable.group({
-    raisonSociale: [this.profil()?.raisonSociale || '', [Validators.required]],
-    siegeSocial: [this.profil()?.siegeSocial || '', [Validators.required]],
-    telephoneFixe: [this.profil()?.telephoneFixe || '', [Validators.required]],
-    emailOfficiel: [this.profil()?.emailOfficiel || '', [Validators.required, Validators.email]],
-    siteWeb: [this.profil()?.siteWeb || '', [Validators.required]]
-  });
+  readonly utilisateur = this.authService.currentUser;
+  readonly documents = signal<DocumentKycResponse[]>([]);
+  readonly chargementKyc = signal(true);
 
   ngOnInit(): void {
-    this.societeService.getProfilSociete().subscribe(p => {
-      if (p) {
-        this.profilForm.patchValue({
-          raisonSociale: p.raisonSociale,
-          siegeSocial: p.siegeSocial,
-          telephoneFixe: p.telephoneFixe,
-          emailOfficiel: p.emailOfficiel,
-          siteWeb: p.siteWeb
-        });
-      }
+    this.societeService.getProfilSociete().subscribe({
+      error: (e) => this.toast.error('Profil indisponible', messageErreurApi(e, 'Impossible de charger la société.')),
     });
-  }
-
-  submitSave(): void {
-    if (this.profilForm.invalid) {
-      this.profilForm.markAllAsTouched();
-      return;
-    }
-
-    this.societeService.updateProfilSociete(this.profilForm.getRawValue()).subscribe({
-      next: () => {
-        this.isSavedSuccess.set(true);
-        setTimeout(() => this.isSavedSuccess.set(false), 3000);
+    this.kycService.getStatut().subscribe({
+      next: (dossier) => {
+        this.documents.set(dossier.documents ?? []);
+        this.chargementKyc.set(false);
       },
-      error: (err) => {
-        console.error('Erreur mise à jour profil société:', err);
-      }
+      error: () => this.chargementKyc.set(false),
     });
   }
 }

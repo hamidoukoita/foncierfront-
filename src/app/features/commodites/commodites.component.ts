@@ -4,6 +4,7 @@ import { MatIcon } from '@angular/material/icon';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CommoditeService } from '../../core/services/commodite.service';
+import { MaisonsService } from '../../core/services/maisons.service';
 import { SocieteService } from '../../core/services/societe.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Commodite, ProximiteCommodite } from '../../core/models/commodite.models';
@@ -27,6 +28,7 @@ import { RattachementFormModalComponent } from './rattachement-form-modal/rattac
 export class CommoditesComponent implements OnInit {
   private readonly commoditeService = inject(CommoditeService);
   private readonly societeService = inject(SocieteService);
+  private readonly maisonsService = inject(MaisonsService);
   private readonly toast = inject(ToastService);
 
   readonly types = this.commoditeService.types;
@@ -34,6 +36,7 @@ export class CommoditesComponent implements OnInit {
   readonly proximites = this.commoditeService.proximites;
   readonly programmes = this.societeService.programmes;
   readonly parcelles = this.societeService.parcelles;
+  readonly maisons = this.maisonsService.maisons;
 
   readonly isLoading = signal(false);
 
@@ -66,6 +69,7 @@ export class CommoditesComponent implements OnInit {
       proximites: this.commoditeService.loadProximites().pipe(catchError(() => of([]))),
       programmes: this.societeService.getProgrammes().pipe(catchError(() => of([]))),
       parcelles: this.societeService.getParcelles().pipe(catchError(() => of([]))),
+      maisons: this.maisonsService.charger().pipe(catchError(() => of([]))),
     }).subscribe({
       next: () => this.isLoading.set(false),
       error: (e) => {

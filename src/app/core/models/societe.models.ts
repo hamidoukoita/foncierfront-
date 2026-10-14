@@ -63,6 +63,14 @@ export interface Reservation {
   agentAssignId?: number;
   agentAssignNom?: string;
   statut: StatutReservation;
+  /** N° de dossier (ex. RES-2026-004). */
+  numeroDossier?: string;
+  /** Dates ISO : tri et calcul du délai de gel. */
+  dateReservationIso?: string;
+  dateExpirationIso?: string;
+  motifRefus?: string;
+  /** LOT_PROGRAMME, PARCELLE_INDIVIDUELLE ou MAISON_CLE_EN_MAIN. */
+  typeBien?: string;
 }
 
 export type StatutVisite = 'CONFIRME' | 'EN_ATTENTE' | 'EFFECTUE' | 'ANNULE';
@@ -84,6 +92,10 @@ export interface VisiteRendezVous {
   agentStatutConfirmation?: string;
   statut: StatutVisite;
   typeVisite: 'CHANTIER' | 'SIEGE';
+  lieu?: string;
+  /** Compte-rendu saisi par l'agent après la visite (application mobile). */
+  compteRendu?: string;
+  motifRefus?: string;
 }
 
 export type StatutAgent = 'ACTIF' | 'SUSPENDU';
@@ -147,7 +159,28 @@ export interface ProjetConstruction {
   commentaireAvancement?: string;
   dateDerniereMiseAJour?: string;
   delaiInfo?: string;
+  /** Message libre de l'acquéreur au promoteur. */
   description?: string;
+  motifRefus?: string;
+  dateDemande?: string;
+  /** Vrai quand l'acquéreur décrit sa propre maison au lieu de choisir un modèle du catalogue. */
+  modelePersonnalise: boolean;
+  /** Maison clé en main prise comme référence par l'acquéreur. */
+  maisonReferenceTitre?: string;
+  maisonReferenceImageUrl?: string;
+  descriptionModelePersonnalise?: string;
+  nombreChambresSouhaitees?: number;
+  nombreSallesBainSouhaitees?: number;
+  surfaceConstruiteSouhaitee?: number;
+  fichiers: FichierProjet[];
+}
+
+export interface FichierProjet {
+  id: number;
+  type: 'TITRE_FONCIER' | 'PLAN' | 'PHOTO';
+  nomOriginal: string;
+  contentType?: string;
+  taille?: number;
 }
 
 export interface NotificationItem {
@@ -180,6 +213,14 @@ export interface ProfilSociete {
   documentKycTaille: string;
   documentKycDate: string;
   documentKycUrl: string;
+  /** Date de l'arrêté d'agrément (ISO), renseignée par l'administration. */
+  dateAgrement?: string | null;
+  /** Présentation de la société (visible des acquéreurs). */
+  description?: string;
+  /** Heures laissées pour attribuer un agent à une demande avant son annulation automatique. */
+  delaiAttributionHeures?: number;
+  /** Un même lot ou une même parcelle peut-il être réservé par plusieurs acquéreurs. */
+  reservationMultiple?: boolean;
 }
 
 export interface DashboardKPIs {
@@ -191,4 +232,10 @@ export interface DashboardKPIs {
   reservationsSubtext: string;
   visitesCount: number;
   visitesSubtext: string;
+}
+
+/** Règles de réservation communes à tous les biens d'une société. */
+export interface ReglesReservation {
+  delaiAttributionHeures: number;
+  reservationMultiple: boolean;
 }

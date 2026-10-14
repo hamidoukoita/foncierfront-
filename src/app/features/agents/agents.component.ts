@@ -1,38 +1,46 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { SocieteService } from '../../core/services/societe.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AgentCollaborateur } from '../../core/models/societe.models';
-import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { normaliser } from '../../core/utils/format';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { StatsCardComponent } from '../../shared/components/stats-card/stats-card.component';
+import { ChampRechercheComponent } from '../../shared/components/champ-recherche/champ-recherche.component';
+import {
+  FiltreOngletsComponent,
+  OngletFiltre,
+} from '../../shared/components/filtre-onglets/filtre-onglets.component';
+import { AgentCarteComponent } from './agent-carte/agent-carte.component';
+import { NouvelAgentDialogComponent } from './nouvel-agent-dialog/nouvel-agent-dialog.component';
 
 type AgentFilter = 'TOUS' | 'ACTIFS' | 'SUSPENDUS';
+
+const TAILLE_PAGE = 9;
 
 @Component({
   selector: 'app-agents',
   standalone: true,
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
     MatIconModule,
-    StatusBadgeComponent,
     PaginationComponent,
-    ConfirmDialogComponent
+    ConfirmDialogComponent,
+    StatsCardComponent,
+    ChampRechercheComponent,
+    FiltreOngletsComponent,
+    AgentCarteComponent,
+    NouvelAgentDialogComponent,
   ],
   templateUrl: './agents.component.html',
-  styleUrl: './agents.component.css'
+  styleUrl: './agents.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AgentsComponent implements OnInit {
   private readonly societeService = inject(SocieteService);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
-  private readonly fb = inject(FormBuilder);
 
   readonly agents = this.societeService.agents;
   readonly currentFilter = signal<AgentFilter>('TOUS');
@@ -51,34 +59,35 @@ export class AgentsComponent implements OnInit {
     if (filter === 'ACTIFS') list = list.filter(a => a.statut === 'ACTIF');
     if (filter === 'SUSPENDUS') list = list.filter(a => a.statut === 'SUSPENDU');
 
-    const q = this.searchQuery().trim().toLowerCase();
+    const q = normaliser(this.searchQuery().trim());
     if (q) {
       list = list.filter(a =>
-        `${a.prenom} ${a.nom}`.toLowerCase().includes(q) ||
-        (a.telephone || '').includes(q) ||
-        (a.matricule || '').toLowerCase().includes(q)
+        [`${a.prenom} ${a.nom}`, a.telephone, a.matricule].some(v => normaliser(v).includes(q))
       );
     }
     return list;
   });
 
+  readonly taillePage = TAILLE_PAGE;
   readonly pagedAgents = computed(() => {
-    const page = this.currentPage();
-    const size = 8;
-    const start = (page - 1) * size;
-    return this.filteredAgents().slice(start, start + size);
+    const start = (this.currentPage() - 1) * TAILLE_PAGE;
+    return this.filteredAgents().slice(start, start + TAILLE_PAGE);
   });
 
   readonly countTous = computed(() => this.agents().length);
   readonly countActifs = computed(() => this.agents().filter(a => a.statut === 'ACTIF').length);
   readonly countSuspendus = computed(() => this.agents().filter(a => a.statut === 'SUSPENDU').length);
+  readonly dossiersSuivis = computed(() =>
+    this.agents().reduce((s, a) => s + a.rdvVisitesCount + a.reservationsCount, 0));
+  /** Plus forte charge de l'équipe : référence des jauges de charge. */
+  readonly chargeMax = computed(() =>
+    Math.max(0, ...this.agents().map(a => a.rdvVisitesCount + a.reservationsCount)));
 
-  readonly agentForm = this.fb.nonNullable.group({
-    prenom: ['', [Validators.required, Validators.minLength(2)]],
-    nom: ['', [Validators.required, Validators.minLength(2)]],
-    telephone: ['', [Validators.required, Validators.pattern(/^[0-9]{8,12}$/)]],
-    motDePasse: ['agent1234', [Validators.required, Validators.minLength(4)]]
-  });
+  readonly onglets = computed<OngletFiltre[]>(() => [
+    { valeur: 'TOUS', libelle: 'Tous', icone: 'apps', compte: this.countTous() },
+    { valeur: 'ACTIFS', libelle: 'Actifs', icone: 'how_to_reg', compte: this.countActifs() },
+    { valeur: 'SUSPENDUS', libelle: 'Suspendus', icone: 'person_off', compte: this.countSuspendus() },
+  ]);
 
   ngOnInit(): void {
     this.isLoading.set(true);
@@ -91,55 +100,14 @@ export class AgentsComponent implements OnInit {
     });
   }
 
-  setFilter(f: AgentFilter): void {
-    this.currentFilter.set(f);
+  setFilter(f: string): void {
+    this.currentFilter.set(f as AgentFilter);
     this.currentPage.set(1);
   }
 
   onSearch(value: string): void {
     this.searchQuery.set(value);
     this.currentPage.set(1);
-  }
-
-  openAddModal(): void {
-    this.agentForm.reset({
-      prenom: '',
-      nom: '',
-      telephone: '',
-      motDePasse: 'agent1234'
-    });
-    this.isAddModalOpen.set(true);
-  }
-
-  submitAddAgent(): void {
-    if (this.agentForm.invalid) {
-      this.agentForm.markAllAsTouched();
-      this.toast.warning('Formulaire invalide', 'Vérifiez le prénom, le nom, le téléphone et le mot de passe.');
-      return;
-    }
-
-    const val = this.agentForm.getRawValue();
-    this.isLoading.set(true);
-    this.societeService.createAgent({
-      prenom: val.prenom.trim(),
-      nom: val.nom.trim(),
-      telephone: val.telephone.trim(),
-      motDePasse: val.motDePasse
-    }).subscribe({
-      next: () => {
-        this.isLoading.set(false);
-        this.isAddModalOpen.set(false);
-        this.toast.success(
-          'Collaborateur créé',
-          `${val.prenom} ${val.nom} peut se connecter avec le téléphone ${val.telephone}.`
-        );
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        const msg = err?.error?.message || err?.message || 'Impossible de créer le compte collaborateur.';
-        this.toast.error('Création impossible', msg);
-      }
-    });
   }
 
   requestToggleAgentStatut(agent: AgentCollaborateur): void {
@@ -193,12 +161,5 @@ export class AgentsComponent implements OnInit {
     if (agent.estResponsableSociete) return false;
     if (this.currentUserId() != null && agent.id === this.currentUserId()) return false;
     return true;
-  }
-
-  formatPhone(tel: string | undefined): string {
-    if (!tel) return '—';
-    const clean = tel.replace(/\s+/g, '');
-    if (clean.startsWith('+')) return clean;
-    return `+223 ${clean}`;
   }
 }

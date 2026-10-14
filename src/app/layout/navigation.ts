@@ -27,6 +27,7 @@ export const NAV_SOCIETE: NavItem[] = [
   { label: 'Tableau de bord', route: '/societe/dashboard', icon: 'dashboard' },
   { label: 'Programmes', route: '/societe/programmes', icon: 'holiday_village' },
   { label: 'Parcelles', route: '/societe/parcelles', icon: 'grid_view' },
+  { label: 'Clés en main', route: '/societe/cles-en-main', icon: 'home_work' },
   { label: 'Commodités', route: '/societe/commodites', icon: 'storefront' },
   { label: 'Réservations', route: '/societe/reservations', icon: 'assignment' },
   { label: 'Rendez-vous', route: '/societe/visites', icon: 'event' },
