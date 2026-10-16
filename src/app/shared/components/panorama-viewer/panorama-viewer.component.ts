@@ -5,9 +5,11 @@ import {
   ElementRef,
   NgZone,
   OnDestroy,
+  afterRenderEffect,
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -41,6 +43,19 @@ void main() {
   o = vec4(texture(t, vec2(lon / (2.0 * PI) + 0.5, 0.5 - lat / PI)).rgb, 1.0);
 }`;
 
+import { Direction, Vue, directionDepuisEcran, orientationVers, positionAEcran } from './panorama-geometrie';
+
+/** Point de passage affiché dans le panorama (« Chambre », « Cuisine »…). */
+export interface PointPanorama {
+  id: number;
+  azimut: number;
+  elevation: number;
+  libelle: string;
+}
+
+/** Au-delà de ce déplacement (px), un appui est un glisser et non un clic. */
+const SEUIL_CLIC_PX = 6;
+
 const FOV_MIN = (30 * Math.PI) / 180;
 const FOV_MAX = (100 * Math.PI) / 180;
 const PITCH_MAX = (85 * Math.PI) / 180;
@@ -49,7 +64,8 @@ const TEXTURE_MAX_SIDE = 8192;
 /**
  * Visionneuse de photo panoramique équirectangulaire (360° x 180°) :
  * glisser pour regarder autour, molette ou pincement pour zoomer, flèches du clavier.
- * Sans WebGL 2, l'image est affichée à plat.
+ * Peut afficher des points de passage vers d'autres pièces ; en mode édition, un clic dans
+ * l'image donne la direction visée (pour poser un point). Sans WebGL 2, l'image est affichée à plat.
  */
 @Component({
   selector: 'app-panorama-viewer',
@@ -84,6 +100,25 @@ const TEXTURE_MAX_SIDE = 8192;
       }
 
       @if (state() === 'ready') {
+        <!-- Points de passage : positionnés à chaque image par la boucle de rendu. -->
+        @for (p of points(); track p.id) {
+          <button
+            type="button"
+            [attr.data-point]="p.id"
+            (click)="pointChoisi.emit(p.id)"
+            [attr.aria-label]="'Aller vers ' + p.libelle"
+            class="group absolute left-0 top-0 hidden flex-col items-center gap-1 cursor-pointer"
+          >
+            <span
+              class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white shadow-lg transition-transform group-hover:scale-110"
+              [class]="p.id === pointSelectionne() ? 'bg-brand-primary text-white' : 'bg-white/90 text-brand-secondary'"
+            >
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M12 4l-7 8h4v8h6v-8h4z" /></svg>
+            </span>
+            <span class="whitespace-nowrap rounded-full bg-black/65 px-2.5 py-0.5 text-[11px] font-bold text-white">{{ p.libelle }}</span>
+          </button>
+        }
+
         <div class="absolute right-3 top-3 flex flex-col gap-1.5">
           <button type="button" (click)="zoom(-1)" class="w-8 h-8 rounded-lg bg-black/55 hover:bg-black/75 text-white text-base cursor-pointer" aria-label="Zoom avant">+</button>
           <button type="button" (click)="zoom(1)" class="w-8 h-8 rounded-lg bg-black/55 hover:bg-black/75 text-white text-base cursor-pointer" aria-label="Zoom arrière">−</button>
@@ -95,7 +130,7 @@ const TEXTURE_MAX_SIDE = 8192;
           <button type="button" (click)="fullscreen()" class="w-8 h-8 rounded-lg bg-black/55 hover:bg-black/75 text-white text-xs cursor-pointer" aria-label="Plein écran" title="Plein écran">⛶</button>
         </div>
         <p class="absolute left-3 bottom-3 px-2.5 py-1 rounded-lg bg-black/55 text-white text-[11px] pointer-events-none">
-          Glissez pour regarder autour · molette pour zoomer
+          {{ edition() ? 'Cliquez dans l’image pour placer le point' : 'Glissez pour regarder autour · molette pour zoomer' }}
         </p>
       }
     </div>
@@ -104,6 +139,16 @@ const TEXTURE_MAX_SIDE = 8192;
 export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
   readonly src = input.required<string>();
   readonly titre = input<string>('');
+  /** Points de passage de ce panorama. */
+  readonly points = input<PointPanorama[]>([]);
+  readonly pointSelectionne = input<number | null>(null);
+  /** Mode édition : un clic dans l'image émet la direction visée. */
+  readonly edition = input(false);
+  /** Direction regardée à l'ouverture (et par « Recentrer »). */
+  readonly vueInitiale = input<Direction | null>(null);
+
+  readonly pointChoisi = output<number>();
+  readonly clicVue = output<Direction>();
 
   readonly state = signal<'loading' | 'ready' | 'error' | 'flat'>('loading');
   readonly errorMessage = signal<string>('');
@@ -128,6 +173,7 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
   private resizeObserver?: ResizeObserver;
   private readonly pointers = new Map<number, { x: number; y: number }>();
   private pinchDistance = 0;
+  private debutAppui: { x: number; y: number } | null = null;
   private loadToken = 0;
   private readonly cleanups: Array<() => void> = [];
 
@@ -136,6 +182,12 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
       const url = this.src();
       if (!this.viewReady()) return;
       untracked(() => this.charger(url));
+    });
+    // Les marqueurs viennent d'être (re)créés dans le DOM : on les replace.
+    afterRenderEffect(() => {
+      this.points();
+      this.pointSelectionne();
+      this.demanderRendu();
     });
   }
 
@@ -246,6 +298,7 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
       on('pointerdown', (e) => {
         canvas.setPointerCapture(e.pointerId);
         this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        this.debutAppui = this.pointers.size === 1 ? { x: e.clientX, y: e.clientY } : null;
         this.vYaw = this.vPitch = 0;
         this.arreterAuto();
         if (this.pointers.size === 2) this.pinchDistance = this.distanceDoigts();
@@ -269,6 +322,7 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
         }
       });
       const fin = (e: PointerEvent) => {
+        this.signalerClic(e, canvas);
         this.pointers.delete(e.pointerId);
         this.pinchDistance = 0;
         if (this.pointers.size === 0) this.demanderRendu(); // lance l'inertie
@@ -319,8 +373,10 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
   }
 
   reset(): void {
-    this.yaw = 0;
-    this.pitch = 0;
+    const initiale = this.vueInitiale();
+    const orientation = initiale ? orientationVers(initiale) : { yaw: 0, pitch: 0 };
+    this.yaw = orientation.yaw;
+    this.pitch = this.borner(orientation.pitch, -PITCH_MAX, PITCH_MAX);
     this.fov = (75 * Math.PI) / 180;
     this.vYaw = this.vPitch = 0;
     this.demanderRendu();
@@ -382,6 +438,7 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
       gl.uniform1f(this.uniforms['pitch'], this.pitch);
       gl.uniform1f(this.uniforms['fov'], this.fov);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      this.placerMarqueurs(canvas);
     }
 
     const continuer = this.dirty || (libre && (this.autoRotate() || Math.abs(this.vYaw) > 0.00005 || Math.abs(this.vPitch) > 0.00005));
@@ -398,6 +455,37 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
       canvas.width = w;
       canvas.height = h;
     }
+  }
+
+  private vue(canvas: HTMLCanvasElement): Vue {
+    return { yaw: this.yaw, pitch: this.pitch, fov: this.fov, largeur: canvas.clientWidth, hauteur: canvas.clientHeight };
+  }
+
+  /** Place chaque marqueur sur sa direction ; masque ceux qui sont derrière la caméra. */
+  private placerMarqueurs(canvas: HTMLCanvasElement): void {
+    const marqueurs = this.host().nativeElement.querySelectorAll<HTMLElement>('[data-point]');
+    if (marqueurs.length === 0) return;
+    const vue = this.vue(canvas);
+    const parId = new Map(this.points().map((p) => [String(p.id), p]));
+    marqueurs.forEach((el) => {
+      const point = parId.get(el.dataset['point'] ?? '');
+      const position = point ? positionAEcran(point, vue) : null;
+      const visible = !!position && position.x > -40 && position.x < vue.largeur + 40 && position.y > -40 && position.y < vue.hauteur + 40;
+      el.style.display = visible ? 'flex' : 'none';
+      if (visible) el.style.transform = `translate(${position!.x}px, ${position!.y}px) translate(-50%, -20px)`;
+    });
+  }
+
+  /** En édition, un appui court (sans glisser) donne la direction visée. */
+  private signalerClic(e: PointerEvent, canvas: HTMLCanvasElement): void {
+    const debut = this.debutAppui;
+    this.debutAppui = null;
+    if (!this.edition() || !debut || this.pointers.size !== 1) return;
+    if (Math.hypot(e.clientX - debut.x, e.clientY - debut.y) > SEUIL_CLIC_PX) return;
+    const rect = canvas.getBoundingClientRect();
+    const direction = directionDepuisEcran(e.clientX - rect.left, e.clientY - rect.top, this.vue(canvas));
+    this.vYaw = this.vPitch = 0;
+    this.zone.run(() => this.clicVue.emit(direction));
   }
 
   private distanceDoigts(): number {

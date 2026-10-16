@@ -9,7 +9,7 @@
     <button
       type="button"
       (click)="openAddModal()"
-      class="parcelles-primary-btn"
+      class="bouton bouton-primaire"
     >
       <mat-icon>add</mat-icon>
       <span>Ajouter une parcelle</span>
@@ -70,7 +70,7 @@
           <p class="mt-1 text-sm text-red-700">{{ loadError() }}</p>
         </div>
       </div>
-      <button type="button" (click)="loadParcelles()" class="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-800 hover:bg-red-100">Réessayer</button>
+      <button type="button" (click)="loadParcelles()" class="bouton bouton-danger">Réessayer</button>
     </div>
   } @else if (isLoading()) {
     <div class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500">
@@ -82,7 +82,7 @@
       title="Aucune parcelle trouvée"
       message="Aucune parcelle ne correspond à ce filtre. Essayez une autre recherche ou ajoutez une parcelle."
     >
-      <button action type="button" (click)="openAddModal()" class="rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white">Ajouter une parcelle</button>
+      <button action type="button" (click)="openAddModal()" class="bouton bouton-primaire">Ajouter une parcelle</button>
     </app-empty-state>
   } @else {
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -215,8 +215,8 @@
           </fieldset>
         </div>
         <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
-          <button type="button" (click)="closeForm()" [disabled]="isSaving()" class="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50">Annuler</button>
-          <button type="submit" [disabled]="isSaving() || parcelleForm.invalid" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" (click)="closeForm()" [disabled]="isSaving()" class="bouton bouton-contour">Annuler</button>
+          <button type="submit" [disabled]="isSaving() || parcelleForm.invalid" class="bouton bouton-primaire">
             @if (isSaving()) { <mat-icon class="animate-spin">progress_activity</mat-icon> }
             {{ isSaving() ? 'Enregistrement...' : (editingParcelle() ? 'Enregistrer les modifications' : 'Créer la parcelle') }}
           </button>

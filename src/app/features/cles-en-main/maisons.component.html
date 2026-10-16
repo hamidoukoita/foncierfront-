@@ -10,7 +10,7 @@
     <button
       type="button"
       (click)="enEdition.set(null)"
-      class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-brand-primary-hover active:scale-[0.99]"
+      class="bouton bouton-primaire"
     >
       <mat-icon class="!h-[18px] !w-[18px] !text-[18px]">add_home</mat-icon>
       Publier une maison
@@ -63,7 +63,7 @@
         {{ maisons().length ? 'Modifiez la recherche ou le filtre.' : 'Publiez votre première maison prête à habiter : elle apparaîtra dans l’onglet « Clés en main » de l’application.' }}
       </p>
       @if (!maisons().length) {
-        <button type="button" (click)="enEdition.set(null)" class="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-primary-hover">
+        <button type="button" (click)="enEdition.set(null)" class="bouton bouton-primaire mt-4">
           <mat-icon class="!h-4 !w-4 !text-[16px]">add_home</mat-icon> Publier une maison
         </button>
       }
@@ -130,12 +130,15 @@
   }
   @if (selection(); as m) {
     <div panneau-actions class="flex flex-wrap items-center gap-2">
-      <button type="button" (click)="aSupprimer.set(m)" class="cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-danger transition-colors hover:bg-red-50">Supprimer</button>
+      <button type="button" (click)="aSupprimer.set(m)" class="bouton bouton-danger">Supprimer</button>
       <span class="flex-1"></span>
-      <button type="button" (click)="ouvrirGalerie(m)" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-bold text-brand-secondary hover:bg-brand-bg">
+      <button type="button" (click)="ouvrirGalerie(m)" class="bouton bouton-contour">
         <mat-icon class="!h-4 !w-4 !text-[16px]">collections</mat-icon> Photos et 360°
       </button>
-      <button type="button" (click)="enEdition.set(m)" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-brand-primary-hover">
+      <button type="button" (click)="visiteEnEdition.set(m)" class="bouton bouton-contour">
+        <mat-icon>route</mat-icon> Visite virtuelle
+      </button>
+      <button type="button" (click)="enEdition.set(m)" class="bouton bouton-primaire">
         <mat-icon class="!h-4 !w-4 !text-[16px]">edit</mat-icon> Modifier
       </button>
     </div>
@@ -161,9 +164,13 @@
 }
 
 @if (visite360(); as visite) {
-  <app-panorama-modal [titre]="visite.titre" [panoramas]="visite.panoramas" (closed)="visite360.set(null)" />
+  <app-panorama-modal [titre]="visite.titre" [panoramas]="visite.panoramas" [liens]="visite.liens" (closed)="visite360.set(null)" />
 }
 
 @if (couvertureCible(); as cible) {
   <app-couverture-dialog [cible]="cible" (closed)="fermerCouverture($event)" />
+}
+
+@if (visiteEnEdition(); as m) {
+  <app-visite-editor [maison]="m" (fermer)="visiteEnEdition.set(null)" />
 }

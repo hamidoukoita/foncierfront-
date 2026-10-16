@@ -1,7 +1,7 @@
 import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { MediaCible, MediaFoncier, TypeMedia } from '../models/media.models';
+import { LienPanorama, LienPanoramaRequest, MediaCible, MediaFoncier, TypeMedia } from '../models/media.models';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -53,6 +53,31 @@ export class MediaService {
 
   supprimer(id: number): Observable<void> {
     return this.http.delete<ApiResponse<void>>(`${this.API_BASE}/medias/${id}`).pipe(map(() => undefined));
+  }
+
+  // ---------- Visite virtuelle : points de passage entre panoramas d'une maison ----------
+
+  liens(bienId: number): Observable<LienPanorama[]> {
+    return this.http
+      .get<ApiResponse<LienPanorama[]>>(`${this.API_BASE}/medias/bien/${bienId}/liens`)
+      .pipe(map((res) => (Array.isArray(res.data) ? res.data : [])));
+  }
+
+  /** Crée le point (et le retour si demandé) ; renvoie les points créés. */
+  creerLien(requete: LienPanoramaRequest): Observable<LienPanorama[]> {
+    return this.http
+      .post<ApiResponse<LienPanorama[]>>(`${this.API_BASE}/medias/liens`, requete)
+      .pipe(map((res) => res.data ?? []));
+  }
+
+  modifierLien(id: number, requete: LienPanoramaRequest): Observable<LienPanorama> {
+    return this.http
+      .put<ApiResponse<LienPanorama>>(`${this.API_BASE}/medias/liens/${id}`, requete)
+      .pipe(map((res) => res.data));
+  }
+
+  supprimerLien(id: number): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.API_BASE}/medias/liens/${id}`).pipe(map(() => undefined));
   }
 
   /** URL utilisable dans une balise <img>, une texture WebGL ou une iframe. */

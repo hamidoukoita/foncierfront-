@@ -6,8 +6,7 @@ import { catchError } from 'rxjs/operators';
 import { SocieteService } from '../../core/services/societe.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Reservation, StatutLot } from '../../core/models/societe.models';
-import { delaiAttribution, DelaiAttribution } from '../reservations/reservation-delai';
-import { LIBELLES_STATUT } from '../reservations/reservation-detail/reservation-detail.component';
+import { decompteReservation, DecompteReservation } from '../reservations/reservation-delai';
 import { ReservationLigneComponent } from '../reservations/reservation-ligne/reservation-ligne.component';
 import { StatsCardComponent } from '../../shared/components/stats-card/stats-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
@@ -94,7 +93,6 @@ export class DashboardComponent implements OnInit {
   }));
 
   readonly derniersReservations = computed(() => [...this.reservations()].sort((a, b) => b.id - a.id).slice(0, APERCU.reservations));
-  readonly libellesStatutReservation = LIBELLES_STATUT;
 
   /** Rendez-vous à honorer à partir d'aujourd'hui, du plus proche au plus lointain. */
   readonly visitesAVenir = computed(() => {
@@ -127,8 +125,8 @@ export class DashboardComponent implements OnInit {
     this.societeService.getProfilSociete().pipe(catchError(() => of(null))).subscribe();
   }
 
-  delaiReservation(r: Reservation): DelaiAttribution | null {
-    return delaiAttribution(r, Date.now());
+  decompteReservation(r: Reservation): DecompteReservation | null {
+    return decompteReservation(r, Date.now());
   }
 
   /** Le traitement d'un dossier se fait dans la page Réservations. */

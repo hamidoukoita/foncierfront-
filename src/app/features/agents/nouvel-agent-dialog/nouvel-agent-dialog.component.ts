@@ -63,11 +63,11 @@ const MOT_DE_PASSE_TEMPORAIRE = 'agent1234';
             </label>
 
             <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
-              <button type="button" (click)="fermerSiLibre()" class="cursor-pointer rounded-xl px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100">Annuler</button>
+              <button type="button" (click)="fermerSiLibre()" class="bouton bouton-discret">Annuler</button>
               <button
                 type="submit"
                 [disabled]="form.invalid || enCours()"
-                class="cursor-pointer rounded-xl bg-brand-primary px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                class="bouton bouton-primaire"
               >
                 {{ enCours() ? 'Création…' : 'Créer le compte' }}
               </button>

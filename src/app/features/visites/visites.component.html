@@ -11,7 +11,7 @@
       type="button"
       (click)="actualiser()"
       [disabled]="isLoading()"
-      class="inline-flex cursor-pointer items-center gap-1.5 self-start rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-brand-secondary shadow-card transition-colors hover:bg-brand-bg disabled:opacity-50 sm:self-auto"
+      class="bouton bouton-contour self-start sm:self-auto"
     >
       <mat-icon class="!h-4 !w-4 !text-[16px]" [class.animate-spin]="isLoading()">refresh</mat-icon>
       Actualiser
@@ -131,15 +131,15 @@
 
     @if (v.statut === 'EN_ATTENTE' || v.statut === 'CONFIRME') {
       <div panneau-actions class="flex flex-wrap items-center gap-2">
-        <button type="button" (click)="ouvrirDialogue('refus')" class="cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-danger transition-colors hover:bg-red-50">
+        <button type="button" (click)="ouvrirDialogue('refus')" class="bouton bouton-danger">
           {{ v.statut === 'EN_ATTENTE' ? 'Refuser' : 'Annuler le RDV' }}
         </button>
         <span class="flex-1"></span>
         <button
           type="button"
           (click)="ouvrirDialogue('attribution')"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-colors"
-          [class]="v.statut === 'EN_ATTENTE' && !v.agentAssignId ? 'bg-brand-primary text-white shadow-xs hover:bg-brand-primary-hover' : 'border border-gray-200 bg-white text-brand-secondary hover:bg-brand-bg'"
+          class="bouton"
+          [class]="v.statut === 'EN_ATTENTE' && !v.agentAssignId ? 'bouton-primaire' : 'bouton-contour'"
         >
           <mat-icon class="!h-4 !w-4 !text-[16px]">person_add</mat-icon>
           {{ v.agentAssignId ? 'Changer d’agent' : 'Attribuer et confirmer' }}

@@ -39,12 +39,12 @@ import { MatIcon } from '@angular/material/icon';
           </div>
 
           <div class="flex items-center justify-end gap-2.5 border-t border-gray-100 pt-3">
-            <button type="button" (click)="annuler()" class="cursor-pointer rounded-xl px-4 py-2 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-100">Retour</button>
+            <button type="button" (click)="annuler()" class="bouton bouton-discret">Retour</button>
             <button
               type="button"
               [disabled]="!valide() || enCours()"
               (click)="valider.emit(motif().trim())"
-              class="cursor-pointer rounded-xl bg-brand-danger px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              class="bouton bouton-danger-plein"
             >
               {{ enCours() ? 'Envoi…' : libelleConfirmation() }}
             </button>

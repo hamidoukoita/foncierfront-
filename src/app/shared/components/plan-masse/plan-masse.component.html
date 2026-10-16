@@ -153,14 +153,14 @@
           <button 
             type="button" 
             (click)="actionLot.emit({ lot: activeLot()!, action: 'RESERVER' })"
-            class="px-3.5 py-1.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-xs cursor-pointer transition-colors">
+            class="bouton bouton-primaire bouton-sm">
             Poser Option (Gel 72h)
           </button>
         }
         <button 
           type="button" 
           (click)="actionLot.emit({ lot: activeLot()!, action: 'TOGGLE_LITIGE' })"
-          class="px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-100 text-xs font-semibold text-gray-700 cursor-pointer transition-colors shadow-card"
+          class="bouton bouton-contour bouton-sm"
           [title]="activeLot()?.statut === 'INDISPONIBLE_LITIGE' ? 'Lever le gel litige' : 'Geler pour contestation'">
           {{ activeLot()?.statut === 'INDISPONIBLE_LITIGE' ? 'Lever Litige' : 'Geler Litige' }}
         </button>

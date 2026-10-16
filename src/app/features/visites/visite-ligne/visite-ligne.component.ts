@@ -70,7 +70,7 @@ import { LIBELLES_STATUT_VISITE, MODALITES_VISITE } from '../visite-detail/visit
             <button
               type="button"
               (click)="$event.stopPropagation(); action.emit()"
-              class="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-lg bg-brand-primary px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition-colors hover:bg-brand-primary-hover"
+              class="bouton bouton-primaire bouton-sm"
             >
               <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">{{ v.agentAssignId ? 'event_available' : 'person_add' }}</mat-icon>
               {{ v.agentAssignId ? 'Confirmer' : 'Attribuer' }}

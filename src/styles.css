@@ -10,6 +10,7 @@
 /* Tailwind CSS v4 Theme & Design Tokens Foncier+ */
 @import 'tailwindcss';
 @import './theme/colors.css';
+@import './theme/boutons.css';
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

@@ -3,10 +3,11 @@ import { MatIcon } from '@angular/material/icon';
 import { Reservation } from '../../../core/models/societe.models';
 import { formaterFcfa, initiales } from '../../../core/utils/format';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
-import { DelaiAttribution } from '../reservation-delai';
+import { DecompteReservation } from '../reservation-delai';
 import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
+import { LIBELLES_STATUT, TON_STATUT } from '../reservation-statut';
 
-/** Une demande de réservation dans la liste : bien, acquéreur, montant, agent, statut et action. */
+/** Une réservation dans la liste : bien, acquéreur, paiement, agent ou décompte, statut et action. */
 @Component({
   selector: 'app-reservation-ligne',
   standalone: true,
@@ -15,7 +16,7 @@ import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
   host: { class: 'block' },
   template: `
     @let r = reservation();
-    @let d = delai();
+    @let d = decompte();
     <article
       (click)="ouvrir.emit()"
       class="group flex cursor-pointer overflow-hidden rounded-2xl border bg-white shadow-card transition-all hover:-translate-y-0.5 hover:border-brand-primary/40"
@@ -43,13 +44,16 @@ import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
           <p class="truncate font-mono text-[11px] text-gray-500">{{ r.prospectTelephone }}</p>
         </div>
 
-        <!-- Montant -->
+        <!-- Paiement -->
         <div class="min-w-0">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Montant</p>
-          <p class="truncate text-xs font-extrabold text-brand-secondary">{{ montant() }}</p>
+          <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Réservation</p>
+          <p class="truncate text-xs font-extrabold text-brand-secondary">{{ paiement() }}</p>
+          @if (r.rembourse) {
+            <p class="text-[10px] font-semibold text-brand-success">Remboursée</p>
+          }
         </div>
 
-        <!-- Agent ou délai restant -->
+        <!-- Agent et décompte -->
         <div class="min-w-0">
           <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Agent</p>
           @if (r.agentAssignNom) {
@@ -57,25 +61,28 @@ import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
               <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-secondary text-[9px] font-bold text-white">{{ initialesAgent() }}</span>
               <span class="truncate text-xs font-semibold text-gray-800">{{ r.agentAssignNom }}</span>
             </span>
-          } @else if (d) {
-            <div class="mt-0.5"><app-delai-chip [delai]="d" /></div>
           } @else {
-            <p class="text-xs text-gray-400">—</p>
+            <p class="text-xs font-semibold" [class]="r.statut === 'EN_ATTENTE' ? 'text-brand-warning' : 'text-gray-400'">
+              {{ r.statut === 'EN_ATTENTE' ? 'À attribuer' : '—' }}
+            </p>
+          }
+          @if (d) {
+            <div class="mt-1"><app-delai-chip [delai]="d" /></div>
           }
         </div>
 
         <!-- Statut et action -->
         <div class="col-span-2 flex items-center justify-between gap-2 border-t border-gray-100 pt-3 lg:col-span-1 lg:justify-end lg:border-0 lg:pt-0">
-          <app-status-badge [status]="r.statut" [label]="libelleStatut()" />
-          @if (r.statut === 'EN_ATTENTE' && d?.niveau !== 'depasse') {
+          <app-status-badge [status]="ton()" [label]="libelleStatut()" />
+          @if (actionPossible()) {
             <button
               type="button"
               (click)="$event.stopPropagation(); action.emit()"
-              class="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition-colors"
-              [class]="r.agentAssignId ? 'bg-brand-success hover:bg-emerald-700' : 'bg-brand-primary hover:bg-brand-primary-hover'"
+              class="bouton bouton-sm"
+              [class]="r.statut === 'EN_COURS' ? 'bouton-succes' : 'bouton-primaire'"
             >
-              <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">{{ r.agentAssignId ? 'task_alt' : 'person_add' }}</mat-icon>
-              {{ r.agentAssignId ? 'Confirmer' : 'Attribuer' }}
+              <mat-icon>{{ r.statut === 'EN_COURS' ? 'sell' : 'person_add' }}</mat-icon>
+              {{ r.statut === 'EN_COURS' ? 'Vendu' : 'Attribuer' }}
             </button>
           } @else {
             <mat-icon class="text-gray-300 transition-colors group-hover:text-brand-primary">chevron_right</mat-icon>
@@ -87,12 +94,14 @@ import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
 })
 export class ReservationLigneComponent {
   readonly reservation = input.required<Reservation>();
-  readonly delai = input<DelaiAttribution | null>(null);
-  readonly libelleStatut = input<string>('');
+  readonly decompte = input<DecompteReservation | null>(null);
 
   readonly ouvrir = output<void>();
-  /** Action principale de l'étape : attribuer un agent, ou confirmer. */
+  /** Action principale de l'étape : attribuer un agent, ou conclure la vente. */
   readonly action = output<void>();
+
+  readonly libelleStatut = computed(() => LIBELLES_STATUT[this.reservation().statut]);
+  readonly ton = computed(() => TON_STATUT[this.reservation().statut]);
 
   readonly icone = computed(() => {
     switch (this.reservation().typeBien) {
@@ -101,14 +110,28 @@ export class ReservationLigneComponent {
       default: return 'holiday_village';
     }
   });
-  readonly montant = computed(() => formaterFcfa(this.reservation().montantFcfa));
+
+  readonly paiement = computed(() => {
+    const montant = this.reservation().montantReservationFcfa;
+    return montant > 0 ? formaterFcfa(montant) : 'Gratuite';
+  });
+
   readonly initialesAgent = computed(() => initiales(this.reservation().agentAssignNom));
+
+  readonly actionPossible = computed(() => {
+    const r = this.reservation();
+    return (r.statut === 'EN_ATTENTE' && !r.agentAssignId)
+      || (r.statut === 'EN_COURS' && this.decompte()?.niveau !== 'depasse');
+  });
 
   /** Liseré de couleur selon l'état du dossier. */
   readonly accent = computed(() => {
-    const r = this.reservation();
-    if (r.statut === 'CONFIRMEE') return 'bg-brand-success';
-    if (r.statut === 'ANNULEE') return 'bg-gray-300';
-    return this.delai()?.niveau === 'normal' || !this.delai() ? 'bg-brand-primary' : 'bg-brand-danger';
+    switch (this.reservation().statut) {
+      case 'VENDUE': return 'bg-brand-success';
+      case 'EXPIREE':
+      case 'ANNULEE': return 'bg-gray-300';
+      case 'EN_COURS': return this.decompte()?.niveau === 'normal' ? 'bg-brand-primary' : 'bg-brand-danger';
+      default: return this.reservation().agentAssignId ? 'bg-brand-secondary' : 'bg-brand-warning';
+    }
   });
 }

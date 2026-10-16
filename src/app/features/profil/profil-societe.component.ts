@@ -11,12 +11,14 @@ import { ReferencesLegalesComponent } from './components/references-legales.comp
 import { DossierKycComponent } from './components/dossier-kyc.component';
 import { ResponsableLegalComponent } from './components/responsable-legal.component';
 import { ReglesReservationComponent } from './components/regles-reservation.component';
+import { LogoSocieteComponent } from './components/logo-societe.component';
 
 /** Profil de la société promotrice : statut, coordonnées et règles de réservation modifiables, références légales, KYC. */
 @Component({
   selector: 'app-profil-societe',
   standalone: true,
   imports: [
+    LogoSocieteComponent,
     StatutAgrementBannerComponent,
     IdentiteFormComponent,
     ReferencesLegalesComponent,

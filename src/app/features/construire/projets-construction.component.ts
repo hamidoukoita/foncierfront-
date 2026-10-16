@@ -29,6 +29,11 @@ import {
   OngletFiltre,
 } from '../../shared/components/filtre-onglets/filtre-onglets.component';
 import { ProjetDetailComponent } from './projet-detail/projet-detail.component';
+import { MediaCible } from '../../core/models/media.models';
+import { ApercuMediasService, PanoramaAffichable } from '../../core/services/apercu-medias.service';
+import { MediaManagerComponent } from '../../shared/components/media-manager/media-manager.component';
+import { PanoramaModalComponent } from '../../shared/components/panorama-modal/panorama-modal.component';
+import { urlFichier } from '../../core/utils/url-fichier';
 
 type ConstructionFilter = 'TOUS' | 'EN_ETUDE' | 'ACCEPTER' | 'REFUSER';
 type ViewMode = 'PROJETS' | 'MODELES';
@@ -59,7 +64,10 @@ const ETAPES = [
     ChampRechercheComponent,
     FiltreOngletsComponent,
     ProjetDetailComponent,
+    MediaManagerComponent,
+    PanoramaModalComponent,
   ],
+  providers: [ApercuMediasService],
   templateUrl: './projets-construction.component.html',
   styleUrl: './projets-construction.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,6 +77,7 @@ export class ProjetsConstructionComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
+  readonly apercu = inject(ApercuMediasService);
 
   readonly viewMode = signal<ViewMode>('PROJETS');
   readonly isLoading = signal(false);
@@ -144,10 +153,43 @@ export class ProjetsConstructionComponent implements OnInit {
     const societeId =
       this.societeService.getSocieteId() ?? this.authService.currentUser()?.societeId;
     this.societeService.getModelesMaison(societeId ?? undefined).subscribe({
-      next: (items) => this.modeles.set(items ?? []),
+      next: (items) => {
+        this.modeles.set(items ?? []);
+        this.apercu.charger(this.modeles().map((m) => this.cibleModele(m)));
+      },
       error: (e) =>
         this.errorMessage.set(this.extractError(e, 'Impossible de charger les modèles.')),
     });
+  }
+
+  // ---------- Médias des modèles (photos, 360°) ----------
+
+  readonly galerieModele = signal<MediaCible | null>(null);
+  readonly visite360 = signal<{ titre: string; panoramas: PanoramaAffichable[] } | null>(null);
+
+  private cibleModele(m: ModelMaison): MediaCible {
+    return { kind: 'modele', id: m.id, titre: m.libeller };
+  }
+
+  ouvrirGalerieModele(m: ModelMaison): void {
+    this.galerieModele.set(this.cibleModele(m));
+  }
+
+  /** La couverture et le nombre de panoramas viennent du backend : on recharge le catalogue. */
+  fermerGalerieModele(): void {
+    this.galerieModele.set(null);
+    this.loadModels();
+  }
+
+  /** Visite 360° ; sans panorama, ouvre la galerie pour en ajouter un. */
+  ouvrir360Modele(m: ModelMaison): void {
+    const panoramas = this.apercu.panoramas(m.id);
+    if (panoramas.length === 0) {
+      this.toast.info('Aucune vue 360°', 'Ajoutez un panorama 360° pour proposer la visite virtuelle du modèle.');
+      this.ouvrirGalerieModele(m);
+      return;
+    }
+    this.visite360.set({ titre: m.libeller, panoramas });
   }
 
   readonly filteredProjets = computed(() => {
@@ -486,10 +528,7 @@ export class ProjetsConstructionComponent implements OnInit {
   }
 
   imageUrl(url?: string | null): string {
-    if (!url) return '';
-    if (url.startsWith('http') || url.startsWith('data:')) return url;
-    if (url.startsWith('/')) return `http://localhost:8080${url}`;
-    return url;
+    return urlFichier(url);
   }
 
   statusLabel(e: EtatEtudeConstruction): string {

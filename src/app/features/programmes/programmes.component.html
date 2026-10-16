@@ -7,8 +7,8 @@
         Studio.
       </p>
     </div>
-    <button type="button" class="create-program-btn" (click)="openCreateModal()">
-      <span class="plus">＋</span>
+    <button type="button" class="bouton bouton-primaire" (click)="openCreateModal()">
+      <mat-icon>add</mat-icon>
       <span>Nouveau programme</span>
     </button>
   </div>
@@ -75,12 +75,12 @@
       [message]="searchQuery() ? 'Aucun programme ne correspond à votre recherche. Essayez un autre terme.' : 'Créez votre premier programme foncier pour commencer la conception du lotissement.'"
     >
       @if (searchQuery()) {
-        <button action type="button" (click)="onSearchChange('')" class="create-empty-btn">
+        <button action type="button" (click)="onSearchChange('')" class="bouton bouton-contour">
           Effacer la recherche
         </button>
       } @else {
-        <button action type="button" (click)="openCreateModal()" class="create-empty-btn">
-          ＋ Créer un programme
+        <button action type="button" (click)="openCreateModal()" class="bouton bouton-primaire">
+          <mat-icon>add</mat-icon> Créer un programme
         </button>
       }
     </app-empty-state>
@@ -303,11 +303,11 @@
             }}</small>
           </div>
           <div class="visuel-actions">
-            <button type="button" class="outline-action" (click)="attacherVisuel3D()">
+            <button type="button" class="bouton bouton-contour bouton-sm" (click)="attacherVisuel3D()">
               📎 Attacher
             </button>
             @if (attachedVisuel3D()) {
-              <button type="button" class="clear-action" (click)="attachedVisuel3D.set(null)">
+              <button type="button" class="bouton bouton-danger bouton-sm" (click)="attachedVisuel3D.set(null)">
                 Retirer
               </button>
             }
@@ -317,18 +317,18 @@
         <div class="program-modal-footer">
           <button
             type="button"
-            class="footer-secondary"
+            class="bouton bouton-contour"
             (click)="suspendreBrouillon()"
             [disabled]="isSubmitting()"
           >
             Enregistrer le brouillon
           </button>
           <div class="footer-primary-group">
-            <button type="button" class="footer-link" (click)="attacherVisuel3D()">
+            <button type="button" class="bouton bouton-discret" (click)="attacherVisuel3D()">
               Attacher un visuel 3D</button
             ><button
               type="submit"
-              class="footer-primary"
+              class="bouton bouton-primaire"
               [disabled]="isSubmitting() || programmeForm.invalid"
             >
               {{ isSubmitting() ? 'Enregistrement…' : 'Créer et publier' }} <span>→</span>
@@ -405,10 +405,10 @@
           </div>
         </div>
         <div class="program-modal-footer">
-          <button type="button" class="footer-secondary" (click)="closeEditModal()">Annuler</button
+          <button type="button" class="bouton bouton-contour" (click)="closeEditModal()">Annuler</button
           ><button
             type="submit"
-            class="footer-primary"
+            class="bouton bouton-primaire"
             [disabled]="isSubmitting() || programmeForm.invalid"
           >
             {{ isSubmitting() ? 'Enregistrement…' : 'Enregistrer les modifications' }}

@@ -48,7 +48,11 @@ export interface ParcelleLot {
   geometryJson?: string;
 }
 
-export type StatutReservation = 'EN_ATTENTE' | 'CONFIRMEE' | 'ANNULEE';
+/**
+ * Cycle d'une réservation : payée → en attente d'un agent → décompte démarré par l'agent (en cours)
+ * → vendue avant l'échéance, ou expirée. L'acquéreur peut annuler tant que le bien n'est pas vendu.
+ */
+export type StatutReservation = 'EN_ATTENTE' | 'EN_COURS' | 'VENDUE' | 'EXPIREE' | 'ANNULEE';
 
 export interface Reservation {
   id: number;
@@ -58,8 +62,6 @@ export interface Reservation {
   prospectTelephone: string;
   montantFcfa: number;
   dateReservation: string;
-  delaiGel72h: string; // Ex: 'Reste 36h' ou 'Compromis signé'
-  delaiExpire: boolean;
   agentAssignId?: number;
   agentAssignNom?: string;
   statut: StatutReservation;
@@ -67,8 +69,17 @@ export interface Reservation {
   numeroDossier?: string;
   /** Dates ISO : tri et calcul du délai de gel. */
   dateReservationIso?: string;
+  /** Décompte démarré par l'agent, jusqu'à l'échéance. */
+  dateDebutDecompteIso?: string;
   dateExpirationIso?: string;
-  motifRefus?: string;
+  dateConclusionIso?: string;
+  dureeReservationHeures?: number;
+  motifAnnulation?: string;
+  /** Paiement Orange Money simulé (zéro pour une maison clé en main, réservée gratuitement). */
+  montantReservationFcfa: number;
+  referencePaiement?: string;
+  datePaiementIso?: string;
+  rembourse: boolean;
   /** LOT_PROGRAMME, PARCELLE_INDIVIDUELLE ou MAISON_CLE_EN_MAIN. */
   typeBien?: string;
 }
@@ -124,6 +135,7 @@ export interface ModelMaison {
   description?: string;
   imageUrl?: string;
   planUrl?: string;
+  nombrePanoramas?: number;
   surfaceTerrainMin?: number;
   surfaceTerrainMax?: number;
   surfaceConstruite?: number;
@@ -221,6 +233,12 @@ export interface ProfilSociete {
   delaiAttributionHeures?: number;
   /** Un même lot ou une même parcelle peut-il être réservé par plusieurs acquéreurs. */
   reservationMultiple?: boolean;
+  /** Montant payé par l'acquéreur pour réserver un lot ou une parcelle (FCFA). */
+  prixReservation?: number;
+  /** Chemin du logo (/uploads/logos/…), affiché sur les publications côté acquéreurs. */
+  logoUrl?: string | null;
+  /** Assistant de première connexion terminé ou passé. */
+  parametrageInitialFait?: boolean;
 }
 
 export interface DashboardKPIs {
@@ -236,6 +254,9 @@ export interface DashboardKPIs {
 
 /** Règles de réservation communes à tous les biens d'une société. */
 export interface ReglesReservation {
+  /** Durée de la réservation, comptée à partir du démarrage du décompte par l'agent. */
   delaiAttributionHeures: number;
   reservationMultiple: boolean;
+  /** Montant fixe payé pour réserver un lot ou une parcelle (FCFA). */
+  prixReservation: number;
 }
