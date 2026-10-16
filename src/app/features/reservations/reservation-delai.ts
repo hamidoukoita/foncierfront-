@@ -1,41 +1,40 @@
 import { Reservation } from '../../core/models/societe.models';
 
-/** Délai appliqué par le backend tant qu'une société n'a pas fixé le sien. */
-export const DELAI_ATTRIBUTION_PAR_DEFAUT_HEURES = 72;
+/** Valeurs appliquées par le backend tant qu'une société n'a pas fixé les siennes. */
+export const DUREE_RESERVATION_PAR_DEFAUT_HEURES = 72;
+export const PRIX_RESERVATION_PAR_DEFAUT = 25_000;
 const HEURE_MS = 3_600_000;
 
 export type NiveauDelai = 'normal' | 'urgent' | 'depasse';
 
-export interface DelaiAttribution {
+export interface DecompteReservation {
   niveau: NiveauDelai;
   libelle: string;
-  /** Part du délai déjà consommée (0 → 1), pour la jauge. */
+  /** Part de la durée déjà écoulée (0 → 1), pour la jauge. */
   progression: number;
-  /** Durée totale du délai fixé par la société, en heures. */
+  /** Durée totale de la réservation, en heures. */
   totalHeures: number;
 }
 
 /**
- * Temps restant pour attribuer un agent à une demande en attente, jusqu'à l'échéance
- * calculée par le backend selon le délai de la société.
- * Retourne null quand le délai ne s'applique plus (agent attribué, demande traitée).
+ * Temps restant d'une réservation dont l'agent a démarré le décompte, jusqu'à l'échéance
+ * calculée par le backend. Retourne null avant le démarrage ou une fois la réservation terminée.
  */
-export function delaiAttribution(r: Reservation, maintenant: number): DelaiAttribution | null {
-  if (r.statut !== 'EN_ATTENTE' || r.agentAssignId || !r.dateReservationIso) return null;
-  const debut = new Date(r.dateReservationIso).getTime();
-  if (Number.isNaN(debut)) return null;
+export function decompteReservation(r: Reservation, maintenant: number): DecompteReservation | null {
+  if (r.statut !== 'EN_COURS' || !r.dateDebutDecompteIso || !r.dateExpirationIso) return null;
+  const debut = new Date(r.dateDebutDecompteIso).getTime();
+  const fin = new Date(r.dateExpirationIso).getTime();
+  if (Number.isNaN(debut) || Number.isNaN(fin) || fin <= debut) return null;
 
-  const echeance = r.dateExpirationIso ? new Date(r.dateExpirationIso).getTime() : NaN;
-  const fin = echeance > debut ? echeance : debut + DELAI_ATTRIBUTION_PAR_DEFAUT_HEURES * HEURE_MS;
   const totalMs = fin - debut;
   const totalHeures = Math.round(totalMs / HEURE_MS);
   const restantMs = fin - maintenant;
-  if (restantMs <= 0) return { niveau: 'depasse', libelle: 'Délai dépassé', progression: 1, totalHeures };
+  if (restantMs <= 0) return { niveau: 'depasse', libelle: 'Délai écoulé', progression: 1, totalHeures };
 
   const heures = Math.floor(restantMs / HEURE_MS);
   const minutes = Math.floor((restantMs % HEURE_MS) / 60_000);
   return {
-    // Urgent dans le dernier tiers du délai (sous 24 h pour un délai de 72 h).
+    // Urgent dans le dernier tiers de la durée.
     niveau: restantMs < totalMs / 3 ? 'urgent' : 'normal',
     libelle:
       heures >= 48
@@ -43,7 +42,7 @@ export function delaiAttribution(r: Reservation, maintenant: number): DelaiAttri
         : heures > 0
           ? `${heures} h ${String(minutes).padStart(2, '0')} restantes`
           : `${minutes} min restantes`,
-    progression: 1 - restantMs / totalMs,
+    progression: Math.min(1, Math.max(0, 1 - restantMs / totalMs)),
     totalHeures,
   };
 }

@@ -1,0 +1,161 @@
+<div class="fixed inset-0 z-[2100] flex items-center justify-center bg-slate-950/80 p-3 backdrop-blur-sm sm:p-6" (click)="fermer.emit()">
+  <section
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="visite-titre"
+    class="flex h-full max-h-[820px] w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
+      <div class="min-w-0">
+        <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-primary">Visite virtuelle</p>
+        <h2 id="visite-titre" class="mt-0.5 truncate text-lg font-bold text-brand-secondary">{{ maison().titre }}</h2>
+        <p class="mt-0.5 text-xs text-gray-500">
+          Placez dans chaque pièce des points qui mènent aux autres pièces. Les acquéreurs passeront de l’une à l’autre depuis l’application.
+        </p>
+      </div>
+      <button type="button" class="bouton bouton-discret" (click)="fermer.emit()" aria-label="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+
+    @if (chargement()) {
+      <div class="flex flex-1 items-center justify-center text-sm text-gray-500">Chargement des panoramas…</div>
+    } @else if (panoramas().length < 2) {
+      <div class="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+        <span class="flex h-14 w-14 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
+          <mat-icon>360</mat-icon>
+        </span>
+        <p class="text-sm font-bold text-brand-secondary">Il faut au moins deux panoramas 360°</p>
+        <p class="max-w-md text-xs text-gray-500">
+          Ajoutez un panorama par pièce (salon, chambre, cuisine…) depuis « Photos et 360° », en leur donnant le nom de la pièce, puis revenez relier les pièces entre elles.
+        </p>
+      </div>
+    } @else {
+      <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <!-- Pièces -->
+        <aside class="flex shrink-0 gap-2 overflow-x-auto border-b border-gray-100 p-3 lg:w-64 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r">
+          <p class="hidden px-1 text-[11px] font-bold uppercase tracking-wider text-gray-400 lg:block">Pièces</p>
+          @for (p of panoramas(); track p.id; let i = $index) {
+            <button
+              type="button"
+              (click)="allerA(p.id)"
+              class="flex shrink-0 cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left transition-colors"
+              [class]="p.id === courantId()
+                ? 'border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary'
+                : 'border-gray-200 bg-white hover:border-brand-primary/50'"
+            >
+              <span class="min-w-0">
+                <span class="block truncate text-xs font-bold text-brand-secondary">{{ p.titre }}</span>
+                <span class="block text-[11px] text-gray-500">{{ nombrePoints(p.id) }} point(s){{ i === 0 ? ' · départ' : '' }}</span>
+              </span>
+              <mat-icon class="!h-4 !w-4 !text-[16px] text-gray-400">chevron_right</mat-icon>
+            </button>
+          }
+        </aside>
+
+        <!-- Panorama -->
+        <div class="flex min-h-0 flex-1 flex-col">
+          <div class="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-2.5">
+            <p class="mr-auto truncate text-sm font-bold text-brand-secondary">{{ courant()?.titre }}</p>
+            @if (mode() === 'vue') {
+              <button type="button" class="bouton bouton-primaire bouton-sm" (click)="commencerPlacement()" [disabled]="enCours()">
+                <mat-icon>add_location_alt</mat-icon> Ajouter un point
+              </button>
+            } @else {
+              <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-brand-warning">
+                {{ mode() === 'placement' ? 'Cliquez à l’endroit de la porte ou du passage' : 'Cliquez à la nouvelle position du point' }}
+              </span>
+              <button type="button" class="bouton bouton-discret bouton-sm" (click)="annuler()">Annuler</button>
+            }
+          </div>
+
+          <div class="relative min-h-[280px] flex-1 bg-black">
+            @for (p of vue(); track p.id) {
+              <div class="absolute inset-0 p-2">
+                <app-panorama-viewer
+                  [src]="p.url"
+                  [titre]="p.titre"
+                  [points]="points()"
+                  [pointSelectionne]="selectionId()"
+                  [edition]="mode() !== 'vue'"
+                  [vueInitiale]="arrivee()"
+                  (clicVue)="clicVue($event)"
+                  (pointChoisi)="choisirPoint($event)"
+                />
+              </div>
+            }
+          </div>
+
+          <!-- Nouveau point -->
+          @if (brouillon(); as b) {
+            <div class="grid grid-cols-1 gap-3 border-t border-gray-100 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <label class="block">
+                <span class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">Mène vers</span>
+                <select
+                  [ngModel]="b.cibleId"
+                  (ngModelChange)="choisirCible(+$event)"
+                  class="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 outline-none focus:border-brand-primary"
+                >
+                  @for (p of autresPieces(); track p.id) {
+                    <option [ngValue]="p.id">{{ p.titre }}</option>
+                  }
+                </select>
+              </label>
+              <label class="block">
+                <span class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">Libellé affiché</span>
+                <input
+                  [ngModel]="b.libelle"
+                  (ngModelChange)="modifierBrouillon('libelle', $event)"
+                  maxlength="60"
+                  placeholder="Chambre, Cuisine…"
+                  class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand-primary"
+                />
+              </label>
+              <div class="flex items-center gap-2">
+                <button type="button" class="bouton bouton-discret" (click)="annuler()">Annuler</button>
+                <button type="button" class="bouton bouton-primaire" (click)="creer()" [disabled]="enCours() || !b.cibleId">
+                  {{ enCours() ? 'Enregistrement…' : 'Enregistrer' }}
+                </button>
+              </div>
+              <label class="flex cursor-pointer items-center gap-2 text-xs text-gray-600 sm:col-span-3">
+                <input type="checkbox" [ngModel]="b.retour" (ngModelChange)="modifierBrouillon('retour', $event)" class="h-4 w-4 accent-brand-primary" />
+                Créer aussi le point retour vers « {{ courant()?.titre }} » (à ajuster ensuite dans l’autre pièce)
+              </label>
+            </div>
+          }
+
+          <!-- Point sélectionné -->
+          @if (selection(); as s) {
+            <div class="flex flex-wrap items-end gap-3 border-t border-gray-100 p-4">
+              <label class="block min-w-[200px] flex-1">
+                <span class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                  Point vers « {{ titrePiece(s.cibleId) }} »
+                </span>
+                <input
+                  [ngModel]="libelleSelection()"
+                  (ngModelChange)="libelleSelection.set($event)"
+                  (keydown.enter)="renommer()"
+                  maxlength="60"
+                  class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand-primary"
+                />
+              </label>
+              <button type="button" class="bouton bouton-contour" (click)="renommer()" [disabled]="enCours() || !libelleSelection().trim() || libelleSelection().trim() === s.libelle">
+                Renommer
+              </button>
+              <button type="button" class="bouton bouton-contour" (click)="deplacer()" [disabled]="enCours()">
+                <mat-icon>open_with</mat-icon> Déplacer
+              </button>
+              <button type="button" class="bouton bouton-secondaire" (click)="suivre()">
+                <mat-icon>arrow_forward</mat-icon> Aller à {{ titrePiece(s.cibleId) }}
+              </button>
+              <button type="button" class="bouton bouton-danger" (click)="supprimer()" [disabled]="enCours()">
+                <mat-icon>delete</mat-icon> Supprimer
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </section>
+</div>

@@ -21,7 +21,7 @@
       }
       <a
         routerLink="/societe/programmes"
-        class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white text-xs font-bold shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+        class="bouton bouton-primaire"
       >
         <mat-icon style="font-size: 18px; width: 18px; height: 18px">add_2</mat-icon>
         <span>Nouveau programme</span>
@@ -41,7 +41,7 @@
       <button
         type="button"
         (click)="reload()"
-        class="px-3 py-1.5 rounded-lg bg-white border border-rose-200 font-bold hover:bg-rose-100 cursor-pointer shadow-card"
+        class="bouton bouton-contour bouton-sm"
       >
         Réessayer
       </button>
@@ -430,8 +430,7 @@
         @for (res of derniersReservations(); track res.id) {
           <app-reservation-ligne
             [reservation]="res"
-            [delai]="delaiReservation(res)"
-            [libelleStatut]="libellesStatutReservation[res.statut]"
+            [decompte]="decompteReservation(res)"
             (ouvrir)="ouvrirReservations()"
             (action)="ouvrirReservations()"
           />

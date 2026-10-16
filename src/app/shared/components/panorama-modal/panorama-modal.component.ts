@@ -2,8 +2,14 @@ import { ChangeDetectionStrategy, Component, HostListener, computed, input, outp
 import { MatIcon } from '@angular/material/icon';
 import { PanoramaAffichable } from '../../../core/services/apercu-medias.service';
 import { PanoramaViewerComponent } from '../panorama-viewer/panorama-viewer.component';
+import { Direction } from '../panorama-viewer/panorama-geometrie';
+import { pointsDuPanorama, vueArrivee } from '../panorama-viewer/visite-virtuelle';
+import { LienPanorama } from '../../../core/models/media.models';
 
-/** Visualisation 360° plein écran, avec choix de la vue quand il y en a plusieurs. */
+/**
+ * Visualisation 360° plein écran, avec choix de la vue quand il y en a plusieurs.
+ * Avec des points de passage (visite virtuelle d'une maison), on passe d'une pièce à l'autre depuis l'image.
+ */
 @Component({
   selector: 'app-panorama-modal',
   standalone: true,
@@ -29,7 +35,15 @@ import { PanoramaViewerComponent } from '../panorama-viewer/panorama-viewer.comp
         <div class="relative flex-1 bg-black">
           <!-- Clé = id : la visionneuse est recréée à chaque changement de vue. -->
           @for (p of vueCourante(); track p.id) {
-            <div class="absolute inset-0 p-2"><app-panorama-viewer [src]="p.url" [titre]="p.titre" /></div>
+            <div class="absolute inset-0 p-2">
+              <app-panorama-viewer
+                [src]="p.url"
+                [titre]="p.titre"
+                [points]="points()"
+                [vueInitiale]="arrivee()"
+                (pointChoisi)="suivre($event)"
+              />
+            </div>
           }
         </div>
         @if (panoramas().length > 1) {
@@ -37,7 +51,7 @@ import { PanoramaViewerComponent } from '../panorama-viewer/panorama-viewer.comp
             @for (p of panoramas(); track p.id; let i = $index) {
               <button
                 type="button"
-                (click)="index.set(i)"
+                (click)="aller(i)"
                 class="shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors"
                 [class]="i === index() ? 'bg-brand-primary text-white' : 'bg-white/10 text-white/80 hover:bg-white/20'"
               >
@@ -53,13 +67,34 @@ import { PanoramaViewerComponent } from '../panorama-viewer/panorama-viewer.comp
 export class PanoramaModalComponent {
   readonly titre = input.required<string>();
   readonly panoramas = input.required<PanoramaAffichable[]>();
+  /** Points de passage de la visite virtuelle (maisons clés en main). */
+  readonly liens = input<LienPanorama[]>([]);
   readonly closed = output<void>();
 
   readonly index = signal(0);
+  readonly arrivee = signal<Direction | null>(null);
   readonly vueCourante = computed(() => {
     const p = this.panoramas()[this.index()];
     return p ? [p] : [];
   });
+  readonly points = computed(() => {
+    const courant = this.panoramas()[this.index()];
+    return courant ? pointsDuPanorama(this.liens(), courant.id) : [];
+  });
+
+  aller(index: number): void {
+    this.arrivee.set(null);
+    this.index.set(index);
+  }
+
+  /** Passe dans la pièce visée par le point, dos à la porte d'entrée. */
+  suivre(lienId: number): void {
+    const lien = this.liens().find((l) => l.id === lienId);
+    const cible = lien ? this.panoramas().findIndex((p) => p.id === lien.cibleId) : -1;
+    if (!lien || cible < 0) return;
+    this.arrivee.set(vueArrivee(this.liens(), lien.sourceId, lien.cibleId));
+    this.index.set(cible);
+  }
 
   @HostListener('document:keydown.escape')
   fermer(): void {

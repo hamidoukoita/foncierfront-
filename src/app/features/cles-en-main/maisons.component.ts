@@ -17,6 +17,9 @@ import { MediaManagerComponent } from '../../shared/components/media-manager/med
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PanneauLateralComponent } from '../../shared/components/panneau-lateral/panneau-lateral.component';
 import { PanoramaModalComponent } from '../../shared/components/panorama-modal/panorama-modal.component';
+import { VisiteEditorComponent } from './visite-editor/visite-editor.component';
+import { MediaService } from '../../core/services/media.service';
+import { LienPanorama } from '../../core/models/media.models';
 import { StatsCardComponent } from '../../shared/components/stats-card/stats-card.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { libelleStatutMaison } from './maison-statut';
@@ -40,6 +43,7 @@ const TAILLE_PAGE = 6;
     FiltreOngletsComponent,
     FoncierCardComponent,
     MediaManagerComponent,
+    VisiteEditorComponent,
     PaginationComponent,
     PanneauLateralComponent,
     PanoramaModalComponent,
@@ -55,6 +59,7 @@ const TAILLE_PAGE = 6;
 export class MaisonsComponent implements OnInit {
   private readonly maisonsService = inject(MaisonsService);
   private readonly toast = inject(ToastService);
+  private readonly mediaService = inject(MediaService);
   readonly apercu = inject(ApercuMediasService);
 
   readonly maisons = this.maisonsService.maisons;
@@ -72,7 +77,9 @@ export class MaisonsComponent implements OnInit {
 
   readonly mediaCible = signal<MediaCible | null>(null);
   readonly couvertureCible = signal<MediaCible | null>(null);
-  readonly visite360 = signal<{ titre: string; panoramas: PanoramaAffichable[] } | null>(null);
+  readonly visite360 = signal<{ titre: string; panoramas: PanoramaAffichable[]; liens: LienPanorama[] } | null>(null);
+  /** Maison dont on édite la visite virtuelle (points de passage entre pièces). */
+  readonly visiteEnEdition = signal<MaisonCleEnMain | null>(null);
 
   private readonly chargementApercus = effect(() => {
     const maisons = this.maisons();
@@ -155,7 +162,9 @@ export class MaisonsComponent implements OnInit {
 
   /** Échap ferme d'abord le formulaire ou la confirmation ouverts par-dessus la fiche. */
   fermerFiche(): void {
-    if (!this.aSupprimer() && this.enEdition() === undefined && !this.mediaCible()) this.selectionId.set(null);
+    if (!this.aSupprimer() && this.enEdition() === undefined && !this.mediaCible() && !this.visiteEnEdition() && !this.visite360()) {
+      this.selectionId.set(null);
+    }
   }
 
   // ---------- Médias ----------
@@ -192,7 +201,11 @@ export class MaisonsComponent implements OnInit {
       this.ouvrirGalerie(m);
       return;
     }
-    this.visite360.set({ titre: m.titre, panoramas });
+    // Les points de passage permettent d'aller d'une pièce à l'autre ; sans eux, simple choix de vue.
+    this.mediaService.liens(m.id).subscribe({
+      next: (liens) => this.visite360.set({ titre: m.titre, panoramas, liens }),
+      error: () => this.visite360.set({ titre: m.titre, panoramas, liens: [] }),
+    });
   }
 
   // ---------- Suppression ----------

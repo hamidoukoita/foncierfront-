@@ -14,7 +14,7 @@
     <button
       type="button"
       (click)="openCreateModel()"
-      class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.99] text-white text-xs font-bold shadow-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-primary">
+      class="bouton bouton-primaire">
       <span class="text-base leading-none">+</span>
       <span>Ajouter un modèle</span>
     </button>
@@ -129,7 +129,7 @@
                       </span>
                     } @else if (p.etatEtude === 'ACCEPTER') {
                       <button type="button" (click)="$event.stopPropagation(); openProgressModal(p)"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-secondary hover:bg-brand-bg">
+                        class="bouton bouton-contour bouton-sm">
                         <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">trending_up</mat-icon> Avancement
                       </button>
                     } @else {
@@ -195,6 +195,12 @@
                       <div>
                         <p class="font-bold text-gray-900 text-xs">{{ m.libeller }}</p>
                         <p class="text-[10px] text-gray-500 max-w-[180px] truncate">{{ m.description || '—' }}</p>
+                        <p class="mt-1 flex items-center gap-2 text-[10px] font-semibold text-gray-500">
+                          <span class="inline-flex items-center gap-0.5"><mat-icon class="!h-3.5 !w-3.5 !text-[14px]">photo_library</mat-icon>{{ apercu.nombrePhotos(m.id) }}</span>
+                          @if (apercu.panoramas(m.id).length) {
+                            <span class="inline-flex items-center gap-0.5 rounded-full bg-brand-primary/10 px-1.5 text-brand-primary"><mat-icon class="!h-3.5 !w-3.5 !text-[14px]">360</mat-icon>{{ apercu.panoramas(m.id).length }}</span>
+                          }
+                        </p>
                       </div>
                     </div>
                   </td>
@@ -221,10 +227,18 @@
                   </td>
                   <td class="py-4 px-6">
                     <div class="flex items-center justify-end gap-1.5">
-                      <button type="button" (click)="openEditModel(m)" title="Modifier"
-                        class="w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors shadow-card">✎</button>
-                      <button type="button" [disabled]="isSaving()" (click)="deleteModel(m)" title="Supprimer"
-                        class="w-8 h-8 rounded-lg border border-red-200 bg-white text-red-500 hover:bg-red-50 flex items-center justify-center cursor-pointer disabled:opacity-50 shadow-card">🗑</button>
+                      <button type="button" class="bouton bouton-contour bouton-sm" (click)="ouvrirGalerieModele(m)">
+                        <mat-icon>collections</mat-icon> Photos et 360°
+                      </button>
+                      <button type="button" class="bouton bouton-discret bouton-sm" (click)="ouvrir360Modele(m)" title="Visualisation 360°" [attr.aria-label]="'Visualisation 360° de ' + m.libeller">
+                        <mat-icon>360</mat-icon>
+                      </button>
+                      <button type="button" class="bouton bouton-discret bouton-sm" (click)="openEditModel(m)" title="Modifier" [attr.aria-label]="'Modifier ' + m.libeller">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button type="button" class="bouton bouton-danger bouton-sm" [disabled]="isSaving()" (click)="deleteModel(m)" title="Supprimer" [attr.aria-label]="'Supprimer ' + m.libeller">
+                        <mat-icon>delete</mat-icon>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -327,11 +341,11 @@
 
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" (click)="isModelModalOpen.set(false)"
-            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer shadow-card">
+            class="bouton bouton-contour">
             Annuler
           </button>
           <button type="submit" [disabled]="isSaving()"
-            class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover cursor-pointer disabled:opacity-50">
+            class="bouton bouton-primaire">
             {{ isSaving() ? 'Enregistrement…' : (activeModel() ? 'Mettre à jour' : 'Créer le modèle') }}
           </button>
         </div>
@@ -389,9 +403,9 @@
         </div>
         <div class="flex justify-end gap-2">
           <button type="button" (click)="isProgressModalOpen.set(false)"
-            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-gray-200 cursor-pointer shadow-card">Annuler</button>
+            class="bouton bouton-contour">Annuler</button>
           <button type="submit" [disabled]="isSaving()"
-            class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover cursor-pointer disabled:opacity-50">
+            class="bouton bouton-primaire">
             {{ isSaving() ? '…' : 'Enregistrer' }}
           </button>
         </div>
@@ -412,7 +426,7 @@
 
     @if (p.etatEtude === 'EN_ETUDE') {
       <div panneau-actions class="flex flex-wrap items-center gap-2">
-        <button type="button" (click)="dialogue.set('refus')" class="cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-danger transition-colors hover:bg-red-50">
+        <button type="button" (click)="dialogue.set('refus')" class="bouton bouton-danger">
           Refuser
         </button>
         <span class="flex-1"></span>
@@ -430,7 +444,7 @@
         <button
           type="button"
           (click)="openProgressModal(p)"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-brand-primary px-3.5 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-brand-primary-hover"
+          class="bouton bouton-primaire"
         >
           <mat-icon class="!h-4 !w-4 !text-[16px]">trending_up</mat-icon>
           Mettre à jour l’avancement
@@ -458,3 +472,11 @@
   (valider)="refuserProjet($event)"
   (annule)="fermerDialogue()"
 />
+
+@if (galerieModele(); as cible) {
+  <app-media-manager [cible]="cible" (closed)="fermerGalerieModele()" />
+}
+
+@if (visite360(); as visite) {
+  <app-panorama-modal [titre]="visite.titre" [panoramas]="visite.panoramas" (closed)="visite360.set(null)" />
+}

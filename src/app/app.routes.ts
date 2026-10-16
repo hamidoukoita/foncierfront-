@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, noAuthGuard } from './core/guards/auth.guard';
 import { adminPlatformGuard, promoteurResponsableGuard } from './core/guards/role.guard';
 import { kycValideGuard } from './core/guards/kyc-valide.guard';
+import { parametrageInitialGuard } from './core/guards/parametrage-initial.guard';
 import { AdminLayoutComponent } from './layout/admin-layout/admin-layout.component';
 
 export const routes: Routes = [
@@ -100,6 +101,15 @@ export const routes: Routes = [
 
   // --- BRANCHE 2 : DIRECTION SOCIÉTÉ PROMOTRICE AGRÉÉE (SEMA SA, SIFMA, etc.) ---
   // Accessible UNIQUEMENT par l'Agent Promoteur Responsable (estResponsableSociete = true)
+  // Assistant de première connexion (plein écran, hors du layout) : logo et règles de réservation.
+  {
+    path: 'societe/bienvenue',
+    loadComponent: () =>
+      import('./features/bienvenue/parametrage-initial.component').then(
+        (m) => m.ParametrageInitialComponent,
+      ),
+    canActivate: [authGuard, promoteurResponsableGuard, kycValideGuard],
+  },
   {
     path: 'societe',
     component: AdminLayoutComponent,
@@ -114,6 +124,7 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+        canActivate: [parametrageInitialGuard],
       },
       {
         path: 'programmes',

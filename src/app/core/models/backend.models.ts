@@ -24,6 +24,9 @@ export interface SocietePromotriceBackend {
   /** Règles de réservation fixées par la société. */
   delaiAttributionHeures?: number;
   reservationMultiple?: boolean;
+  prixReservation?: number;
+  /** Assistant de première connexion terminé ou passé. */
+  parametrageInitialFait?: boolean;
   // Métadonnées d'interface
   formeJuridique?: string;
   representantLegal?: string;
@@ -105,7 +108,8 @@ export interface UtilisateurBackend {
 }
 
 export type StatutParcelleBackend = 'DISPONIBLE' | 'RESERVER' | 'VENDUE' | 'INDISPONIBLE';
-export type StatutReservationBackend = 'EN_ATTENTE' | 'CONFIRMER' | 'REFUSER' | 'ANNULEE';
+/** CONFIRMER et REFUSER : anciens dossiers, antérieurs à la réservation payante. */
+export type StatutReservationBackend = 'EN_ATTENTE' | 'EN_COURS' | 'VENDUE' | 'EXPIREE' | 'ANNULEE' | 'CONFIRMER' | 'REFUSER';
 export type StatutRendezVousBackend = 'EN_ATTENTE' | 'ACCEPTER' | 'REFUSER';
 
 export interface ReservationBackend {
@@ -127,6 +131,16 @@ export interface ReservationBackend {
   acquereurNom?: string;
   acquereurTelephone?: string;
   agentNom?: string;
+  motifAnnulation?: string;
+  dateDebutDecompte?: string;
+  dateConclusion?: string;
+  dureeReservationHeures?: number;
+  montantReservation?: number;
+  moyenPaiement?: string;
+  referencePaiement?: string;
+  datePaiement?: string;
+  rembourse?: boolean;
+  dateRemboursement?: string;
 }
 
 export interface RendezVousBackend {
@@ -222,6 +236,8 @@ export interface ModelMaisonBackend {
   description?: string;
   imageUrl?: string;
   planUrl?: string;
+  /** Nombre de panoramas 360° de la galerie du modèle. */
+  nombrePanoramas?: number;
   surfaceTerrainMin?: number;
   surfaceTerrainMax?: number;
   surfaceConstruite?: number;

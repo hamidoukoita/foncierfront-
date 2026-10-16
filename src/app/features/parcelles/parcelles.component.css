@@ -34,45 +34,6 @@
   line-height: 18px;
 }
 
-.parcelles-primary-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 12px 20px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--foncier-primary);
-  color: #fff;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
-  transition: background-color .15s, box-shadow .15s, transform .15s;
-}
-
-.parcelles-primary-btn:hover {
-  background: var(--foncier-primary-hover);
-}
-
-.parcelles-primary-btn:active {
-  transform: scale(.99);
-}
-
-.parcelles-primary-btn:focus-visible {
-  outline: 2px solid var(--foncier-primary);
-  outline-offset: 2px;
-}
-
-.parcelles-primary-btn mat-icon {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
-  line-height: 18px;
-}
-
 .parcelles-filter-row {
   display: flex;
   flex-wrap: wrap;

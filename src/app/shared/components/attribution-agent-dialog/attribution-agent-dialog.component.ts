@@ -57,12 +57,12 @@ import { AgentCollaborateur } from '../../../core/models/societe.models';
           </div>
 
           <div class="flex items-center justify-end gap-2.5 border-t border-gray-100 px-6 py-4">
-            <button type="button" (click)="annuler()" class="cursor-pointer rounded-xl px-4 py-2 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-100">Annuler</button>
+            <button type="button" (click)="annuler()" class="bouton bouton-discret">Annuler</button>
             <button
               type="button"
               [disabled]="selection() === null || enCours()"
               (click)="valider.emit(selection()!)"
-              class="cursor-pointer rounded-xl bg-brand-primary px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              class="bouton bouton-primaire"
             >
               {{ enCours() ? 'Attribution…' : libelleConfirmation() }}
             </button>

@@ -1,0 +1,82 @@
+<div class="min-h-screen bg-brand-bg font-sans">
+  <header class="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
+    <app-logo size="md" />
+    <button type="button" class="bouton bouton-discret" (click)="passer()" [disabled]="enCours()">
+      Passer la configuration
+    </button>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 pb-12 sm:px-6">
+    <div class="mb-6">
+      <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-primary">Bienvenue sur Foncier+</p>
+      <h1 class="mt-1 text-2xl font-bold tracking-tight text-brand-secondary">
+        Configurons l’espace de {{ profil().raisonSociale || 'votre société' }}
+      </h1>
+      <p class="mt-1 text-sm text-gray-600">
+        Deux réglages rapides avant de publier. Vous pourrez les changer à tout moment depuis le profil.
+      </p>
+    </div>
+
+    <!-- Étapes -->
+    <ol class="mb-5 flex items-center gap-3" aria-label="Étapes de la configuration">
+      @for (e of etapes; track e.id; let i = $index) {
+        <li class="flex items-center gap-2" [attr.aria-current]="etape() === e.id ? 'step' : null">
+          <span
+            class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+            [class]="i < indexEtape()
+              ? 'bg-brand-success text-white'
+              : i === indexEtape() ? 'bg-brand-secondary text-white' : 'bg-white text-gray-400 border border-gray-200'"
+          >
+            @if (i < indexEtape()) {
+              <mat-icon class="!h-4 !w-4 !text-[16px]">check</mat-icon>
+            } @else {
+              {{ i + 1 }}
+            }
+          </span>
+          <span class="text-xs font-bold" [class.text-brand-secondary]="i <= indexEtape()" [class.text-gray-400]="i > indexEtape()">
+            {{ e.titre }}
+          </span>
+        </li>
+        @if (i < etapes.length - 1) {
+          <li aria-hidden="true" class="h-px w-10 bg-gray-200"></li>
+        }
+      }
+    </ol>
+
+    <section class="rounded-2xl border border-gray-100/90 bg-white p-6 shadow-card sm:p-8">
+      @if (etape() === 'logo') {
+        <h2 class="text-base font-bold text-brand-secondary">Le logo de votre société</h2>
+        <p class="mt-1 text-xs text-gray-500">
+          Il accompagne chacune de vos publications (cités, parcelles, maisons) dans l’application des acquéreurs.
+        </p>
+        <div class="mt-6">
+          <app-logo-societe [logoUrl]="profil().logoUrl" [nomSociete]="profil().raisonSociale" />
+        </div>
+        <div class="mt-8 flex flex-wrap items-center justify-end gap-3 border-t border-gray-100 pt-5">
+          @if (!profil().logoUrl) {
+            <button type="button" class="bouton bouton-discret" (click)="etape.set('regles')">Plus tard</button>
+          }
+          <button type="button" class="bouton bouton-primaire" (click)="etape.set('regles')">
+            Continuer <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+      } @else {
+        <h2 class="text-base font-bold text-brand-secondary">Vos règles de réservation</h2>
+        <p class="mt-1 text-xs text-gray-500">
+          Prix payé par l’acquéreur pour réserver, durée de la réservation et nombre de réservations par bien. Par défaut : 25 000 FCFA, 72 h, une seule réservation.
+        </p>
+        <div class="mt-6">
+          <app-choix-regles-reservation [(delai)]="delai" [(multiple)]="multiple" [(prix)]="prix" />
+        </div>
+        <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5">
+          <button type="button" class="bouton bouton-discret" (click)="etape.set('logo')" [disabled]="enCours()">
+            <mat-icon>arrow_back</mat-icon> Retour
+          </button>
+          <button type="button" class="bouton bouton-primaire" (click)="terminer()" [disabled]="enCours()">
+            {{ enCours() ? 'Enregistrement…' : 'Terminer et accéder au tableau de bord' }}
+          </button>
+        </div>
+      }
+    </section>
+  </main>
+</div>

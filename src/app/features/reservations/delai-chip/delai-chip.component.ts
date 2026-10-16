@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
-import { DelaiAttribution } from '../reservation-delai';
+import { DecompteReservation } from '../reservation-delai';
 
-/** Pastille du temps restant pour attribuer un agent (délai fixé par la société). */
+/** Pastille du temps restant d'une réservation dont le décompte est démarré. */
 @Component({
   selector: 'app-delai-chip',
   standalone: true,
@@ -16,7 +16,7 @@ import { DelaiAttribution } from '../reservation-delai';
   `,
 })
 export class DelaiChipComponent {
-  readonly delai = input.required<DelaiAttribution>();
+  readonly delai = input.required<DecompteReservation>();
 
   readonly classes = computed(() => {
     switch (this.delai().niveau) {
