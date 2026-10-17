@@ -24,7 +24,7 @@ import { LIBELLES_STATUT, TON_STATUT } from '../reservation-statut';
     >
       <span class="w-1 shrink-0" [class]="accent()"></span>
 
-      <div class="grid flex-1 grid-cols-2 items-center gap-x-5 gap-y-3 p-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_auto]">
+      <div class="grid flex-1 grid-cols-2 items-center gap-x-5 gap-y-3 p-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_13rem]">
         <!-- Bien -->
         <div class="col-span-2 flex min-w-0 items-center gap-3 lg:col-span-1">
           <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-bg text-brand-secondary">

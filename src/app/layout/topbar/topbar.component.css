@@ -91,22 +91,7 @@
 }
 
 /* Badge de statut dans les pilules */
-.nav-tab-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2.5px 8px;
-  border-radius: 9999px;
-  background: rgba(26, 43, 76, 0.08);
-  color: inherit;
-  line-height: 1.2;
-}
-
-.nav-tab-pill.active-nav .nav-tab-badge {
-  background: rgba(255, 255, 255, 0.3);
-  color: #fff !important;
-}
-
-/* Decorative Brand Strip */
+.nav-tab-pill.active-nav /* Decorative Brand Strip */
 .topbar-brand-strip {
   height: 3.5px;
   background: linear-gradient(

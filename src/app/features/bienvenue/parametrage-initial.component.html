@@ -66,7 +66,7 @@
           Prix payé par l’acquéreur pour réserver, durée de la réservation et nombre de réservations par bien. Par défaut : 25 000 FCFA, 72 h, une seule réservation.
         </p>
         <div class="mt-6">
-          <app-choix-regles-reservation [(delai)]="delai" [(multiple)]="multiple" [(prix)]="prix" />
+          <app-choix-regles-reservation [(delai)]="delai" [(reservationsMax)]="reservationsMax" [(prix)]="prix" />
         </div>
         <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5">
           <button type="button" class="bouton bouton-discret" (click)="etape.set('logo')" [disabled]="enCours()">

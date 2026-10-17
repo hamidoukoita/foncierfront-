@@ -141,14 +141,11 @@
           matRipple
           class="nav-tab-pill">
           
-          <mat-icon>{{ item.icon }}</mat-icon>
+          <span class="relative inline-flex">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <app-pastille-compteur [valeur]="item.badge ?? 0" [libelle]="(item.badge ?? 0) + ' à traiter'" />
+          </span>
           <span>{{ item.label }}</span>
-
-          @if (item.badge) {
-            <span class="nav-tab-badge">
-              {{ item.badge }}
-            </span>
-          }
         </a>
       }
     </div>

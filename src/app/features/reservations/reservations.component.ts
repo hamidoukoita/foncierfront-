@@ -36,7 +36,7 @@ import { ChampRechercheComponent } from '../../shared/components/champ-recherche
 import { ReservationDetailComponent } from './reservation-detail/reservation-detail.component';
 
 type FiltreStatut = 'TOUTES' | Reservation['statut'];
-type Dialogue = 'attribution' | 'demarrage' | 'vente' | null;
+type Dialogue = 'attribution' | 'vente' | null;
 
 const TAILLE_PAGE = 8;
 const RAFRAICHISSEMENT_DELAIS_MS = 60_000;
@@ -89,7 +89,7 @@ export class ReservationsComponent implements OnInit {
     return {
       duree: formaterDuree(profil.delaiAttributionHeures ?? DUREE_RESERVATION_PAR_DEFAUT_HEURES),
       prix: formaterMontantCompact(profil.prixReservation ?? PRIX_RESERVATION_PAR_DEFAUT),
-      multiple: profil.reservationMultiple ?? false,
+      max: profil.reservationsMax ?? 1,
     };
   });
 
@@ -271,16 +271,6 @@ export class ReservationsComponent implements OnInit {
       titre: 'Dossier attribué',
       message: `${r.lotDesignation} (${r.prospectNom}) est confié à ${nomAgent}.`,
       echec: 'Attribution impossible.',
-    });
-  }
-
-  demarrer(): void {
-    const r = this.selection();
-    if (!r) return;
-    this.executer(this.societeService.demarrerDecompteReservation(r.id), {
-      titre: 'Décompte démarré',
-      message: `${r.lotDesignation} est réservé à ${r.prospectNom} pour ${this.regles().duree}.`,
-      echec: 'Démarrage impossible.',
     });
   }
 

@@ -22,8 +22,21 @@ export function navAdministration(societesEnAttente: number): NavItem[] {
   ];
 }
 
-/** Menus de la société promotrice agréée. */
-export const NAV_SOCIETE: NavItem[] = [
+/** Menus de la société promotrice agréée ; la bulle des notifications compte les non lues. */
+export function navSociete(notificationsNonLues: number): NavItem[] {
+  return [
+    ...NAV_SOCIETE.slice(0, -1),
+    {
+      label: 'Notifications',
+      route: '/societe/notifications',
+      icon: 'notifications',
+      badge: notificationsNonLues > 0 ? notificationsNonLues : undefined,
+    },
+    ...NAV_SOCIETE.slice(-1),
+  ];
+}
+
+const NAV_SOCIETE: NavItem[] = [
   { label: 'Tableau de bord', route: '/societe/dashboard', icon: 'dashboard' },
   { label: 'Programmes', route: '/societe/programmes', icon: 'holiday_village' },
   { label: 'Parcelles', route: '/societe/parcelles', icon: 'grid_view' },
