@@ -75,7 +75,7 @@ export interface Reservation {
   dateConclusionIso?: string;
   dureeReservationHeures?: number;
   motifAnnulation?: string;
-  /** Paiement Orange Money simulé (zéro pour une maison clé en main, réservée gratuitement). */
+  /** Paiement Orange Money simulé (zéro si la société a choisi la gratuité). */
   montantReservationFcfa: number;
   referencePaiement?: string;
   datePaiementIso?: string;
@@ -233,6 +233,8 @@ export interface ProfilSociete {
   delaiAttributionHeures?: number;
   /** Un même lot ou une même parcelle peut-il être réservé par plusieurs acquéreurs. */
   reservationMultiple?: boolean;
+  /** Nombre maximal de réservations en cours sur un même bien (1 = unique). */
+  reservationsMax?: number;
   /** Montant payé par l'acquéreur pour réserver un lot ou une parcelle (FCFA). */
   prixReservation?: number;
   /** Chemin du logo (/uploads/logos/…), affiché sur les publications côté acquéreurs. */
@@ -256,7 +258,8 @@ export interface DashboardKPIs {
 export interface ReglesReservation {
   /** Durée de la réservation, comptée à partir du démarrage du décompte par l'agent. */
   delaiAttributionHeures: number;
-  reservationMultiple: boolean;
+  /** Nombre maximal de réservations en cours sur un même bien (1 = unique). */
+  reservationsMax: number;
   /** Montant fixe payé pour réserver un lot ou une parcelle (FCFA). */
   prixReservation: number;
 }

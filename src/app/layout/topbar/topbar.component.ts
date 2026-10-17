@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   HostListener,
   inject,
@@ -13,7 +14,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { SuperAdminService } from '../../core/services/super-admin.service';
 import { LogoComponent } from '../../shared/components/logo/logo.component';
-import { NAV_SOCIETE, NavItem, navAdministration } from '../navigation';
+import { NavItem, navAdministration, navSociete } from '../navigation';
+import { CompteurNotificationsService } from '../../core/services/compteur-notifications.service';
+import { PastilleCompteurComponent } from '../../shared/components/pastille-compteur/pastille-compteur.component';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +31,7 @@ import { MatRippleModule } from '@angular/material/core';
     RouterLink, 
     RouterLinkActive,
     LogoComponent,
+    PastilleCompteurComponent,
     MatIconModule,
     MatButtonModule,
     MatRippleModule
@@ -43,6 +47,10 @@ export class TopbarComponent {
   private readonly elementRef = inject(ElementRef);
 
   readonly currentUser = this.authService.currentUser;
+
+  constructor() {
+    inject(CompteurNotificationsService).suivre(inject(DestroyRef));
+  }
   readonly isMenuOpen = signal<boolean>(false);
 
   readonly headerWorkspaceTitle = computed(() => {
@@ -59,10 +67,11 @@ export class TopbarComponent {
     navAdministration(this.superAdminService.countSocietesEnAttente()),
   );
 
-  private readonly societeNav = NAV_SOCIETE;
+  private readonly compteurNotifications = inject(CompteurNotificationsService);
+  private readonly societeNav = computed(() => navSociete(this.compteurNotifications.nonLues()));
 
   readonly currentNavItems = computed(() => {
-    return this.authService.isPlatformAdmin() ? this.superAdminNav() : this.societeNav;
+    return this.authService.isPlatformAdmin() ? this.superAdminNav() : this.societeNav();
   });
 
   toggleMenu(): void {

@@ -25,7 +25,7 @@ import {
   MODALITES_VISITE,
   VisiteDetailComponent,
 } from './visite-detail/visite-detail.component';
-import { VisiteLigneComponent } from './visite-ligne/visite-ligne.component';
+import { GRILLE_VISITE, VisiteLigneComponent } from './visite-ligne/visite-ligne.component';
 import { ChampRechercheComponent } from '../../shared/components/champ-recherche/champ-recherche.component';
 
 type FiltreStatut = 'TOUS' | StatutVisite;
@@ -54,6 +54,7 @@ const TAILLE_PAGE = 10;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VisitesComponent implements OnInit {
+  readonly grille = GRILLE_VISITE;
   private readonly societeService = inject(SocieteService);
   private readonly toast = inject(ToastService);
 

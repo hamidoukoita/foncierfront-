@@ -12,7 +12,7 @@
         title="Modifier les règles de réservation dans le profil société"
       >
         <mat-icon class="!h-3.5 !w-3.5 !text-[14px] text-brand-primary">tune</mat-icon>
-        {{ regles().prix }} FCFA · {{ regles().duree }} · réservation {{ regles().multiple ? 'multiple' : 'unique' }}
+        {{ regles().prix }} FCFA · {{ regles().duree }} · {{ regles().max }} réservation(s) par bien
         <span class="font-bold text-brand-primary">Modifier</span>
       </a>
     </div>
@@ -137,9 +137,7 @@
           {{ r.agentAssignId ? 'Changer d’agent' : 'Attribuer' }}
         </button>
         @if (r.statut === 'EN_ATTENTE' && r.agentAssignId) {
-          <button type="button" (click)="ouvrirDialogue('demarrage')" class="bouton bouton-secondaire">
-            <mat-icon>timer</mat-icon> Démarrer le décompte
-          </button>
+          <span class="text-[11px] font-semibold text-gray-500">L’agent démarrera le décompte depuis son application.</span>
         }
         @if (r.statut === 'EN_COURS') {
           <button type="button" (click)="ouvrirDialogue('vente')" class="bouton bouton-succes">
@@ -160,15 +158,6 @@
   [enCours]="enCours()"
   (valider)="attribuer($event)"
   (annule)="fermerDialogue()"
-/>
-
-<app-confirm-dialog
-  [isOpen]="dialogue() === 'demarrage'"
-  title="Démarrer le décompte ?"
-  [message]="selection() ? 'D’habitude, l’agent le démarre depuis son application. ' + selection()!.lotDesignation + ' sera réservé à ' + selection()!.prospectNom + ' pendant ' + regles().duree + ' ; sans vente à l’échéance, la réservation expire.' : ''"
-  confirmText="Démarrer"
-  (confirmed)="demarrer()"
-  (cancelled)="fermerDialogue()"
 />
 
 <app-confirm-dialog

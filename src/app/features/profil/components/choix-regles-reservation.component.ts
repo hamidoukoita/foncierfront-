@@ -9,23 +9,11 @@ const DELAIS_PROPOSES = [24, 48, 72, 120, 168, 336];
 const PRIX_PROPOSES = [10_000, 25_000, 50_000, 100_000];
 const PRIX_MAX = 5_000_000;
 
-const MODES = [
-  {
-    multiple: false,
-    icone: 'person',
-    titre: 'Une seule fois',
-    texte: 'Une réservation en cours bloque le bien : personne d’autre ne peut le réserver.',
-  },
-  {
-    multiple: true,
-    icone: 'groups',
-    titre: 'Plusieurs fois',
-    texte: 'D’autres acquéreurs peuvent réserver le même bien ; à la vente, leurs réservations sont remboursées.',
-  },
-] as const;
+/** Plafond accepté par le backend. */
+const RESERVATIONS_MAX_LIMITE = 20;
 
 /**
- * Choix des règles de réservation (prix, durée, réservation unique ou multiple).
+ * Choix des règles de réservation (prix, durée, nombre de réservations par bien).
  * Sans enregistrement : utilisé par le profil et par l'assistant de première connexion.
  */
 @Component({
@@ -69,7 +57,7 @@ const MODES = [
         </div>
         <p class="text-[11px] text-gray-500 flex items-start gap-1.5">
           <mat-icon class="!text-sm !w-4 !h-4 text-brand-primary shrink-0">smartphone</mat-icon>
-          Payé par l’acquéreur avec Orange Money (simulé) pour réserver un lot ou une parcelle ; jamais remboursé s’il se désiste. Les maisons clés en main se réservent gratuitement.
+          Payé par l’acquéreur avec Orange Money (simulé) pour réserver un lot, une parcelle ou une maison clé en main ; jamais remboursé s’il se désiste.
         </p>
       </div>
 
@@ -98,31 +86,25 @@ const MODES = [
       </div>
 
       <div class="space-y-2">
-        <span class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">Un même bien peut être réservé</span>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Réservation multiple">
-          @for (m of modes; track m.multiple) {
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="multiple() === m.multiple"
-              (click)="multiple.set(m.multiple)"
-              class="cursor-pointer rounded-xl border p-3.5 text-left transition-colors flex items-start gap-3"
-              [class]="multiple() === m.multiple
-                ? 'border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary'
-                : 'border-gray-200 bg-white hover:border-brand-primary/50'"
-            >
-              <span
-                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                [class]="multiple() === m.multiple ? 'bg-brand-primary text-white' : 'bg-brand-bg text-gray-500'"
-              >
-                <mat-icon class="!h-5 !w-5 !text-[20px]">{{ m.icone }}</mat-icon>
-              </span>
-              <span class="min-w-0">
-                <span class="block text-xs font-bold text-brand-secondary">{{ m.titre }}</span>
-                <span class="mt-0.5 block text-[11px] leading-snug text-gray-500">{{ m.texte }}</span>
-              </span>
+        <span class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">Réservations en cours par bien</span>
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="inline-flex items-center rounded-xl border border-gray-200 bg-white" role="group" aria-label="Nombre maximal de réservations par bien">
+            <button type="button" class="bouton bouton-discret" (click)="changerMax(-1)" [disabled]="reservationsMax() <= 1" aria-label="Diminuer">
+              <mat-icon>remove</mat-icon>
             </button>
-          }
+            <span class="min-w-10 text-center text-base font-extrabold text-brand-secondary" aria-live="polite">{{ reservationsMax() }}</span>
+            <button type="button" class="bouton bouton-discret" (click)="changerMax(1)" [disabled]="reservationsMax() >= maxLimite" aria-label="Augmenter">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+          <p class="min-w-0 flex-1 text-[11px] leading-snug text-gray-500">
+            @if (reservationsMax() === 1) {
+              Une réservation en cours bloque le bien : personne d’autre ne peut le réserver ni demander de visite.
+            } @else {
+              Jusqu’à {{ reservationsMax() }} acquéreurs peuvent réserver le même bien ; à la vente, les autres sont remboursés.
+              Le nombre atteint, plus aucune réservation ni demande de visite.
+            }
+          </p>
         </div>
       </div>
     </div>
@@ -130,11 +112,12 @@ const MODES = [
 })
 export class ChoixReglesReservationComponent {
   readonly delai = model.required<number>();
-  readonly multiple = model.required<boolean>();
+  /** Nombre maximal de réservations en cours sur un même bien (1 = unique). */
+  readonly reservationsMax = model.required<number>();
   readonly prix = model.required<number>();
   /** Valeur enregistrée, ajoutée aux délais proposés si elle n'en fait pas partie. */
   readonly delaiEnregistre = input<number | null>(null);
-  readonly modes = MODES;
+  readonly maxLimite = RESERVATIONS_MAX_LIMITE;
   readonly prixProposes = PRIX_PROPOSES;
   readonly prixMax = PRIX_MAX;
 
@@ -150,6 +133,10 @@ export class ChoixReglesReservationComponent {
 
   fcfa(montant: number): string {
     return formaterFcfa(montant);
+  }
+
+  changerMax(pas: number): void {
+    this.reservationsMax.update((n) => Math.min(RESERVATIONS_MAX_LIMITE, Math.max(1, n + pas)));
   }
 
   saisirPrix(valeur: string): void {

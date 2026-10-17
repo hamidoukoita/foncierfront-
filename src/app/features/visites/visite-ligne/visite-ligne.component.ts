@@ -5,6 +5,13 @@ import { initiales } from '../../../core/utils/format';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { LIBELLES_STATUT_VISITE, MODALITES_VISITE } from '../visite-detail/visite-detail.component';
 
+/**
+ * Colonnes du planning (lignes et en-tête) : largeurs fixes pour le créneau et la colonne statut/action,
+ * afin que les colonnes restent alignées d'une ligne à l'autre quel que soit le bouton affiché.
+ */
+export const GRILLE_VISITE =
+  'grid-cols-[4rem_minmax(0,1fr)] lg:grid-cols-[4rem_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1fr)_14rem]';
+
 /** Un rendez-vous dans le planning : créneau, acquéreur, bien, agent, statut et action. */
 @Component({
   selector: 'app-visite-ligne',
@@ -21,7 +28,7 @@ import { LIBELLES_STATUT_VISITE, MODALITES_VISITE } from '../visite-detail/visit
     >
       <span class="w-1 shrink-0" [class]="accent()"></span>
 
-      <div class="grid flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-4 lg:grid-cols-[auto_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1fr)_auto]">
+      <div class="grid flex-1 items-center gap-x-4 gap-y-3 p-4" [class]="grille">
         <!-- Créneau -->
         <div class="flex h-14 w-16 flex-col items-center justify-center rounded-xl bg-brand-secondary text-white">
           <span class="text-sm font-extrabold leading-none">{{ v.heureDebut }}</span>
@@ -89,6 +96,8 @@ export class VisiteLigneComponent {
   readonly ouvrir = output<void>();
   /** Action principale : attribuer (ce qui confirme) ou confirmer. */
   readonly action = output<void>();
+
+  readonly grille = GRILLE_VISITE;
 
   readonly modalite = computed(() => MODALITES_VISITE[this.visite().typeVisite]);
   readonly libelleStatut = computed(() => LIBELLES_STATUT_VISITE[this.visite().statut]);

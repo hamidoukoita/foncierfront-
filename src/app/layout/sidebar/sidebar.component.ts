@@ -6,7 +6,9 @@ import { MatRippleModule } from '@angular/material/core';
 import { AuthService } from '../../core/services/auth.service';
 import { SuperAdminService } from '../../core/services/super-admin.service';
 import { LogoComponent } from '../../shared/components/logo/logo.component';
-import { NAV_SOCIETE, NavItem, navAdministration } from '../navigation';
+import { NavItem, navAdministration, navSociete } from '../navigation';
+import { CompteurNotificationsService } from '../../core/services/compteur-notifications.service';
+import { PastilleCompteurComponent } from '../../shared/components/pastille-compteur/pastille-compteur.component';
 
 
 @Component({
@@ -19,6 +21,7 @@ import { NAV_SOCIETE, NavItem, navAdministration } from '../navigation';
     MatIconModule,
     MatRippleModule,
     LogoComponent,
+    PastilleCompteurComponent,
   ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
@@ -39,10 +42,11 @@ export class SidebarComponent {
     navAdministration(this.superAdminService.countSocietesEnAttente()),
   );
 
-  private readonly societeNav = NAV_SOCIETE;
+  private readonly compteurNotifications = inject(CompteurNotificationsService);
+  private readonly societeNav = computed(() => navSociete(this.compteurNotifications.nonLues()));
 
   readonly currentNavItems = computed(() => {
-    return this.authService.isPlatformAdmin() ? this.superAdminNav() : this.societeNav;
+    return this.authService.isPlatformAdmin() ? this.superAdminNav() : this.societeNav();
   });
 
   onLogout(): void {

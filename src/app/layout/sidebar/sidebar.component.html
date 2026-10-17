@@ -32,25 +32,20 @@
           class="sidebar-nav-link d-flex align-items-center justify-content-between px-3.5 py-3 rounded-3 text-decoration-none text-dark fw-semibold"
         >
           <div class="d-flex align-items-center gap-3">
-            <mat-icon
-              class="sidebar-icon shrink-0"
-              style="font-size: 22px; width: 22px; height: 22px"
-            >
-              {{ item.icon }}
-            </mat-icon>
+            <span class="relative inline-flex shrink-0">
+              <mat-icon
+                class="sidebar-icon shrink-0"
+                style="font-size: 22px; width: 22px; height: 22px"
+              >
+                {{ item.icon }}
+              </mat-icon>
+              <app-pastille-compteur [valeur]="item.badge ?? 0" [libelle]="(item.badge ?? 0) + ' à traiter'" />
+            </span>
             <span class="text-truncate" style="font-size: 14px; letter-spacing: -0.1px">{{
               item.label
             }}</span>
           </div>
 
-          @if (item.badge) {
-            <span
-              class="badge rounded-pill bg-warning-subtle text-dark border border-warning-subtle px-2.5 py-1 fw-bold"
-              style="font-size: 11px"
-            >
-              {{ item.badge }}
-            </span>
-          }
         </a>
       }
     </div>

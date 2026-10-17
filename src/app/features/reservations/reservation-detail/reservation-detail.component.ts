@@ -70,7 +70,7 @@ function dateHeure(iso?: string): string {
             [valeur]="r.rembourse ? 'Remboursée (bien vendu à un autre acquéreur)' : 'Non remboursable'"
           />
         } @else {
-          <app-info-ligne icone="redeem" libelle="Montant" valeur="Réservation gratuite (maison clé en main)" />
+          <app-info-ligne icone="redeem" libelle="Montant" valeur="Réservation gratuite" />
         }
       </div>
     </section>

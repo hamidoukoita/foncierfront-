@@ -692,13 +692,6 @@ export class SocieteService {
     };
   }
 
-  /** L'agent (ou le responsable) démarre le décompte : le bien est bloqué jusqu'à l'échéance. */
-  demarrerDecompteReservation(id: number): Observable<BackendApiResponse<ReservationBackend>> {
-    return this.http.patch<BackendApiResponse<ReservationBackend>>(`${this.API_BASE}/reservations/${id}/demarrer`, {}).pipe(
-      tap(() => this.getReservations().subscribe())
-    );
-  }
-
   /** Vente conclue : le bien passe « vendu », les autres réservations sont remboursées. */
   conclureVenteReservation(id: number): Observable<BackendApiResponse<ReservationBackend>> {
     return this.http.patch<BackendApiResponse<ReservationBackend>>(`${this.API_BASE}/reservations/${id}/vendre`, {}).pipe(
@@ -1035,6 +1028,7 @@ export class SocieteService {
           description: s.description ?? '',
           delaiAttributionHeures: s.delaiAttributionHeures,
           reservationMultiple: s.reservationMultiple ?? false,
+          reservationsMax: s.reservationsMax ?? 1,
           prixReservation: s.prixReservation,
           logoUrl: s.logoUrl ?? null,
           parametrageInitialFait: s.parametrageInitialFait ?? false
@@ -1101,6 +1095,7 @@ export class SocieteService {
         ...p,
         delaiAttributionHeures: s.delaiAttributionHeures,
         reservationMultiple: s.reservationMultiple ?? false,
+        reservationsMax: s.reservationsMax ?? 1,
         prixReservation: s.prixReservation
       })))
     );

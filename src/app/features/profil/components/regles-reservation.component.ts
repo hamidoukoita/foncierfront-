@@ -8,7 +8,7 @@ import { formaterDuree, formaterFcfa } from '../../../core/utils/format';
 import { DUREE_RESERVATION_PAR_DEFAUT_HEURES, PRIX_RESERVATION_PAR_DEFAUT } from '../../reservations/reservation-delai';
 import { ChoixReglesReservationComponent } from './choix-regles-reservation.component';
 
-/** Règles de réservation de la société : prix, durée et réservation unique ou multiple. */
+/** Règles de réservation de la société : prix, durée et nombre de réservations par bien. */
 @Component({
   selector: 'app-regles-reservation',
   standalone: true,
@@ -23,7 +23,7 @@ import { ChoixReglesReservationComponent } from './choix-regles-reservation.comp
 
       <app-choix-regles-reservation
         [(delai)]="delai"
-        [(multiple)]="multiple"
+        [(reservationsMax)]="reservationsMax"
         [(prix)]="prix"
         [delaiEnregistre]="delaiEnregistre()"
       />
@@ -64,23 +64,23 @@ export class ReglesReservationComponent {
   readonly delaiEnregistre = computed(
     () => this.profil().delaiAttributionHeures ?? DUREE_RESERVATION_PAR_DEFAUT_HEURES,
   );
-  private readonly multipleEnregistre = computed(() => this.profil().reservationMultiple ?? false);
+  private readonly maxEnregistre = computed(() => this.profil().reservationsMax ?? 1);
   private readonly prixEnregistre = computed(() => this.profil().prixReservation ?? PRIX_RESERVATION_PAR_DEFAUT);
 
   readonly delai = linkedSignal(() => this.delaiEnregistre());
-  readonly multiple = linkedSignal(() => this.multipleEnregistre());
+  readonly reservationsMax = linkedSignal(() => this.maxEnregistre());
   readonly prix = linkedSignal(() => this.prixEnregistre());
 
   readonly modifie = computed(
     () =>
       this.delai() !== this.delaiEnregistre() ||
-      this.multiple() !== this.multipleEnregistre() ||
+      this.reservationsMax() !== this.maxEnregistre() ||
       this.prix() !== this.prixEnregistre(),
   );
 
   reinitialiser(): void {
     this.delai.set(this.delaiEnregistre());
-    this.multiple.set(this.multipleEnregistre());
+    this.reservationsMax.set(this.maxEnregistre());
     this.prix.set(this.prixEnregistre());
   }
 
@@ -89,7 +89,7 @@ export class ReglesReservationComponent {
     this.societeService
       .updateReglesReservation({
         delaiAttributionHeures: this.delai(),
-        reservationMultiple: this.multiple(),
+        reservationsMax: this.reservationsMax(),
         prixReservation: this.prix(),
       })
       .subscribe({
@@ -97,7 +97,7 @@ export class ReglesReservationComponent {
           this.isSaving.set(false);
           this.toast.success(
             'Règles enregistrées',
-            `${formaterFcfa(this.prix())} · ${formaterDuree(this.delai())} · réservation ${this.multiple() ? 'multiple' : 'unique'}.`,
+            `${formaterFcfa(this.prix())} · ${formaterDuree(this.delai())} · ${this.reservationsMax()} réservation(s) par bien.`,
           );
         },
         error: (err) => {

@@ -24,6 +24,7 @@ export interface SocietePromotriceBackend {
   /** Règles de réservation fixées par la société. */
   delaiAttributionHeures?: number;
   reservationMultiple?: boolean;
+  reservationsMax?: number;
   prixReservation?: number;
   /** Assistant de première connexion terminé ou passé. */
   parametrageInitialFait?: boolean;

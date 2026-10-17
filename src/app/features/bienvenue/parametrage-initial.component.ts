@@ -41,7 +41,7 @@ export class ParametrageInitialComponent implements OnInit {
 
   readonly delai = linkedSignal(() => this.profil().delaiAttributionHeures ?? DUREE_RESERVATION_PAR_DEFAUT_HEURES);
   readonly prix = linkedSignal(() => this.profil().prixReservation ?? PRIX_RESERVATION_PAR_DEFAUT);
-  readonly multiple = linkedSignal(() => this.profil().reservationMultiple ?? false);
+  readonly reservationsMax = linkedSignal(() => this.profil().reservationsMax ?? 1);
 
   readonly indexEtape = computed(() => ETAPES.findIndex((e) => e.id === this.etape()));
 
@@ -63,7 +63,7 @@ export class ParametrageInitialComponent implements OnInit {
     this.societeService
       .updateReglesReservation({
         delaiAttributionHeures: this.delai(),
-        reservationMultiple: this.multiple(),
+        reservationsMax: this.reservationsMax(),
         prixReservation: this.prix(),
       })
       .pipe(switchMap(() => this.societeService.terminerParametrageInitial()))
