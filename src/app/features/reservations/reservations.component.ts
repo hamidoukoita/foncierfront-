@@ -81,7 +81,7 @@ export class ReservationsComponent implements OnInit {
 
   readonly reservations = this.societeService.reservations;
   readonly agents = this.societeService.agents;
-  readonly agentsActifs = this.societeService.agentsActifs;
+  readonly agentsAttribuables = this.societeService.agentsAttribuables;
 
   /** Règles fixées par la société dans son profil. */
   readonly regles = computed(() => {

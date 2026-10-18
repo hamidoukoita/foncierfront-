@@ -60,7 +60,7 @@ export class VisitesComponent implements OnInit {
 
   readonly visites = this.societeService.visites;
   readonly agents = this.societeService.agents;
-  readonly agentsActifs = this.societeService.agentsActifs;
+  readonly agentsAttribuables = this.societeService.agentsAttribuables;
 
   readonly isLoading = signal(false);
   readonly filtreStatut = signal<FiltreStatut>('TOUS');

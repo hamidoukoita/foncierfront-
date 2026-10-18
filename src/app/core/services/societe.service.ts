@@ -60,6 +60,8 @@ export class SocieteService {
   readonly agents = signal<AgentCollaborateur[]>([]);
   /** Agents ACTIF uniquement (attribution réservations / RDV). */
   readonly agentsActifs = computed(() => this.agents().filter(a => a.statut === 'ACTIF'));
+  /** Agents à qui confier un dossier : collaborateurs actifs, jamais le responsable lui-même. */
+  readonly agentsAttribuables = computed(() => this.agentsActifs().filter(a => !a.estResponsableSociete));
   readonly projetsConstruction = signal<ProjetConstruction[]>([]);
   readonly notifications = signal<NotificationItem[]>([]);
   /**

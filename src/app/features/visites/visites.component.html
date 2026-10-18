@@ -174,7 +174,7 @@
   [isOpen]="dialogue() === 'attribution'"
   [titre]="selection()?.agentAssignId ? 'Changer d’agent' : 'Attribuer et confirmer'"
   [contexte]="selection() ? selection()!.prospectNom + ' · ' + selection()!.jourSemaine + ' ' + selection()!.jourMois + ' à ' + selection()!.heureDebut : ''"
-  [agents]="agentsActifs()"
+  [agents]="agentsAttribuables()"
   [agentActuelId]="selection()?.agentAssignId ?? null"
   libelleConfirmation="Attribuer"
   [enCours]="enCours()"

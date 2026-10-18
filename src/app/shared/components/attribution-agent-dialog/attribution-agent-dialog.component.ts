@@ -51,7 +51,7 @@ import { AgentCollaborateur } from '../../../core/models/societe.models';
             } @empty {
               <div class="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center">
                 <mat-icon class="text-gray-300">person_off</mat-icon>
-                <p class="mt-1 text-xs font-semibold text-gray-500">Aucun agent actif dans votre société.</p>
+                <p class="mt-1 text-xs font-semibold text-gray-500">Aucun agent collaborateur actif : ajoutez-en un dans « Gestion des agents ».</p>
               </div>
             }
           </div>

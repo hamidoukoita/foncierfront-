@@ -153,7 +153,7 @@
   [isOpen]="dialogue() === 'attribution'"
   [titre]="selection()?.agentAssignId ? 'Changer d’agent' : 'Attribuer la demande'"
   [contexte]="selection() ? selection()!.lotDesignation + ' · ' + selection()!.prospectNom : ''"
-  [agents]="agentsActifs()"
+  [agents]="agentsAttribuables()"
   [agentActuelId]="selection()?.agentAssignId ?? null"
   [enCours]="enCours()"
   (valider)="attribuer($event)"
