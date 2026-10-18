@@ -194,13 +194,6 @@ export const routes: Routes = [
         canActivate: [kycValideGuard],
       },
       {
-        path: 'notifications',
-        loadComponent: () =>
-          import('./features/notifications/notifications.component').then(
-            (m) => m.NotificationsComponent,
-          ),
-      },
-      {
         path: 'profil',
         loadComponent: () =>
           import('./features/profil/profil-societe.component').then(

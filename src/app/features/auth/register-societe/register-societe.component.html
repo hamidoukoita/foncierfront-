@@ -179,8 +179,8 @@
                   placeholder="Ex: SEMA SA, SIFMA, IMMO MALI..."
                   class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
                 />
-                @if (form.controls.nomSociete.touched && form.controls.nomSociete.invalid) {
-                  <p class="mt-1 text-xs text-red-600">Le nom de la société est obligatoire.</p>
+                @if (erreur('nomSociete', 'Le nom de la société'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
                 }
               </div>
 
@@ -219,9 +219,9 @@
                       class="block w-full pl-18 pr-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
                     />
                   </div>
-                  @if (form.controls.telephoneSociete.touched && form.controls.telephoneSociete.invalid) {
-                    <p class="mt-1 text-xs text-red-600">Numéro de téléphone requis (8 chiffres minimum).</p>
-                  }
+                  @if (erreur('telephoneSociete', 'Le téléphone'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
+                }
                 </div>
               </div>
 
@@ -237,8 +237,8 @@
                   placeholder="Ex: Hamdallaye ACI 2000, Rue 312, Porte 45, Bamako"
                   class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
                 />
-                @if (form.controls.adresse.touched && form.controls.adresse.invalid) {
-                  <p class="mt-1 text-xs text-red-600">L'adresse du siège est obligatoire.</p>
+                @if (erreur('adresse', 'L\'adresse'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
                 }
               </div>
 
@@ -302,9 +302,9 @@
                     placeholder="Ex: AGR-DNDC-2024-045"
                     class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all uppercase shadow-card"
                   />
-                  @if (form.controls.numeroAgrement.touched && form.controls.numeroAgrement.invalid) {
-                    <p class="mt-1 text-xs text-red-600">Le numéro d'agrément est obligatoire.</p>
-                  }
+                  @if (erreur('numeroAgrement', 'Le numéro d\'agrément'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
+                }
                 </div>
 
                 <div>
@@ -336,9 +336,9 @@
                     placeholder="Ex: 0801234567M"
                     class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all uppercase shadow-card"
                   />
-                  @if (form.controls.nif.touched && form.controls.nif.invalid) {
-                    <p class="mt-1 text-xs text-red-600">Le NIF est obligatoire.</p>
-                  }
+                  @if (erreur('nif', 'Le NIF'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
+                }
                 </div>
 
                 <div>
@@ -405,9 +405,9 @@
                     placeholder="Ex: Bakary"
                     class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
                   />
-                  @if (form.controls.prenomResponsable.touched && form.controls.prenomResponsable.invalid) {
-                    <p class="mt-1 text-xs text-red-600">Le prénom est obligatoire.</p>
-                  }
+                  @if (erreur('prenomResponsable', 'Le prénom'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
+                }
                 </div>
 
                 <div>
@@ -421,9 +421,9 @@
                     placeholder="Ex: TRAORÉ"
                     class="block w-full px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all uppercase shadow-card"
                   />
-                  @if (form.controls.nomResponsable.touched && form.controls.nomResponsable.invalid) {
-                    <p class="mt-1 text-xs text-red-600">Le nom de famille est obligatoire.</p>
-                  }
+                  @if (erreur('nomResponsable', 'Le nom'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
+                }
                 </div>
               </div>
 
@@ -445,9 +445,9 @@
                       class="block w-full pl-18 pr-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E07A22] focus:border-transparent transition-all shadow-card"
                     />
                   </div>
-                  @if (form.controls.telephoneResponsable.touched && form.controls.telephoneResponsable.invalid) {
-                    <p class="mt-1 text-xs text-red-600">Numéro malien valide requis (8 chiffres minimum).</p>
-                  }
+                  @if (erreur('telephoneResponsable', 'Le téléphone'); as message) {
+                  <p class="mt-1 text-xs text-red-600">{{ message }}</p>
+                }
                 </div>
 
                 <div>

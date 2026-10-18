@@ -7,7 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { SuperAdminService } from '../../core/services/super-admin.service';
 import { LogoComponent } from '../../shared/components/logo/logo.component';
 import { NavItem, navAdministration, navSociete } from '../navigation';
-import { CompteurNotificationsService } from '../../core/services/compteur-notifications.service';
+import { CompteurNouveautesService } from '../../core/services/compteur-nouveautes.service';
 import { PastilleCompteurComponent } from '../../shared/components/pastille-compteur/pastille-compteur.component';
 
 
@@ -42,8 +42,8 @@ export class SidebarComponent {
     navAdministration(this.superAdminService.countSocietesEnAttente()),
   );
 
-  private readonly compteurNotifications = inject(CompteurNotificationsService);
-  private readonly societeNav = computed(() => navSociete(this.compteurNotifications.nonLues()));
+  private readonly nouveautes = inject(CompteurNouveautesService);
+  private readonly societeNav = computed(() => navSociete(this.nouveautes.parRoute()));
 
   readonly currentNavItems = computed(() => {
     return this.authService.isPlatformAdmin() ? this.superAdminNav() : this.societeNav();
