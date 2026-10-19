@@ -32,6 +32,20 @@ export const telephoneMali: ValidatorFn = (c: AbstractControl): ValidationErrors
   return TELEPHONE_MALI.test(chiffresTelephone(v)) ? null : { telephoneMali: true };
 };
 
+/** Date du jour au format des champs `type="date"` (AAAA-MM-JJ), en heure locale. */
+export function aujourdhuiIso(): string {
+  const d = new Date();
+  const deux = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}`;
+}
+
+/** Date (AAAA-MM-JJ) qui ne doit pas dépasser aujourd'hui. */
+export const datePasseeOuJour: ValidatorFn = (c: AbstractControl): ValidationErrors | null => {
+  const v = String(c.value ?? '');
+  if (!v) return null;
+  return v > aujourdhuiIso() ? { dateFuture: true } : null;
+};
+
 /** Message d'erreur lisible pour un champ, null s'il est valide ou pas encore touché. */
 export function messageErreur(c: AbstractControl | null, libelle: string): string | null {
   if (!c || !c.invalid || !c.touched) return null;
@@ -41,6 +55,7 @@ export function messageErreur(c: AbstractControl | null, libelle: string): strin
   if (e['nomPersonne']) return `${libelle} ne doit contenir que des lettres.`;
   if (e['telephoneMali']) return 'Numéro malien à 8 chiffres attendu (ex. 76 12 34 56).';
   if (e['email']) return 'Adresse e-mail invalide.';
+  if (e['dateFuture']) return `${libelle} ne peut pas être dans le futur.`;
   if (e['minlength']) return `${libelle} doit contenir au moins ${e['minlength'].requiredLength} caractères.`;
   if (e['maxlength']) return `${libelle} est trop long.`;
   return `${libelle} est invalide.`;

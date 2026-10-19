@@ -12,6 +12,7 @@ import {
   AdministrateurRequestBackend,
   AdministrateurResponseBackend
 } from '../models/backend.models';
+import { DossierKycStatusResponse } from '../models/kyc.models';
 
 @Injectable({
   providedIn: 'root'
@@ -99,8 +100,13 @@ export class SuperAdminService {
     );
   }
 
-  getKycDocuments(id: number): Observable<any> {
-    return this.http.get<any>(`${this.API_BASE}/admin/kyc/societes/${id}/documents`);
+  getKycDocuments(id: number): Observable<DossierKycStatusResponse> {
+    return this.http.get<DossierKycStatusResponse>(`${this.API_BASE}/admin/kyc/societes/${id}/documents`);
+  }
+
+  /** Contenu d'un document KYC (requête authentifiée : un simple lien ne transmettrait pas le jeton). */
+  getKycDocumentFichier(documentId: number): Observable<Blob> {
+    return this.http.get(`${this.API_BASE}/admin/kyc/documents/${documentId}/preview`, { responseType: 'blob' });
   }
 
   /**

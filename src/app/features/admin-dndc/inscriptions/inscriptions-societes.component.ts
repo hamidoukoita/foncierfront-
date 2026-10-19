@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { SuperAdminService } from '../../../core/services/super-admin.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { SocietePromotriceBackend } from '../../../core/models/backend.models';
+import { DocumentKycResponse, TypeDocumentKyc } from '../../../core/models/kyc.models';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
@@ -15,6 +17,19 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 type InscriptionFilter = 'EN_ATTENTE' | 'VALIDEES' | 'REFUSEES';
+
+interface DocumentOuvert {
+  doc: DocumentKycResponse;
+  url: string;
+  urlSure: SafeResourceUrl;
+}
+
+const LIBELLES_DOCUMENT_KYC: Record<TypeDocumentKyc, string> = {
+  [TypeDocumentKyc.AGREMENT_MINISTERIEL]: 'Dossier d’agrément',
+  [TypeDocumentKyc.NIF]: 'Immatriculation fiscale (NIF)',
+  [TypeDocumentKyc.RCCM]: 'Extrait RCCM',
+  [TypeDocumentKyc.ATTESTATION_FISCALE]: 'Attestation fiscale',
+};
 
 
 @Component({
@@ -38,6 +53,7 @@ type InscriptionFilter = 'EN_ATTENTE' | 'VALIDEES' | 'REFUSEES';
 export class InscriptionsSocietesComponent implements OnInit {
   private readonly superAdminService = inject(SuperAdminService);
   private readonly toast = inject(ToastService);
+  private readonly sanitizer = inject(DomSanitizer);
   private readonly route = inject(ActivatedRoute);
 
   readonly currentFilter = signal<InscriptionFilter>('EN_ATTENTE');
@@ -196,22 +212,55 @@ export class InscriptionsSocietesComponent implements OnInit {
   }
 
   readonly isKycModalOpen = signal<boolean>(false);
-  readonly kycDocuments = signal<any[]>([]);
+  readonly kycDocuments = signal<DocumentKycResponse[]>([]);
+  /** Document KYC affiché dans la modale, chargé avec le jeton puis servi en URL locale. */
+  readonly documentOuvert = signal<DocumentOuvert | null>(null);
+  readonly chargementDocument = signal<boolean>(false);
 
   consulterDocumentKyc(s: SocietePromotriceBackend): void {
     this.superAdminService.getKycDocuments(s.id).subscribe({
       next: (res) => {
-        this.kycDocuments.set(res.documents || []);
+        const documents = res.documents ?? [];
+        this.kycDocuments.set(documents);
         this.isKycModalOpen.set(true);
+        if (documents.length > 0) this.afficherDocument(documents[0]);
       },
-      error: (err) => {
+      error: () => {
         this.toast.error('Erreur', 'Impossible de charger le dossier KYC.');
       }
     });
   }
 
+  afficherDocument(doc: DocumentKycResponse): void {
+    if (this.documentOuvert()?.doc.id === doc.id) return;
+    this.chargementDocument.set(true);
+    this.superAdminService.getKycDocumentFichier(doc.id).subscribe({
+      next: (fichier) => {
+        this.libererDocument();
+        const url = URL.createObjectURL(fichier);
+        this.documentOuvert.set({ doc, url, urlSure: this.sanitizer.bypassSecurityTrustResourceUrl(url) });
+        this.chargementDocument.set(false);
+      },
+      error: () => {
+        this.chargementDocument.set(false);
+        this.toast.error('Erreur', 'Impossible d’ouvrir ce document.');
+      }
+    });
+  }
+
+  libelleTypeDocument(type: TypeDocumentKyc): string {
+    return LIBELLES_DOCUMENT_KYC[type] ?? 'Document';
+  }
+
   fermerKycModal(): void {
     this.isKycModalOpen.set(false);
     this.kycDocuments.set([]);
+    this.libererDocument();
+  }
+
+  private libererDocument(): void {
+    const ouvert = this.documentOuvert();
+    if (ouvert) URL.revokeObjectURL(ouvert.url);
+    this.documentOuvert.set(null);
   }
 }

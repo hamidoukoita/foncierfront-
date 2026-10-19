@@ -268,8 +268,18 @@ export class AuthService {
    * Enregistre un dossier d'agrément pour une société promotrice et crée le compte responsable initial
    * Accessible publiquement via POST /api/auth/register-societe
    */
-  registerSociete(payload: RegisterSocieteRequest): Observable<ApiResponse<RegisterSocieteResponse>> {
-    return this.http.post<ApiResponse<RegisterSocieteResponse>>(`${this.API_URL}/register-societe`, payload).pipe(
+  registerSociete(
+    payload: RegisterSocieteRequest,
+    dossierKyc: File | null = null,
+  ): Observable<ApiResponse<RegisterSocieteResponse>> {
+    // Avec un dossier PDF : envoi multipart (données JSON + fichier), sinon JSON simple
+    let corps: RegisterSocieteRequest | FormData = payload;
+    if (dossierKyc) {
+      corps = new FormData();
+      corps.append('societe', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+      corps.append('dossier', dossierKyc, dossierKyc.name);
+    }
+    return this.http.post<ApiResponse<RegisterSocieteResponse>>(`${this.API_URL}/register-societe`, corps).pipe(
       catchError((error: HttpErrorResponse | Error) => {
         let errorMsg = "Échec de l'enregistrement de la société.";
         if (error instanceof HttpErrorResponse) {

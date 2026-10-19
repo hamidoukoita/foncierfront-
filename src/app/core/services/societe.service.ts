@@ -691,10 +691,14 @@ export class SocieteService {
       referencePaiement: r.referencePaiement,
       datePaiementIso: r.datePaiement,
       rembourse: r.rembourse ?? false,
+      suiteVente: r.suiteVente,
+      dateLimiteChoixIso: r.dateLimiteChoix,
+      dateRemboursementPrevueIso: r.dateRemboursementPrevue,
+      reservationOrigineId: r.reservationOrigineId,
     };
   }
 
-  /** Vente conclue : le bien passe « vendu », les autres réservations sont remboursées. */
+  /** Vente conclue : le bien passe « vendu » ; les autres acquéreurs choisissent remboursement ou report. */
   conclureVenteReservation(id: number): Observable<BackendApiResponse<ReservationBackend>> {
     return this.http.patch<BackendApiResponse<ReservationBackend>>(`${this.API_BASE}/reservations/${id}/vendre`, {}).pipe(
       tap(() => this.getReservations().subscribe())

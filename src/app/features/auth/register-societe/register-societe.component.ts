@@ -17,7 +17,14 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
   return pass === confirm ? null : { passwordMismatch: true };
 }
 
-import { messageErreur, nomPersonne, telephoneMali, texteRequis } from '../../../core/utils/validateurs';
+import {
+  aujourdhuiIso,
+  datePasseeOuJour,
+  messageErreur,
+  nomPersonne,
+  telephoneMali,
+  texteRequis,
+} from '../../../core/utils/validateurs';
 
 @Component({
   selector: 'app-register-societe',
@@ -51,6 +58,10 @@ export class RegisterSocieteComponent {
   readonly showConfirmPassword = signal<boolean>(false);
   readonly selectedFileName = signal<string | null>(null);
   readonly selectedFileSize = signal<string | null>(null);
+  /** Un agrément ne peut pas être daté du futur. */
+  readonly dateMax = aujourdhuiIso();
+  /** Dossier d'agrément consolidé (PDF) envoyé avec l'inscription. */
+  private readonly dossierKyc = signal<File | null>(null);
 
   // Formulaire unifié avec validation stricte
   readonly form = this.fb.group({
@@ -64,7 +75,7 @@ export class RegisterSocieteComponent {
 
     // Étape 2 : Agrément & Fiscalité
     numeroAgrement: ['', [texteRequis, Validators.maxLength(100)]],
-    dateAgrement: ['', [Validators.required]],
+    dateAgrement: ['', [Validators.required, datePasseeOuJour]],
     nif: ['', [texteRequis, Validators.maxLength(100)]],
     rccm: ['', [Validators.maxLength(100)]],
     description: [''],
@@ -192,6 +203,7 @@ export class RegisterSocieteComponent {
         return;
       }
 
+      this.dossierKyc.set(file);
       this.selectedFileName.set(file.name);
       const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
       this.selectedFileSize.set(`${sizeMb} Mo`);
@@ -235,7 +247,7 @@ export class RegisterSocieteComponent {
       documentKycNom: this.selectedFileName() || 'dossier_kyc_consolide.pdf'
     };
 
-    this.authService.registerSociete(payload).subscribe({
+    this.authService.registerSociete(payload, this.dossierKyc()).subscribe({
       next: () => {
         this.isSubmitting.set(false);
         // Basculer vers l'écran de confirmation / succès (Slide 5)
