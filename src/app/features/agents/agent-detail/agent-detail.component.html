@@ -1,0 +1,131 @@
+<div class="space-y-5 pb-6 font-sans">
+  <a routerLink="/societe/agents" class="bouton bouton-sm bouton-discret">
+    <mat-icon>arrow_back</mat-icon>
+    Agents
+  </a>
+
+  @if (erreur(); as message) {
+    <section class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-5 py-4 shadow-card">
+      <p class="text-sm text-gray-600">{{ message }}</p>
+      <button type="button" class="bouton bouton-sm bouton-contour" (click)="recharger()">
+        <mat-icon>refresh</mat-icon>
+        Réessayer
+      </button>
+    </section>
+  } @else if (stats(); as s) {
+    <!-- En-tête : identité et période -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-4">
+        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-secondary text-base font-extrabold text-white">
+          {{ initiales() }}
+        </span>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-2xl font-bold tracking-tight text-brand-secondary">{{ nomComplet() }}</h1>
+            <app-status-badge [status]="s.agent.statut" />
+          </div>
+          <p class="mt-0.5 text-xs text-gray-600">
+            <a [href]="'tel:' + s.agent.telephone" class="font-mono font-semibold text-brand-primary hover:underline">{{ s.agent.telephone }}</a>
+            @if (s.agent.dateAffectation) {
+              · Dans l’équipe depuis le {{ s.agent.dateAffectation | date: 'dd/MM/yyyy' }}
+            }
+          </p>
+        </div>
+      </div>
+      <app-filtre-onglets [onglets]="periodes" [actif]="periode()" (changement)="choisirPeriode($event)" />
+    </div>
+
+    <div class="space-y-5 transition-opacity" [class.opacity-60]="chargement()">
+      <!-- Réservations -->
+      <section>
+        <h2 class="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">Réservations</h2>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <app-indicateur-tuile icone="assignment_ind" libelle="Dossiers attribués" [valeur]="s.reservations.attribuees" ton="neutre" />
+          <app-indicateur-tuile icone="pending_actions" libelle="À démarrer" [valeur]="s.reservations.enAttente" detail="Décompte non lancé" />
+          <app-indicateur-tuile icone="timer" libelle="En cours" [valeur]="s.reservations.enCours" detail="Décompte en cours" />
+          <app-indicateur-tuile icone="sell" libelle="Vendus" [valeur]="s.reservations.vendues" ton="succes" />
+          <app-indicateur-tuile
+            icone="block"
+            libelle="Expirés ou annulés"
+            [valeur]="s.reservations.expirees + s.reservations.annulees"
+            [detail]="s.reservations.expirees + ' expiré(s) · ' + s.reservations.annulees + ' annulé(s)'"
+            ton="alerte" />
+          <app-indicateur-tuile
+            icone="trending_up"
+            libelle="Taux de conversion"
+            [valeur]="pourcentage(s.reservations.tauxConversion)"
+            detail="Vendus / dossiers attribués"
+            ton="succes" />
+        </div>
+      </section>
+
+      <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <!-- Visites -->
+        <section>
+          <h2 class="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">Visites</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <app-indicateur-tuile icone="event_available" libelle="Effectuées" [valeur]="s.visites.effectuees" ton="succes" />
+            <app-indicateur-tuile icone="event_upcoming" libelle="Prévues" [valeur]="s.visites.prevues" />
+            <app-indicateur-tuile icone="hourglass_top" libelle="À confirmer" [valeur]="s.visites.enAttente" ton="neutre" />
+            <app-indicateur-tuile icone="event_busy" libelle="Refusées" [valeur]="s.visites.refusees" ton="alerte" />
+          </div>
+        </section>
+
+        <!-- Chiffre d'affaires et réactivité -->
+        <section>
+          <h2 class="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">Chiffre d’affaires et réactivité</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <app-indicateur-tuile
+              icone="payments"
+              libelle="Ventes conclues"
+              [valeur]="montant(s.activite.chiffreAffaires)"
+              detail="Prix des biens vendus"
+              ton="succes" />
+            <app-indicateur-tuile
+              icone="account_balance_wallet"
+              libelle="Réservations encaissées"
+              [valeur]="montant(s.activite.reservationsEncaissees)"
+              detail="Hors remboursements" />
+            <app-indicateur-tuile
+              icone="bolt"
+              libelle="Prise en charge"
+              [valeur]="delai(s.reactivite.delaiMoyenPriseEnChargeHeures)"
+              detail="Attribution → démarrage du décompte"
+              ton="neutre" />
+            <app-indicateur-tuile
+              icone="flag"
+              libelle="Délai de vente"
+              [valeur]="delai(s.reactivite.delaiMoyenVenteHeures)"
+              detail="Démarrage → vente conclue"
+              ton="neutre" />
+          </div>
+        </section>
+      </div>
+
+      <!-- Historique -->
+      <section class="rounded-2xl bg-white p-5 shadow-card">
+        <app-filtre-onglets [onglets]="ongletsListe()" [actif]="onglet()" (changement)="choisirOnglet($event)" />
+        <div class="mt-3">
+          <app-agent-historique [agentId]="s.agent.id" [periode]="periode()" [liste]="onglet()" />
+        </div>
+      </section>
+    </div>
+  } @else {
+    <!-- Squelette du premier chargement : la mise en page apparaît tout de suite. -->
+    <div class="animate-pulse space-y-5" aria-busy="true" aria-label="Chargement de l’activité de l’agent">
+      <div class="flex items-center gap-4">
+        <span class="h-14 w-14 rounded-2xl bg-gray-200"></span>
+        <div class="space-y-2">
+          <span class="block h-5 w-48 rounded-lg bg-gray-200"></span>
+          <span class="block h-3 w-32 rounded-lg bg-gray-100"></span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        @for (i of squelette; track i) {
+          <span class="h-[88px] rounded-2xl border border-gray-100 bg-white"></span>
+        }
+      </div>
+      <span class="block h-64 rounded-2xl bg-white shadow-card"></span>
+    </div>
+  }
+</div>

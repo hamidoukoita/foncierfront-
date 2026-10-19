@@ -17,7 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
 const COULEURS = { dispo: 'var(--foncier-success)', reserve: 'var(--foncier-primary)', vendu: 'var(--foncier-danger)', indispo: '#94A3B8' } as const;
 
 /** Le tableau de bord donne une vue d'ensemble : la totalité des données reste dans les pages dédiées. */
-const APERCU = { programmes: 4, notifications: 3, visites: 3, reservations: 3 } as const;
+const APERCU = { programmes: 4, visites: 3, reservations: 3 } as const;
 
 @Component({
   selector: 'app-dashboard',
@@ -41,7 +41,6 @@ export class DashboardComponent implements OnInit {
   readonly agents = this.societeService.agents;
   readonly reservations = this.societeService.reservations;
   readonly visites = this.societeService.visites;
-  readonly notifications = this.societeService.notifications;
   readonly projets = this.societeService.projetsConstruction;
 
   /** Lots des programmes + parcelles individuelles de la société. */
@@ -104,8 +103,7 @@ export class DashboardComponent implements OnInit {
 
   readonly prochainesVisites = computed(() => this.visitesAVenir().slice(0, APERCU.visites));
 
-  readonly notificationsRecentes = computed(() => [...this.notifications()].sort((a, b) => b.id - a.id).slice(0, APERCU.notifications));
-  readonly notificationsNonLues = computed(() => this.notifications().filter(n => n.nonLu).length);
+  readonly ventesConclues = computed(() => this.reservations().filter((r) => r.statut === 'VENDUE').length);
   readonly agentsActifs = computed(() => this.agents().filter(a => a.statut === 'ACTIF').length);
   readonly projetsEnEtude = computed(() => this.projets().filter(p => p.etatEtude === 'EN_ETUDE').length);
   readonly avancementMoyen = computed(() => {

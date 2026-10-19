@@ -53,10 +53,10 @@
       <app-loading-skeleton [rows]="6"></app-loading-skeleton>
     </div>
   } @else {
-    <!-- Ligne 1 : stock (anneau) + notifications -->
+    <!-- Ligne 1 : stock (anneau) -->
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
       <div
-        class="xl:col-span-7 relative overflow-hidden rounded-2xl p-6 sm:p-7 flex flex-col justify-center text-[#FBF1EA] border border-[#2B3B59] shadow-lg"
+        class="xl:col-span-12 relative overflow-hidden rounded-2xl p-6 sm:p-7 flex flex-col justify-center text-[#FBF1EA] border border-[#2B3B59] shadow-lg"
         style="
           background-color: var(--foncier-secondary);
           background-image: radial-gradient(
@@ -125,55 +125,6 @@
         </div>
       </div>
 
-      <section
-        class="xl:col-span-5 bg-white rounded-2xl p-5 border border-gray-100/90 flex flex-col shadow-card"
-      >
-        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-          <h2 class="text-sm font-bold text-brand-secondary flex items-center gap-2">
-            <mat-icon style="font-size: 18px; width: 18px; height: 18px; color: var(--foncier-primary)"
-              >notifications</mat-icon
-            >
-            Notifications récentes
-            @if (notificationsNonLues() > 0) {
-              <span
-                class="px-2 py-0.5 rounded-full bg-brand-primary text-white text-[11px] font-bold"
-                >{{ notificationsNonLues() }}</span
-              >
-            }
-          </h2>
-          <a
-            routerLink="/societe/notifications"
-            class="text-xs font-bold text-brand-primary hover:underline"
-            >Voir tout ({{ notifications().length }}) ›</a
-          >
-        </div>
-        <div class="mt-2 flex-1 space-y-1">
-          @for (n of notificationsRecentes(); track n.id) {
-            <a
-              [routerLink]="n.actionRoute"
-              class="flex items-start gap-3 p-2.5 rounded-xl hover:bg-brand-bg transition-colors"
-            >
-              <span
-                class="mt-1.5 w-2 h-2 rounded-full shrink-0"
-                [class]="n.nonLu ? 'bg-brand-primary' : 'bg-gray-300'"
-              ></span>
-              <div class="min-w-0">
-                <p class="text-xs text-brand-secondary truncate" [class.font-bold]="n.nonLu">
-                  {{ n.titre }}
-                </p>
-                <p class="text-[11px] text-gray-500 line-clamp-2">{{ n.message }}</p>
-                <p class="text-[11px] text-gray-400 mt-0.5">{{ n.dateRelative }}</p>
-              </div>
-            </a>
-          } @empty {
-            <div
-              class="h-full min-h-[120px] flex items-center justify-center text-xs text-gray-500 border border-dashed border-gray-200 rounded-xl"
-            >
-              Aucune notification pour le moment.
-            </div>
-          }
-        </div>
-      </section>
     </div>
 
     <!-- Ligne 2 : indicateurs clés -->
@@ -398,13 +349,13 @@
               <div class="text-[11px] text-gray-500">Avancement moyen des travaux</div>
             </a>
             <a
-              routerLink="/societe/notifications"
+              routerLink="/societe/reservations"
               class="p-3 rounded-xl bg-brand-bg hover:bg-[#F1ECE1] transition-colors"
             >
               <div class="text-xl font-bold text-brand-secondary leading-tight">
-                {{ notificationsNonLues() }}
+                {{ ventesConclues() }}
               </div>
-              <div class="text-[11px] text-gray-500">Notifications non lues</div>
+              <div class="text-[11px] text-gray-500">Ventes conclues</div>
             </a>
           </div>
         </section>

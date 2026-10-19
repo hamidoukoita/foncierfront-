@@ -7,6 +7,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { montantEncaisse } from './suite-vente';
 import { Observable } from 'rxjs';
 import { MatIcon } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
@@ -81,7 +82,7 @@ export class ReservationsComponent implements OnInit {
 
   readonly reservations = this.societeService.reservations;
   readonly agents = this.societeService.agents;
-  readonly agentsActifs = this.societeService.agentsActifs;
+  readonly agentsAttribuables = this.societeService.agentsAttribuables;
 
   /** Règles fixées par la société dans son profil. */
   readonly regles = computed(() => {
@@ -140,8 +141,8 @@ export class ReservationsComponent implements OnInit {
     const liste = this.reservations();
     const enCours = liste.filter((r) => r.statut === 'EN_COURS');
     const maintenant = this.maintenant();
-    // Montants encaissés : toutes les réservations payées, sauf celles remboursées.
-    const encaisse = liste.filter((r) => !r.rembourse).reduce((s, r) => s + r.montantReservationFcfa, 0);
+    // Montants encaissés : toutes les réservations payées, sauf celles remboursées (et reports comptés une fois).
+    const encaisse = liste.reduce((s, r) => s + montantEncaisse(r), 0);
     return {
       sansAgent: liste.filter((r) => r.statut === 'EN_ATTENTE' && !r.agentAssignId).length,
       enCours: enCours.length,

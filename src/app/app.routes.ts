@@ -110,10 +110,20 @@ export const routes: Routes = [
       ),
     canActivate: [authGuard, promoteurResponsableGuard, kycValideGuard],
   },
+  // Dossier d'agrément en cours d'examen ou refusé : seule page accessible (plein écran, hors du layout).
+  {
+    path: 'societe/kyc-attente',
+    loadComponent: () =>
+      import('./features/societe/kyc-attente/kyc-attente.component').then(
+        (m) => m.KycAttenteComponent,
+      ),
+    canActivate: [authGuard, promoteurResponsableGuard],
+  },
+  // Tout l'espace société exige un agrément validé par l'administrateur.
   {
     path: 'societe',
     component: AdminLayoutComponent,
-    canActivate: [authGuard, promoteurResponsableGuard],
+    canActivate: [authGuard, promoteurResponsableGuard, kycValideGuard],
     children: [
       {
         path: '',
@@ -130,7 +140,6 @@ export const routes: Routes = [
         path: 'programmes',
         loadComponent: () =>
           import('./features/programmes/programmes.component').then((m) => m.ProgrammesComponent),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'programmes/:id/plan-masse',
@@ -138,7 +147,6 @@ export const routes: Routes = [
           import('./features/plan-masse-editor/plan-masse-editor.component').then(
             (m) => m.PlanMasseEditorComponent,
           ),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'plan-masse',
@@ -146,25 +154,21 @@ export const routes: Routes = [
           import('./features/plan-masse-editor/plan-masse-editor.component').then(
             (m) => m.PlanMasseEditorComponent,
           ),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'parcelles',
         loadComponent: () =>
           import('./features/parcelles/parcelles.component').then((m) => m.ParcellesComponent),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'cles-en-main',
         loadComponent: () =>
           import('./features/cles-en-main/maisons.component').then((m) => m.MaisonsComponent),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'commodites',
         loadComponent: () =>
           import('./features/commodites/commodites.component').then((m) => m.CommoditesComponent),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'reservations',
@@ -172,13 +176,11 @@ export const routes: Routes = [
           import('./features/reservations/reservations.component').then(
             (m) => m.ReservationsComponent,
           ),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'visites',
         loadComponent: () =>
           import('./features/visites/visites.component').then((m) => m.VisitesComponent),
-        canActivate: [kycValideGuard],
       },
       {
         path: 'agents',
@@ -186,18 +188,17 @@ export const routes: Routes = [
           import('./features/agents/agents.component').then((m) => m.AgentsComponent),
       },
       {
+        path: 'agents/:id',
+        loadComponent: () =>
+          import('./features/agents/agent-detail/agent-detail.component').then(
+            (m) => m.AgentDetailComponent,
+          ),
+      },
+      {
         path: 'projets-construction',
         loadComponent: () =>
           import('./features/construire/projets-construction.component').then(
             (m) => m.ProjetsConstructionComponent,
-          ),
-        canActivate: [kycValideGuard],
-      },
-      {
-        path: 'notifications',
-        loadComponent: () =>
-          import('./features/notifications/notifications.component').then(
-            (m) => m.NotificationsComponent,
           ),
       },
       {
@@ -205,13 +206,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profil/profil-societe.component').then(
             (m) => m.ProfilSocieteComponent,
-          ),
-      },
-      {
-        path: 'kyc-attente',
-        loadComponent: () =>
-          import('./features/societe/kyc-attente/kyc-attente.component').then(
-            (m) => m.KycAttenteComponent,
           ),
       },
     ],

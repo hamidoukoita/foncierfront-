@@ -60,6 +60,8 @@ export class SocieteService {
   readonly agents = signal<AgentCollaborateur[]>([]);
   /** Agents ACTIF uniquement (attribution réservations / RDV). */
   readonly agentsActifs = computed(() => this.agents().filter(a => a.statut === 'ACTIF'));
+  /** Agents à qui confier un dossier : collaborateurs actifs, jamais le responsable lui-même. */
+  readonly agentsAttribuables = computed(() => this.agentsActifs().filter(a => !a.estResponsableSociete));
   readonly projetsConstruction = signal<ProjetConstruction[]>([]);
   readonly notifications = signal<NotificationItem[]>([]);
   /**
@@ -689,10 +691,14 @@ export class SocieteService {
       referencePaiement: r.referencePaiement,
       datePaiementIso: r.datePaiement,
       rembourse: r.rembourse ?? false,
+      suiteVente: r.suiteVente,
+      dateLimiteChoixIso: r.dateLimiteChoix,
+      dateRemboursementPrevueIso: r.dateRemboursementPrevue,
+      reservationOrigineId: r.reservationOrigineId,
     };
   }
 
-  /** Vente conclue : le bien passe « vendu », les autres réservations sont remboursées. */
+  /** Vente conclue : le bien passe « vendu » ; les autres acquéreurs choisissent remboursement ou report. */
   conclureVenteReservation(id: number): Observable<BackendApiResponse<ReservationBackend>> {
     return this.http.patch<BackendApiResponse<ReservationBackend>>(`${this.API_BASE}/reservations/${id}/vendre`, {}).pipe(
       tap(() => this.getReservations().subscribe())

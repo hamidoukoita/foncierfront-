@@ -22,18 +22,12 @@ export function navAdministration(societesEnAttente: number): NavItem[] {
   ];
 }
 
-/** Menus de la société promotrice agréée ; la bulle des notifications compte les non lues. */
-export function navSociete(notificationsNonLues: number): NavItem[] {
-  return [
-    ...NAV_SOCIETE.slice(0, -1),
-    {
-      label: 'Notifications',
-      route: '/societe/notifications',
-      icon: 'notifications',
-      badge: notificationsNonLues > 0 ? notificationsNonLues : undefined,
-    },
-    ...NAV_SOCIETE.slice(-1),
-  ];
+/** Menus de la société promotrice agréée ; chaque bulle compte les nouveautés non vues de sa rubrique. */
+export function navSociete(nouveautes: Record<string, number>): NavItem[] {
+  return NAV_SOCIETE.map((item) => {
+    const n = nouveautes[item.route] ?? 0;
+    return n > 0 ? { ...item, badge: n } : item;
+  });
 }
 
 const NAV_SOCIETE: NavItem[] = [

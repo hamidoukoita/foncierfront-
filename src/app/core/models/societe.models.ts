@@ -80,9 +80,18 @@ export interface Reservation {
   referencePaiement?: string;
   datePaiementIso?: string;
   rembourse: boolean;
+  /** Bien vendu à un autre acquéreur : choix de l'acquéreur (remboursement ou report). */
+  suiteVente?: SuiteVente;
+  dateLimiteChoixIso?: string;
+  dateRemboursementPrevueIso?: string;
+  /** Réservation reportée depuis une autre (bien vendu à un autre), sans nouveau paiement. */
+  reservationOrigineId?: number;
   /** LOT_PROGRAMME, PARCELLE_INDIVIDUELLE ou MAISON_CLE_EN_MAIN. */
   typeBien?: string;
 }
+
+/** Suite d'une réservation payée dont le bien a été vendu à un autre acquéreur. */
+export type SuiteVente = 'A_CHOISIR' | 'REMBOURSEMENT_EN_COURS' | 'REMBOURSEE' | 'REMPLACEE';
 
 export type StatutVisite = 'CONFIRME' | 'EN_ATTENTE' | 'EFFECTUE' | 'ANNULE';
 

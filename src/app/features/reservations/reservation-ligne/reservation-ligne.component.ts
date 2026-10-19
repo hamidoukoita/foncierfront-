@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { estRemboursee } from '../suite-vente';
 import { MatIcon } from '@angular/material/icon';
 import { Reservation } from '../../../core/models/societe.models';
 import { formaterFcfa, initiales } from '../../../core/utils/format';
@@ -48,8 +49,14 @@ import { LIBELLES_STATUT, TON_STATUT } from '../reservation-statut';
         <div class="min-w-0">
           <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Réservation</p>
           <p class="truncate text-xs font-extrabold text-brand-secondary">{{ paiement() }}</p>
-          @if (r.rembourse) {
-            <p class="text-[10px] font-semibold text-brand-success">Remboursée</p>
+          @if (r.suiteVente === 'REMPLACEE') {
+            <p class="text-[10px] font-semibold text-brand-secondary">Reportée</p>
+          } @else if (r.suiteVente === 'A_CHOISIR') {
+            <p class="text-[10px] font-semibold text-brand-warning">Choix en attente</p>
+          } @else if (remboursee()) {
+            <p class="text-[10px] font-semibold text-brand-success">{{ r.suiteVente === 'REMBOURSEMENT_EN_COURS' ? 'Remboursement en cours' : 'Remboursée' }}</p>
+          } @else if (r.reservationOrigineId) {
+            <p class="text-[10px] font-semibold text-brand-secondary">Report, sans nouveau paiement</p>
           }
         </div>
 
@@ -102,6 +109,7 @@ export class ReservationLigneComponent {
 
   readonly libelleStatut = computed(() => LIBELLES_STATUT[this.reservation().statut]);
   readonly ton = computed(() => TON_STATUT[this.reservation().statut]);
+  readonly remboursee = computed(() => estRemboursee(this.reservation()));
 
   readonly icone = computed(() => {
     switch (this.reservation().typeBien) {

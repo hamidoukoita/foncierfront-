@@ -142,6 +142,10 @@ export interface ReservationBackend {
   datePaiement?: string;
   rembourse?: boolean;
   dateRemboursement?: string;
+  suiteVente?: 'A_CHOISIR' | 'REMBOURSEMENT_EN_COURS' | 'REMBOURSEE' | 'REMPLACEE';
+  dateLimiteChoix?: string;
+  dateRemboursementPrevue?: string;
+  reservationOrigineId?: number;
 }
 
 export interface RendezVousBackend {

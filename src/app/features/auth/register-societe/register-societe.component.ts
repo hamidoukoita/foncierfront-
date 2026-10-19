@@ -17,6 +17,15 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
   return pass === confirm ? null : { passwordMismatch: true };
 }
 
+import {
+  aujourdhuiIso,
+  datePasseeOuJour,
+  messageErreur,
+  nomPersonne,
+  telephoneMali,
+  texteRequis,
+} from '../../../core/utils/validateurs';
+
 @Component({
   selector: 'app-register-societe',
   standalone: true,
@@ -49,28 +58,32 @@ export class RegisterSocieteComponent {
   readonly showConfirmPassword = signal<boolean>(false);
   readonly selectedFileName = signal<string | null>(null);
   readonly selectedFileSize = signal<string | null>(null);
+  /** Un agrément ne peut pas être daté du futur. */
+  readonly dateMax = aujourdhuiIso();
+  /** Dossier d'agrément consolidé (PDF) envoyé avec l'inscription. */
+  private readonly dossierKyc = signal<File | null>(null);
 
   // Formulaire unifié avec validation stricte
   readonly form = this.fb.group({
     // Étape 1 : Société
-    nomSociete: ['', [Validators.required, Validators.maxLength(150)]],
+    nomSociete: ['', [texteRequis, Validators.maxLength(150)]],
     formeJuridique: ['SARL', [Validators.required]],
-    adresse: ['', [Validators.required, Validators.maxLength(255)]],
-    telephoneSociete: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
+    adresse: ['', [texteRequis, Validators.maxLength(255)]],
+    telephoneSociete: ['', [Validators.required, telephoneMali]],
     emailSociete: ['', [Validators.email]],
     siteWeb: [''],
 
     // Étape 2 : Agrément & Fiscalité
-    numeroAgrement: ['', [Validators.required, Validators.maxLength(100)]],
-    dateAgrement: ['', [Validators.required]],
-    nif: ['', [Validators.required, Validators.maxLength(100)]],
+    numeroAgrement: ['', [texteRequis, Validators.maxLength(100)]],
+    dateAgrement: ['', [Validators.required, datePasseeOuJour]],
+    nif: ['', [texteRequis, Validators.maxLength(100)]],
     rccm: ['', [Validators.maxLength(100)]],
     description: [''],
 
     // Étape 3 : Responsable promoteur
-    prenomResponsable: ['', [Validators.required, Validators.maxLength(100)]],
-    nomResponsable: ['', [Validators.required, Validators.maxLength(100)]],
-    telephoneResponsable: ['', [Validators.required, Validators.pattern(/^[0-9]{8,15}$/)]],
+    prenomResponsable: ['', [texteRequis, nomPersonne, Validators.maxLength(100)]],
+    nomResponsable: ['', [texteRequis, nomPersonne, Validators.maxLength(100)]],
+    telephoneResponsable: ['', [Validators.required, telephoneMali]],
     emailResponsable: ['', [Validators.email]],
     motDePasse: ['', [Validators.required, Validators.minLength(6)]],
     confirmerMotDePasse: ['', [Validators.required]],
@@ -86,6 +99,11 @@ export class RegisterSocieteComponent {
 
   toggleConfirmPasswordVisibility(): void {
     this.showConfirmPassword.update(v => !v);
+  }
+
+  /** Message d'erreur d'un champ (null tant qu'il est valide ou non touché). */
+  erreur(champ: string, libelle: string): string | null {
+    return messageErreur(this.form.get(champ), libelle);
   }
 
   // Navigation entre les slides
@@ -185,6 +203,7 @@ export class RegisterSocieteComponent {
         return;
       }
 
+      this.dossierKyc.set(file);
       this.selectedFileName.set(file.name);
       const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
       this.selectedFileSize.set(`${sizeMb} Mo`);
@@ -228,7 +247,7 @@ export class RegisterSocieteComponent {
       documentKycNom: this.selectedFileName() || 'dossier_kyc_consolide.pdf'
     };
 
-    this.authService.registerSociete(payload).subscribe({
+    this.authService.registerSociete(payload, this.dossierKyc()).subscribe({
       next: () => {
         this.isSubmitting.set(false);
         // Basculer vers l'écran de confirmation / succès (Slide 5)

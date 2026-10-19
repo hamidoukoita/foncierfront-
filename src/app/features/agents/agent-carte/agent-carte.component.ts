@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { AgentCollaborateur } from '../../../core/models/societe.models';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -7,7 +8,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 @Component({
   selector: 'app-agent-carte',
   standalone: true,
-  imports: [MatIcon, StatusBadgeComponent],
+  imports: [RouterLink, MatIcon, StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block h-full' },
   template: `
@@ -72,8 +73,14 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
         </div>
       </div>
 
-      <!-- Accès -->
-      <div class="mt-auto border-t border-gray-100 pt-4">
+      <!-- Activité et accès -->
+      <div class="mt-auto space-y-2 border-t border-gray-100 pt-4">
+        @if (!ag.estResponsableSociete) {
+          <a [routerLink]="['/societe/agents', ag.id]" class="bouton bouton-sm bouton-contour w-full">
+            <mat-icon>insights</mat-icon>
+            Voir l’activité
+          </a>
+        }
         @if (modifiable()) {
           <button
             type="button"

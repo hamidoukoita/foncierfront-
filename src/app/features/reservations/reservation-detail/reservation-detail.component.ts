@@ -7,6 +7,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { DecompteReservation } from '../reservation-delai';
 import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
 import { LIBELLES_STATUT, TON_STATUT } from '../reservation-statut';
+import { libelleSuiteVente } from '../suite-vente';
 
 interface EtapeSuivi {
   libelle: string;
@@ -61,13 +62,17 @@ function dateHeure(iso?: string): string {
       <div class="divide-y divide-gray-100 rounded-2xl border border-gray-100 px-4">
         @if (r.montantReservationFcfa > 0) {
           <app-info-ligne icone="payments" libelle="Montant payé" [valeur]="montantReservation()" />
-          <app-info-ligne icone="smartphone" libelle="Moyen" valeur="Orange Money (simulé)" />
+          <app-info-ligne
+            icone="smartphone"
+            libelle="Moyen"
+            [valeur]="r.reservationOrigineId ? 'Report d’une réservation précédente (sans nouveau paiement)' : 'Orange Money (simulé)'"
+          />
           <app-info-ligne icone="receipt_long" libelle="Référence" [valeur]="r.referencePaiement || '—'" />
           <app-info-ligne icone="schedule" libelle="Payé le" [valeur]="date(r.datePaiementIso) || r.dateReservation" />
           <app-info-ligne
             icone="currency_exchange"
             libelle="Remboursement"
-            [valeur]="r.rembourse ? 'Remboursée (bien vendu à un autre acquéreur)' : 'Non remboursable'"
+            [valeur]="suiteVente() ?? 'Non remboursable'"
           />
         } @else {
           <app-info-ligne icone="redeem" libelle="Montant" valeur="Réservation gratuite" />
@@ -139,6 +144,7 @@ export class ReservationDetailComponent {
   readonly initialesAgent = computed(() => initiales(this.reservation().agentAssignNom));
   readonly libelleStatut = computed(() => LIBELLES_STATUT[this.reservation().statut]);
   readonly ton = computed(() => TON_STATUT[this.reservation().statut]);
+  readonly suiteVente = computed(() => libelleSuiteVente(this.reservation()));
 
   readonly etapes = computed<EtapeSuivi[]>(() => {
     const r = this.reservation();
@@ -150,7 +156,7 @@ export class ReservationDetailComponent {
         : r.statut === 'EXPIREE'
           ? { libelle: 'Réservation expirée', detail: 'Délai écoulé sans vente : le bien est de nouveau disponible', etat: 'echec' }
           : r.statut === 'ANNULEE'
-            ? { libelle: 'Réservation annulée', detail: r.rembourse ? 'Remboursée : bien vendu à un autre acquéreur' : 'Par l’acquéreur, sans remboursement', etat: 'echec' }
+            ? { libelle: 'Réservation annulée', detail: libelleSuiteVente(r) ?? 'Par l’acquéreur, sans remboursement', etat: 'echec' }
             : { libelle: 'Vente', detail: 'À conclure avant l’échéance', etat: demarre ? 'courant' : 'a_venir' };
     return [
       {
