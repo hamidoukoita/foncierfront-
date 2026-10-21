@@ -1,12 +1,12 @@
 /** Nature d'un média rattaché à un programme ou à un bien foncier (lot, parcelle). */
-export type TypeMedia = 'PHOTO' | 'PANORAMA_360' | 'VISITE_VIRTUELLE';
+export type TypeMedia = 'PHOTO' | 'PANORAMA_360';
 
 export interface MediaFoncier {
   id: number;
   type: TypeMedia;
   titre?: string;
   description?: string;
-  /** Chemin relatif (/uploads/medias/…) pour un fichier, lien https pour une visite virtuelle. */
+  /** Chemin relatif du fichier (/uploads/medias/…). */
   url: string;
   typeContenu?: string;
   ordre: number;

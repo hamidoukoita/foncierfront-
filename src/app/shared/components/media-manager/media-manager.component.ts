@@ -1,16 +1,16 @@
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, OnInit, computed, inject, input, output, signal } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MEDIA_TAILLE_MAX_OCTETS, MEDIA_TYPES_ACCEPTES, MediaCible, MediaFoncier, TypeMedia } from '../../../core/models/media.models';
 import { MediaService } from '../../../core/services/media.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { completerPanorama, diagnostiquerPanorama } from '../../../core/utils/panorama';
 import { PanoramaViewerComponent } from '../panorama-viewer/panorama-viewer.component';
 
 type Filtre = 'TOUS' | TypeMedia;
 
 /**
  * Fenêtre de gestion des médias d'un programme ou d'un bien :
- * photos, panoramas 360° (visionneuse interactive) et visites virtuelles (lien https intégré).
+ * photos et panoramas 360° (visionneuse interactive).
  */
 @Component({
   selector: 'app-media-manager',
@@ -25,7 +25,6 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
 
   private readonly mediaService = inject(MediaService);
   private readonly toast = inject(ToastService);
-  private readonly sanitizer = inject(DomSanitizer);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly medias = signal<MediaFoncier[]>([]);
@@ -38,9 +37,11 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
   // Formulaire d'ajout
   readonly formType = signal<TypeMedia>('PANORAMA_360');
   readonly formTitre = signal<string>('');
-  readonly formLien = signal<string>('');
   readonly fichier = signal<File | null>(null);
   readonly fichierAlerte = signal<string | null>(null);
+  readonly fichierInfo = signal<string | null>(null);
+  /** Adaptation d'un panorama en cours, avant l'envoi. */
+  readonly isPreparing = signal<boolean>(false);
   readonly formErreur = signal<string | null>(null);
   readonly progression = signal<number | null>(null);
   readonly isSending = signal<boolean>(false);
@@ -49,7 +50,6 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
     { id: 'TOUS', label: 'Tous' },
     { id: 'PHOTO', label: 'Photos' },
     { id: 'PANORAMA_360', label: 'Panoramas 360°' },
-    { id: 'VISITE_VIRTUELLE', label: 'Visites virtuelles' },
   ];
 
   readonly visibles = computed(() => {
@@ -63,11 +63,6 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
   readonly urlSelection = computed(() => {
     const m = this.selectionne();
     return m ? this.mediaService.urlAbsolue(m) : '';
-  });
-  /** Le lien est validé en https côté formulaire et côté backend avant d'arriver ici. */
-  readonly urlVisite = computed<SafeResourceUrl | null>(() => {
-    const m = this.selectionne();
-    return m && m.type === 'VISITE_VIRTUELLE' ? this.sanitizer.bypassSecurityTrustResourceUrl(m.url) : null;
   });
 
   @HostListener('document:keydown.escape')
@@ -91,7 +86,7 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
   }
 
   libelleType(type: TypeMedia): string {
-    return type === 'PHOTO' ? 'Photo' : type === 'PANORAMA_360' ? 'Panorama 360°' : 'Visite virtuelle';
+    return type === 'PHOTO' ? 'Photo' : 'Panorama 360°';
   }
 
   url(m: MediaFoncier): string {
@@ -130,6 +125,7 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
     this.formType.set(valeur as TypeMedia);
     this.fichier.set(null);
     this.fichierAlerte.set(null);
+    this.fichierInfo.set(null);
     this.formErreur.set(null);
   }
 
@@ -138,6 +134,7 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
     const f = input.files?.[0] ?? null;
     this.fichier.set(null);
     this.fichierAlerte.set(null);
+    this.fichierInfo.set(null);
     this.formErreur.set(null);
     if (!f) return;
 
@@ -151,52 +148,59 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
       input.value = '';
       return;
     }
-    this.fichier.set(f);
+    if (this.formType() === 'PANORAMA_360') void this.preparerPanorama(f);
+    else this.fichier.set(f);
+  }
 
-    // Un vrai panorama équirectangulaire a un ratio 2:1 : on prévient sans bloquer.
-    if (this.formType() === 'PANORAMA_360') {
-      const url = URL.createObjectURL(f);
-      const img = new Image();
-      img.onload = () => {
-        const ratio = img.naturalWidth / img.naturalHeight;
-        if (Math.abs(ratio - 2) > 0.15) {
-          this.fichierAlerte.set(`Ce n'est pas une image 2:1 (${img.naturalWidth}×${img.naturalHeight}). L'affichage 360° sera déformé.`);
-        }
-        URL.revokeObjectURL(url);
-      };
-      img.onerror = () => URL.revokeObjectURL(url);
-      img.src = url;
+  /**
+   * Un panorama 360° doit être au format 2:1. Un panorama de téléphone, plus large, est complété
+   * automatiquement en haut et en bas ; une photo classique est acceptée avec un avertissement.
+   */
+  private async preparerPanorama(f: File): Promise<void> {
+    this.isPreparing.set(true);
+    try {
+      const image = await createImageBitmap(f);
+      const { width, height } = image;
+      image.close();
+      const diagnostic = diagnostiquerPanorama(width, height);
+      if (diagnostic.cas === 'a-completer') {
+        const adapte = await completerPanorama(f, diagnostic.largeur, diagnostic.hauteur);
+        this.fichier.set(adapte.size <= MEDIA_TAILLE_MAX_OCTETS ? adapte : f);
+        this.fichierInfo.set(
+          `Panorama adapté au format 360° (${width}×${height} → ${diagnostic.largeur}×${diagnostic.hauteur}) : ` +
+            'le haut et le bas sont complétés pour un affichage sans déformation.',
+        );
+        return;
+      }
+      this.fichier.set(f);
+      if (diagnostic.cas === 'trop-etroite') {
+        this.fichierAlerte.set(
+          `Cette image (${width}×${height}) ressemble à une photo classique, pas à un panorama. ` +
+            'Choisissez le type « Photo », ou prenez la vue en mode panorama de votre téléphone.',
+        );
+      }
+    } catch {
+      // Image illisible par le navigateur : envoyée telle quelle, le serveur la validera.
+      this.fichier.set(f);
+    } finally {
+      this.isPreparing.set(false);
     }
   }
 
   peutAjouter(): boolean {
-    if (this.isSending()) return false;
-    return this.formType() === 'VISITE_VIRTUELLE' ? this.formLien().trim().length > 0 : this.fichier() !== null;
+    if (this.isSending() || this.isPreparing()) return false;
+    return this.fichier() !== null;
   }
 
   ajouter(): void {
     this.formErreur.set(null);
     const titre = this.formTitre();
 
-    if (this.formType() === 'VISITE_VIRTUELLE') {
-      const lien = this.formLien().trim();
-      if (!this.lienHttpsValide(lien)) {
-        this.formErreur.set('Saisissez un lien complet commençant par https://');
-        return;
-      }
-      this.isSending.set(true);
-      this.mediaService.ajouterLien(this.cible(), lien, titre).subscribe({
-        next: (m) => this.apresAjout(m, 'Visite virtuelle ajoutée'),
-        error: (err) => this.echecAjout(err),
-      });
-      return;
-    }
-
     const f = this.fichier();
     if (!f) return;
     this.isSending.set(true);
     this.progression.set(0);
-    const type = this.formType() as Exclude<TypeMedia, 'VISITE_VIRTUELLE'>;
+    const type = this.formType();
     this.mediaService.envoyerFichier(this.cible(), f, type, titre).subscribe({
       next: (event) => {
         if (event.type === HttpEventType.UploadProgress && event.total) {
@@ -216,9 +220,9 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
     this.filtre.set('TOUS');
     this.selectedId.set(media.id);
     this.formTitre.set('');
-    this.formLien.set('');
     this.fichier.set(null);
     this.fichierAlerte.set(null);
+    this.fichierInfo.set(null);
     this.toast.success(titreToast, `« ${media.titre || this.libelleType(media.type)} » est enregistré.`);
   }
 
@@ -256,15 +260,6 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
   }
 
   // ------------------------------------------------------------------ Outils
-
-  private lienHttpsValide(lien: string): boolean {
-    try {
-      const u = new URL(lien);
-      return u.protocol === 'https:' && !!u.hostname;
-    } catch {
-      return false;
-    }
-  }
 
   private messageErreur(err: unknown, defaut: string): string {
     if (err instanceof HttpErrorResponse) {

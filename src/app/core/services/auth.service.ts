@@ -1,4 +1,5 @@
 import { inject, Injectable, signal, computed } from '@angular/core';
+import { messageErreurApi } from '../utils/api-error';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, tap } from 'rxjs/operators';
@@ -244,18 +245,17 @@ export class AuthService {
       catchError((error: HttpErrorResponse | Error) => {
         let errorMsg = 'Numéro de téléphone ou mot de passe incorrect.';
 
-        if (error instanceof Error && error.message) {
-          errorMsg = error.message;
-        } else if (error instanceof HttpErrorResponse) {
-          if (error.error?.message) {
-            errorMsg = error.error.message;
-          } else if (error.status === 401) {
-            errorMsg = 'Identifiants invalides. Veuillez vérifier votre numéro et mot de passe.';
+        if (error instanceof HttpErrorResponse) {
+          if (error.status === 401) {
+            errorMsg = 'Numéro de téléphone ou mot de passe incorrect.';
           } else if (error.status === 403) {
             errorMsg = 'Votre compte n\'est pas autorisé ou est en attente d\'agrément.';
-          } else if (error.status === 0) {
-            errorMsg = 'Impossible de contacter le serveur d\'authentification (Foncierback).';
+          } else {
+            // Réseau, erreur serveur ou message métier du backend (compte suspendu…).
+            errorMsg = messageErreurApi(error, errorMsg);
           }
+        } else if (error.message) {
+          errorMsg = error.message;
         }
 
         this.state.update(s => ({ ...s, isLoading: false, error: errorMsg }));
@@ -283,15 +283,13 @@ export class AuthService {
       catchError((error: HttpErrorResponse | Error) => {
         let errorMsg = "Échec de l'enregistrement de la société.";
         if (error instanceof HttpErrorResponse) {
-          if (error.error?.message) {
-            errorMsg = error.error.message;
-          } else if (error.status === 409) {
-            errorMsg = "Un compte ou une société avec ces identifiants (téléphone, agrément ou NIF) existe déjà.";
-          } else if (error.status === 400) {
-            errorMsg = "Les informations fournies sont incomplètes ou invalides.";
-          } else if (error.status === 0) {
-            errorMsg = "Impossible de joindre le serveur Foncierback.";
-          }
+          const repli =
+            error.status === 409
+              ? 'Un compte ou une société avec ces identifiants (téléphone, agrément ou NIF) existe déjà.'
+              : error.status === 400
+                ? 'Les informations fournies sont incomplètes ou invalides.'
+                : errorMsg;
+          errorMsg = messageErreurApi(error, repli);
         } else if (error instanceof Error && error.message) {
           errorMsg = error.message;
         }
