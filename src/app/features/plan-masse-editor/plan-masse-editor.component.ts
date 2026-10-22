@@ -196,7 +196,7 @@ export class PlanMasseEditorComponent implements OnInit, OnDestroy {
   readonly isCreateLotModalOpen = signal(false);
   /** Consigne de l'outil actif, affichée dans la barre du plan (remplace les notifications répétées). */
   readonly toolHint = signal<string>('');
-  /** Lot dont on ouvre les photos / panoramas 360° / visites virtuelles. */
+  /** Lot dont on ouvre les photos et panoramas 360°. */
   readonly mediaCible = signal<MediaCible | null>(null);
 
   openLotMedias(): void {

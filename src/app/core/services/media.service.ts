@@ -9,7 +9,7 @@ interface ApiResponse<T> {
   data: T;
 }
 
-/** Accès à l'API /api/medias : photos, panoramas 360° et visites virtuelles. */
+/** Accès à l'API /api/medias : photos, panoramas 360° et points de passage de la visite virtuelle. */
 @Injectable({ providedIn: 'root' })
 export class MediaService {
   private readonly http = inject(HttpClient);
@@ -24,7 +24,7 @@ export class MediaService {
   }
 
   /** Envoi d'un fichier (photo ou panorama) avec progression. */
-  envoyerFichier(cible: MediaCible, fichier: File, type: Exclude<TypeMedia, 'VISITE_VIRTUELLE'>, titre: string): Observable<HttpEvent<ApiResponse<MediaFoncier>>> {
+  envoyerFichier(cible: MediaCible, fichier: File, type: TypeMedia, titre: string): Observable<HttpEvent<ApiResponse<MediaFoncier>>> {
     const form = new FormData();
     form.append('file', fichier, fichier.name);
     form.append('type', type);
@@ -33,15 +33,6 @@ export class MediaService {
       reportProgress: true,
       observe: 'events',
     });
-  }
-
-  ajouterLien(cible: MediaCible, lienExterne: string, titre: string): Observable<MediaFoncier> {
-    return this.http
-      .post<ApiResponse<MediaFoncier>>(`${this.API_BASE}/medias/${cible.kind}/${cible.id}/lien`, {
-        lienExterne: lienExterne.trim(),
-        titre: titre.trim() || undefined,
-      })
-      .pipe(map((res) => res.data));
   }
 
   /** Fait de cette photo la couverture de sa cité ou de son bien. */
@@ -80,8 +71,8 @@ export class MediaService {
     return this.http.delete<ApiResponse<void>>(`${this.API_BASE}/medias/liens/${id}`).pipe(map(() => undefined));
   }
 
-  /** URL utilisable dans une balise <img>, une texture WebGL ou une iframe. */
+  /** URL utilisable dans une balise <img> ou une texture WebGL. */
   urlAbsolue(media: MediaFoncier): string {
-    return media.type === 'VISITE_VIRTUELLE' ? media.url : `${this.FILES_BASE}${media.url}`;
+    return `${this.FILES_BASE}${media.url}`;
   }
 }

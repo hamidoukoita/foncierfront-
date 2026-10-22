@@ -71,7 +71,7 @@ export class ProgrammesComponent implements OnInit {
   readonly selectedProgrammeForPlan = signal<Programme | null>(null);
   readonly selectedProgrammeLots = signal<ParcelleLot[]>([]);
   readonly programmeToDeleteId = signal<number | null>(null);
-  /** Programme dont on ouvre les photos / panoramas 360° / visites virtuelles. */
+  /** Programme dont on ouvre les photos et panoramas 360°. */
   readonly mediaCible = signal<MediaCible | null>(null);
 
   openMedias(prog: Programme): void {
