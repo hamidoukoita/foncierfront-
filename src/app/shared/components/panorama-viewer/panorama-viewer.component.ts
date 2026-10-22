@@ -43,7 +43,7 @@ void main() {
   o = vec4(texture(t, vec2(lon / (2.0 * PI) + 0.5, 0.5 - lat / PI)).rgb, 1.0);
 }`;
 
-import { Direction, Vue, directionDepuisEcran, orientationVers, positionAEcran } from './panorama-geometrie';
+import { Direction, Vue, directionDepuisEcran, directionRegardee, orientationVers, positionAEcran } from './panorama-geometrie';
 
 /** Point de passage affiché dans le panorama (« Chambre », « Cuisine »…). */
 export interface PointPanorama {
@@ -60,12 +60,15 @@ const FOV_MIN = (30 * Math.PI) / 180;
 const FOV_MAX = (100 * Math.PI) / 180;
 const PITCH_MAX = (85 * Math.PI) / 180;
 const TEXTURE_MAX_SIDE = 8192;
+/** Durée du fondu entre deux pièces (ms). */
+const DUREE_FONDU_MS = 800;
 
 /**
  * Visionneuse de photo panoramique équirectangulaire (360° x 180°) :
  * glisser pour regarder autour, molette ou pincement pour zoomer, flèches du clavier.
  * Peut afficher des points de passage vers d'autres pièces ; en mode édition, un clic dans
- * l'image donne la direction visée (pour poser un point). Sans WebGL 2, l'image est affichée à plat.
+ * l'image donne la direction visée (pour poser un point). Quand l'image change, l'ancienne vue
+ * reste affichée pendant le chargement puis s'efface en fondu. Sans WebGL 2, l'image est affichée à plat.
  */
 @Component({
   selector: 'app-panorama-viewer',
@@ -87,6 +90,8 @@ const TEXTURE_MAX_SIDE = 8192;
           [attr.aria-label]="'Panorama 360° ' + (titre() || '') + ' : glissez ou utilisez les flèches du clavier pour regarder autour'"
           (keydown)="onKey($event)"
         ></canvas>
+        <!-- Instantané de la pièce précédente, effacé en fondu une fois la nouvelle affichée. -->
+        <canvas #fondu class="pointer-events-none absolute inset-0 hidden h-full w-full" aria-hidden="true"></canvas>
       }
 
       @if (state() === 'loading') {
@@ -109,11 +114,15 @@ const TEXTURE_MAX_SIDE = 8192;
             [attr.aria-label]="'Aller vers ' + p.libelle"
             class="group absolute left-0 top-0 hidden flex-col items-center gap-1 cursor-pointer"
           >
-            <span
-              class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white shadow-lg transition-transform group-hover:scale-110"
-              [class]="p.id === pointSelectionne() ? 'bg-brand-primary text-white' : 'bg-white/90 text-brand-secondary'"
-            >
-              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M12 4l-7 8h4v8h6v-8h4z" /></svg>
+            <span class="relative flex h-10 w-10">
+              <!-- Pulsation : le point se remarque dans l'image. -->
+              <span class="absolute inset-0 animate-ping rounded-full bg-white/60" aria-hidden="true"></span>
+              <span
+                class="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-white shadow-lg transition-transform group-hover:scale-110"
+                [class]="p.id === pointSelectionne() ? 'bg-brand-primary text-white' : 'bg-white/90 text-brand-secondary'"
+              >
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M12 4l-7 8h4v8h6v-8h4z" /></svg>
+              </span>
             </span>
             <span class="whitespace-nowrap rounded-full bg-black/65 px-2.5 py-0.5 text-[11px] font-bold text-white">{{ p.libelle }}</span>
           </button>
@@ -157,6 +166,7 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
   private readonly zone = inject(NgZone);
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
   private readonly canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
+  private readonly fonduRef = viewChild<ElementRef<HTMLCanvasElement>>('fondu');
   private readonly viewReady = signal(false);
 
   private gl: WebGL2RenderingContext | null = null;
@@ -175,6 +185,10 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
   private pinchDistance = 0;
   private debutAppui: { x: number; y: number } | null = null;
   private loadToken = 0;
+  /** Orientation vers laquelle la vue tourne en douceur (bouton « Pièces »). */
+  private cible: { yaw: number; pitch: number } | null = null;
+  /** Vrai entre le clic sur une porte et l'affichage de la pièce suivante : ses points restent masqués. */
+  private enTransition = false;
   private readonly cleanups: Array<() => void> = [];
 
   constructor() {
@@ -206,7 +220,12 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
 
   private charger(url: string): void {
     const token = ++this.loadToken;
-    this.state.set('loading');
+    // Une pièce est déjà affichée : on la fige à l'écran pendant le chargement de la suivante.
+    if (this.state() === 'ready' && this.texture) {
+      this.figerVueCourante();
+      this.enTransition = true;
+    }
+    else this.state.set('loading');
     const image = new Image();
     image.crossOrigin = 'anonymous';
     image.onload = () => {
@@ -215,6 +234,8 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
     };
     image.onerror = () => {
       if (token !== this.loadToken) return;
+      this.enTransition = false;
+      this.masquerFondu(true);
       this.errorMessage.set("Impossible de charger l'image du panorama.");
       this.state.set('error');
     };
@@ -245,9 +266,11 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    this.enTransition = false;
     this.reset();
     this.state.set('ready');
-    this.demanderRendu();
+    this.dessiner();
+    this.lancerFondu();
   }
 
   private initGL(): boolean {
@@ -382,6 +405,22 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
     this.demanderRendu();
   }
 
+  /** Direction actuellement regardée (centre de la vue). */
+  vueActuelle(): Direction {
+    return directionRegardee(this.yaw, this.pitch);
+  }
+
+  /** Tourne la vue en douceur vers une direction (par exemple une porte). */
+  orienterVers(direction: Direction): void {
+    const o = orientationVers(direction);
+    // Chemin le plus court autour de l'axe vertical.
+    const ecart = Math.atan2(Math.sin(o.yaw - this.yaw), Math.cos(o.yaw - this.yaw));
+    this.cible = { yaw: this.yaw + ecart, pitch: this.borner(o.pitch, -PITCH_MAX, PITCH_MAX) };
+    this.vYaw = this.vPitch = 0;
+    this.arreterAuto();
+    this.demanderRendu();
+  }
+
   fullscreen(): void {
     const el = this.host().nativeElement;
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -413,9 +452,22 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
     const gl = this.gl;
     if (!gl || !this.program || this.state() !== 'ready' && this.state() !== 'loading') return;
 
-    // Inertie après un glisser, rotation automatique sinon.
+    // Rotation demandée, inertie après un glisser, rotation automatique sinon.
     const libre = this.pointers.size === 0;
-    if (libre && (Math.abs(this.vYaw) > 0.00005 || Math.abs(this.vPitch) > 0.00005)) {
+    if (!libre) this.cible = null;
+    if (this.cible) {
+      const dYaw = this.cible.yaw - this.yaw;
+      const dPitch = this.cible.pitch - this.pitch;
+      if (Math.abs(dYaw) < 0.002 && Math.abs(dPitch) < 0.002) {
+        this.yaw = this.cible.yaw;
+        this.pitch = this.cible.pitch;
+        this.cible = null;
+      } else {
+        this.yaw += dYaw * 0.12;
+        this.pitch += dPitch * 0.12;
+      }
+      this.dirty = true;
+    } else if (libre && (Math.abs(this.vYaw) > 0.00005 || Math.abs(this.vPitch) > 0.00005)) {
       this.vYaw *= 0.92;
       this.vPitch *= 0.92;
       this.yaw += this.vYaw;
@@ -426,23 +478,61 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
       this.dirty = true;
     }
 
-    if (this.dirty && this.texture) {
-      this.dirty = false;
-      const canvas = gl.canvas as HTMLCanvasElement;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this.texture);
-      gl.uniform1i(this.uniforms['t'], 0);
-      gl.uniform2f(this.uniforms['res'], canvas.width, canvas.height);
-      gl.uniform1f(this.uniforms['yaw'], this.yaw);
-      gl.uniform1f(this.uniforms['pitch'], this.pitch);
-      gl.uniform1f(this.uniforms['fov'], this.fov);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      this.placerMarqueurs(canvas);
-    }
+    if (this.dirty && this.texture) this.dessiner();
 
-    const continuer = this.dirty || (libre && (this.autoRotate() || Math.abs(this.vYaw) > 0.00005 || Math.abs(this.vPitch) > 0.00005));
+    const continuer = this.dirty || !!this.cible || (libre && (this.autoRotate() || Math.abs(this.vYaw) > 0.00005 || Math.abs(this.vPitch) > 0.00005));
     if (continuer) this.demanderRendu();
+  }
+
+  private dessiner(): void {
+    const gl = this.gl;
+    if (!gl || !this.texture) return;
+    this.dirty = false;
+    const canvas = gl.canvas as HTMLCanvasElement;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.uniform1i(this.uniforms['t'], 0);
+    gl.uniform2f(this.uniforms['res'], canvas.width, canvas.height);
+    gl.uniform1f(this.uniforms['yaw'], this.yaw);
+    gl.uniform1f(this.uniforms['pitch'], this.pitch);
+    gl.uniform1f(this.uniforms['fov'], this.fov);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    this.placerMarqueurs(canvas);
+  }
+
+  // ------------------------------------------------------------------ Fondu entre deux pièces
+
+  /** Copie la vue actuelle dans le calque de fondu, posé par-dessus la visionneuse. */
+  private figerVueCourante(): void {
+    const fondu = this.fonduRef()?.nativeElement;
+    const source = this.canvasRef()?.nativeElement;
+    if (!fondu || !source) return;
+    this.dessiner(); // le tampon WebGL n'est lisible que juste après un rendu
+    fondu.width = source.width;
+    fondu.height = source.height;
+    fondu.getContext('2d')?.drawImage(source, 0, 0);
+    fondu.style.transition = 'none';
+    fondu.style.opacity = '1';
+    fondu.classList.remove('hidden');
+  }
+
+  private lancerFondu(): void {
+    const fondu = this.fonduRef()?.nativeElement;
+    if (!fondu || fondu.classList.contains('hidden')) return;
+    this.zone.runOutsideAngular(() => {
+      requestAnimationFrame(() => {
+        fondu.style.transition = `opacity ${DUREE_FONDU_MS}ms ease`;
+        fondu.style.opacity = '0';
+        setTimeout(() => this.masquerFondu(), DUREE_FONDU_MS);
+      });
+    });
+  }
+
+  /** Retire le calque une fois effacé (ou tout de suite si [force], en cas d'erreur). */
+  private masquerFondu(force = false): void {
+    const fondu = this.fonduRef()?.nativeElement;
+    if (fondu && (force || fondu.style.opacity === '0')) fondu.classList.add('hidden');
   }
 
   private ajusterTaille(): void {
@@ -465,6 +555,10 @@ export class PanoramaViewerComponent implements AfterViewInit, OnDestroy {
   private placerMarqueurs(canvas: HTMLCanvasElement): void {
     const marqueurs = this.host().nativeElement.querySelectorAll<HTMLElement>('[data-point]');
     if (marqueurs.length === 0) return;
+    if (this.enTransition) {
+      marqueurs.forEach((el) => (el.style.display = 'none'));
+      return;
+    }
     const vue = this.vue(canvas);
     const parId = new Map(this.points().map((p) => [String(p.id), p]));
     marqueurs.forEach((el) => {

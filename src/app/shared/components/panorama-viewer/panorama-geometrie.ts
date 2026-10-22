@@ -67,6 +67,11 @@ export function positionAEcran(direction: Direction, vue: Vue): { x: number; y: 
   return { x: ((vx + 1) / 2) * vue.largeur, y: ((1 - vy) / 2) * vue.hauteur };
 }
 
+/** Direction regardée par une caméra orientée (yaw, pitch en radians) : inverse d'orientationVers. */
+export function directionRegardee(yaw: number, pitch: number): Direction {
+  return { azimut: normaliserAzimut(-yaw / DEG), elevation: pitch / DEG };
+}
+
 /** Orientation de caméra (yaw, pitch en radians) qui regarde dans cette direction. */
 export function orientationVers(direction: Direction): { yaw: number; pitch: number } {
   return { yaw: -direction.azimut * DEG, pitch: direction.elevation * DEG };

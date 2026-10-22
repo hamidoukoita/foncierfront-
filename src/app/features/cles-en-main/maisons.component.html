@@ -164,7 +164,7 @@
 }
 
 @if (visite360(); as visite) {
-  <app-panorama-modal [titre]="visite.titre" [panoramas]="visite.panoramas" [liens]="visite.liens" (closed)="visite360.set(null)" />
+  <app-panorama-modal [titre]="visite.titre" [panoramas]="visite.panoramas" [liens]="visite.liens" [departId]="visite.departId" (closed)="visite360.set(null)" />
 }
 
 @if (couvertureCible(); as cible) {
