@@ -77,7 +77,7 @@ export class MaisonsComponent implements OnInit {
 
   readonly mediaCible = signal<MediaCible | null>(null);
   readonly couvertureCible = signal<MediaCible | null>(null);
-  readonly visite360 = signal<{ titre: string; panoramas: PanoramaAffichable[]; liens: LienPanorama[] } | null>(null);
+  readonly visite360 = signal<{ titre: string; panoramas: PanoramaAffichable[]; liens: LienPanorama[]; departId: number | null } | null>(null);
   /** Maison dont on édite la visite virtuelle (points de passage entre pièces). */
   readonly visiteEnEdition = signal<MaisonCleEnMain | null>(null);
 
@@ -195,16 +195,16 @@ export class MaisonsComponent implements OnInit {
 
   /** Visite 360° ; sans panorama, ouvre la galerie pour en ajouter un. */
   ouvrir360(m: MaisonCleEnMain): void {
-    const panoramas = this.apercu.panoramas(m.id);
+    const panoramas = this.apercu.panoramas(m.id, 'Pièce ');
     if (panoramas.length === 0) {
       this.toast.info('Aucune vue 360°', 'Ajoutez un panorama 360° pour proposer la visite virtuelle de la maison.');
       this.ouvrirGalerie(m);
       return;
     }
     // Les points de passage permettent d'aller d'une pièce à l'autre ; sans eux, simple choix de vue.
-    this.mediaService.liens(m.id).subscribe({
-      next: (liens) => this.visite360.set({ titre: m.titre, panoramas, liens }),
-      error: () => this.visite360.set({ titre: m.titre, panoramas, liens: [] }),
+    this.mediaService.visite(m.id).subscribe({
+      next: (v) => this.visite360.set({ titre: m.titre, panoramas, liens: v.liens, departId: v.panoramaDepartId }),
+      error: () => this.visite360.set({ titre: m.titre, panoramas, liens: [], departId: null }),
     });
   }
 

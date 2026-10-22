@@ -33,7 +33,17 @@ export interface LienPanorama {
   /** Direction du point dans la sphère, en degrés. */
   azimut: number;
   elevation: number;
-  libelle: string;
+  /** Libellé saisi ; null : le nom de la pièce d'arrivée. */
+  libelle: string | null;
+  /** Direction regardée en arrivant dans la pièce cible ; null : calculée automatiquement. */
+  azimutArrivee?: number | null;
+  elevationArrivee?: number | null;
+}
+
+/** Visite virtuelle d'une maison : pièce de départ (null : la première) et points de passage. */
+export interface VisiteVirtuelle {
+  panoramaDepartId: number | null;
+  liens: LienPanorama[];
 }
 
 export interface LienPanoramaRequest {

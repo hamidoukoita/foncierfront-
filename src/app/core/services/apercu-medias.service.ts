@@ -49,10 +49,11 @@ export class ApercuMediasService {
     return photo ? this.mediaService.urlAbsolue(photo) : null;
   }
 
-  panoramas(id: number): PanoramaAffichable[] {
+  /** Panoramas dans l'ordre de la galerie ; sans titre : « Vue 360° n°N » (ou « Pièce N » pour une visite). */
+  panoramas(id: number, nomParDefaut = 'Vue 360° n°'): PanoramaAffichable[] {
     return this.trier(id, 'PANORAMA_360').map((m, i) => ({
       id: m.id,
-      titre: m.titre || `Vue 360° n°${i + 1}`,
+      titre: m.titre || `${nomParDefaut}${i + 1}`,
       url: this.mediaService.urlAbsolue(m),
     }));
   }

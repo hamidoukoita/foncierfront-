@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
@@ -8,11 +8,13 @@ import { PanoramaAffichable } from '../../../core/services/apercu-medias.service
 import { MediaService } from '../../../core/services/media.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { messageErreurApi } from '../../../core/utils/api-error';
+import { PanoramaModalComponent } from '../../../shared/components/panorama-modal/panorama-modal.component';
 import { PanoramaViewerComponent } from '../../../shared/components/panorama-viewer/panorama-viewer.component';
 import { Direction } from '../../../shared/components/panorama-viewer/panorama-geometrie';
-import { pointsDuPanorama, vueArrivee } from '../../../shared/components/panorama-viewer/visite-virtuelle';
+import { indexDepart, libellePorte, pointsDuPanorama, vueArrivee } from '../../../shared/components/panorama-viewer/visite-virtuelle';
 
-type Mode = 'vue' | 'placement' | 'deplacement';
+/** vue : navigation ; placement / deplacement : clic dans l'image ; arrivee : réglage de la vue d'arrivée. */
+type Mode = 'vue' | 'placement' | 'deplacement' | 'arrivee';
 
 interface Brouillon {
   direction: Direction;
@@ -23,12 +25,13 @@ interface Brouillon {
 
 /**
  * Éditeur de la visite virtuelle d'une maison clé en main : dans chaque panorama (pièce),
- * la société pose des points de passage vers les autres pièces (« Salon → Chambre »).
+ * la société pose des points de passage vers les autres pièces (« Salon → Chambre »),
+ * choisit la pièce de départ, règle la vue d'arrivée de chaque point et teste la visite.
  */
 @Component({
   selector: 'app-visite-editor',
   standalone: true,
-  imports: [FormsModule, MatIcon, PanoramaViewerComponent],
+  imports: [FormsModule, MatIcon, PanoramaModalComponent, PanoramaViewerComponent],
   templateUrl: './visite-editor.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -38,6 +41,8 @@ export class VisiteEditorComponent implements OnInit {
 
   readonly maison = input.required<MaisonCleEnMain>();
   readonly fermer = output<void>();
+
+  private readonly viewer = viewChild(PanoramaViewerComponent);
 
   readonly chargement = signal(true);
   readonly enCours = signal(false);
@@ -49,15 +54,17 @@ export class VisiteEditorComponent implements OnInit {
   readonly brouillon = signal<Brouillon | null>(null);
   readonly selectionId = signal<number | null>(null);
   readonly libelleSelection = signal('');
+  readonly departId = signal<number | null>(null);
+  /** Point dont on règle la vue d'arrivée (mode « arrivee »). */
+  readonly lienArrivee = signal<LienPanorama | null>(null);
+  readonly test = signal(false);
 
   readonly courant = computed(() => this.panoramas().find((p) => p.id === this.courantId()) ?? null);
-  readonly vue = computed(() => {
-    const p = this.courant();
-    return p ? [p] : [];
-  });
+  /** Pièce de départ effective : celle choisie, sinon la première. */
+  readonly departEffectif = computed(() => this.panoramas()[indexDepart(this.panoramas(), this.departId())]?.id ?? null);
   readonly points = computed(() => {
     const id = this.courantId();
-    return id == null ? [] : pointsDuPanorama(this.liens(), id);
+    return id == null ? [] : pointsDuPanorama(this.liens(), id, this.panoramas());
   });
   readonly autresPieces = computed(() => this.panoramas().filter((p) => p.id !== this.courantId()));
   readonly selection = computed(() => this.liens().find((l) => l.id === this.selectionId()) ?? null);
@@ -66,16 +73,17 @@ export class VisiteEditorComponent implements OnInit {
     const maison = this.maison();
     forkJoin({
       medias: this.mediaService.list({ kind: 'bien', id: maison.id, titre: maison.titre }),
-      liens: this.mediaService.liens(maison.id),
+      visite: this.mediaService.visite(maison.id),
     }).subscribe({
-      next: ({ medias, liens }) => {
+      next: ({ medias, visite }) => {
         const panoramas = medias
           .filter((m) => m.type === 'PANORAMA_360')
           .sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0))
           .map((m, i) => ({ id: m.id, titre: m.titre || `Pièce ${i + 1}`, url: this.mediaService.urlAbsolue(m) }));
         this.panoramas.set(panoramas);
-        this.liens.set(liens);
-        this.courantId.set(panoramas[0]?.id ?? null);
+        this.liens.set(visite.liens);
+        this.departId.set(visite.panoramaDepartId);
+        this.courantId.set(panoramas[indexDepart(panoramas, visite.panoramaDepartId)]?.id ?? null);
         this.chargement.set(false);
       },
       error: (err) => {
@@ -87,7 +95,8 @@ export class VisiteEditorComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   echap(): void {
-    if (this.brouillon() || this.mode() !== 'vue') this.annuler();
+    if (this.test()) this.test.set(false);
+    else if (this.brouillon() || this.mode() !== 'vue') this.annuler();
     else if (!this.enCours()) this.fermer.emit();
   }
 
@@ -99,10 +108,56 @@ export class VisiteEditorComponent implements OnInit {
     return this.panoramas().find((p) => p.id === id)?.titre ?? 'Pièce';
   }
 
-  allerA(panoramaId: number, depuis?: number): void {
+  allerA(panoramaId: number, par?: LienPanorama): void {
     this.annuler();
-    this.arrivee.set(depuis == null ? null : vueArrivee(this.liens(), depuis, panoramaId));
+    this.arrivee.set(par ? vueArrivee(this.liens(), par) : null);
     this.courantId.set(panoramaId);
+  }
+
+  definirDepart(): void {
+    const panoramaId = this.courantId();
+    if (panoramaId == null) return;
+    this.enCours.set(true);
+    this.mediaService.definirDepart(this.maison().id, panoramaId).subscribe({
+      next: (visite) => {
+        this.enCours.set(false);
+        this.departId.set(visite.panoramaDepartId);
+        this.toast.success('Pièce de départ', `La visite commencera par « ${this.titrePiece(panoramaId)} ».`);
+      },
+      error: (err) => this.echec(err),
+    });
+  }
+
+  /** Ouvre la pièce cible du point : on tourne la vue vers ce que l'acquéreur doit voir en entrant. */
+  reglerArrivee(): void {
+    const lien = this.selection();
+    if (!lien) return;
+    this.allerA(lien.cibleId, lien);
+    this.lienArrivee.set(lien);
+    this.mode.set('arrivee');
+  }
+
+  /** Enregistre la vue actuelle, ou revient au calcul automatique ([automatique]). */
+  validerArrivee(automatique = false): void {
+    const lien = this.lienArrivee();
+    const viewer = this.viewer();
+    if (!lien || (!automatique && !viewer)) return;
+    const vue = automatique ? null : viewer!.vueActuelle();
+    this.enCours.set(true);
+    this.mediaService.definirVueArrivee(lien.id, vue).subscribe({
+      next: (maj) => {
+        this.enCours.set(false);
+        this.liens.update((l) => l.map((x) => (x.id === maj.id ? maj : x)));
+        this.annuler();
+        this.toast.success(
+          'Vue d’arrivée',
+          automatique
+            ? `En entrant dans « ${this.titrePiece(maj.cibleId)} », la vue sera calculée automatiquement.`
+            : `En entrant dans « ${this.titrePiece(maj.cibleId)} », l’acquéreur verra cette vue.`,
+        );
+      },
+      error: (err) => this.echec(err),
+    });
   }
 
   commencerPlacement(): void {
@@ -115,6 +170,7 @@ export class VisiteEditorComponent implements OnInit {
     this.mode.set('vue');
     this.brouillon.set(null);
     this.selectionId.set(null);
+    this.lienArrivee.set(null);
   }
 
   /** Clic dans l'image : nouveau point, ou nouvelle position du point sélectionné. */
@@ -166,7 +222,7 @@ export class VisiteEditorComponent implements OnInit {
     const lien = this.liens().find((l) => l.id === id);
     this.brouillon.set(null);
     this.selectionId.set(id);
-    this.libelleSelection.set(lien?.libelle ?? '');
+    this.libelleSelection.set(lien ? libellePorte(lien, this.panoramas()) : '');
   }
 
   deplacer(): void {
@@ -189,7 +245,7 @@ export class VisiteEditorComponent implements OnInit {
         this.enCours.set(false);
         this.liens.update((l) => l.filter((x) => x.id !== lien.id));
         this.selectionId.set(null);
-        this.toast.success('Point supprimé', `« ${lien.libelle} » ne mène plus vers ${this.titrePiece(lien.cibleId)}.`);
+        this.toast.success('Point supprimé', `Le point ne mène plus vers ${this.titrePiece(lien.cibleId)}.`);
       },
       error: (err) => this.echec(err),
     });
@@ -197,21 +253,21 @@ export class VisiteEditorComponent implements OnInit {
 
   suivre(): void {
     const lien = this.selection();
-    if (lien) this.allerA(lien.cibleId, lien.sourceId);
+    if (lien) this.allerA(lien.cibleId, lien);
   }
 
   private enregistrerPosition(lien: LienPanorama, direction: Direction): void {
-    this.mettreAJour(lien, { ...direction, libelle: lien.libelle }, 'Point déplacé');
+    this.mettreAJour(lien, { ...direction, libelle: lien.libelle ?? undefined }, 'Point déplacé');
   }
 
-  private mettreAJour(lien: LienPanorama, valeurs: { azimut: number; elevation: number; libelle: string }, titre: string): void {
+  private mettreAJour(lien: LienPanorama, valeurs: { azimut: number; elevation: number; libelle?: string }, titre: string): void {
     this.enCours.set(true);
     this.mediaService.modifierLien(lien.id, valeurs).subscribe({
       next: (maj) => {
         this.enCours.set(false);
         this.mode.set('vue');
         this.liens.update((l) => l.map((x) => (x.id === maj.id ? maj : x)));
-        this.toast.success(titre, `« ${maj.libelle} »`);
+        this.toast.success(titre, `« ${libellePorte(maj, this.panoramas())} »`);
       },
       error: (err) => this.echec(err),
     });

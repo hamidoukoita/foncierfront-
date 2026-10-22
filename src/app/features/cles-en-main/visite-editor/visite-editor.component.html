@@ -47,9 +47,13 @@
             >
               <span class="min-w-0">
                 <span class="block truncate text-xs font-bold text-brand-secondary">{{ p.titre }}</span>
-                <span class="block text-[11px] text-gray-500">{{ nombrePoints(p.id) }} point(s){{ i === 0 ? ' · départ' : '' }}</span>
+                <span class="block text-[11px] text-gray-500">{{ nombrePoints(p.id) }} point(s)</span>
               </span>
-              <mat-icon class="!h-4 !w-4 !text-[16px] text-gray-400">chevron_right</mat-icon>
+              @if (p.id === departEffectif()) {
+                <span class="shrink-0 rounded-full bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-white">Départ</span>
+              } @else {
+                <mat-icon class="!h-4 !w-4 !text-[16px] text-gray-400">chevron_right</mat-icon>
+              }
             </button>
           }
         </aside>
@@ -59,8 +63,25 @@
           <div class="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-2.5">
             <p class="mr-auto truncate text-sm font-bold text-brand-secondary">{{ courant()?.titre }}</p>
             @if (mode() === 'vue') {
+              @if (courantId() !== departEffectif()) {
+                <button type="button" class="bouton bouton-discret bouton-sm" (click)="definirDepart()" [disabled]="enCours()">
+                  <mat-icon>flag</mat-icon> Pièce de départ
+                </button>
+              }
+              <button type="button" class="bouton bouton-contour bouton-sm" (click)="test.set(true)">
+                <mat-icon>play_circle</mat-icon> Tester la visite
+              </button>
               <button type="button" class="bouton bouton-primaire bouton-sm" (click)="commencerPlacement()" [disabled]="enCours()">
                 <mat-icon>add_location_alt</mat-icon> Ajouter un point
+              </button>
+            } @else if (mode() === 'arrivee') {
+              <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-brand-warning">
+                Tournez la vue vers ce que l’acquéreur doit voir en entrant, puis validez
+              </span>
+              <button type="button" class="bouton bouton-discret bouton-sm" (click)="annuler()" [disabled]="enCours()">Annuler</button>
+              <button type="button" class="bouton bouton-contour bouton-sm" (click)="validerArrivee(true)" [disabled]="enCours()">Automatique</button>
+              <button type="button" class="bouton bouton-primaire bouton-sm" (click)="validerArrivee()" [disabled]="enCours()">
+                <mat-icon>check</mat-icon> Valider cette vue
               </button>
             } @else {
               <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-brand-warning">
@@ -71,14 +92,14 @@
           </div>
 
           <div class="relative min-h-[280px] flex-1 bg-black">
-            @for (p of vue(); track p.id) {
+            @if (courant(); as p) {
               <div class="absolute inset-0 p-2">
                 <app-panorama-viewer
                   [src]="p.url"
                   [titre]="p.titre"
                   [points]="points()"
                   [pointSelectionne]="selectionId()"
-                  [edition]="mode() !== 'vue'"
+                  [edition]="mode() === 'placement' || mode() === 'deplacement'"
                   [vueInitiale]="arrivee()"
                   (clicVue)="clicVue($event)"
                   (pointChoisi)="choisirPoint($event)"
@@ -140,11 +161,20 @@
                   class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand-primary"
                 />
               </label>
-              <button type="button" class="bouton bouton-contour" (click)="renommer()" [disabled]="enCours() || !libelleSelection().trim() || libelleSelection().trim() === s.libelle">
+              <button type="button" class="bouton bouton-contour" (click)="renommer()" [disabled]="enCours() || !libelleSelection().trim() || libelleSelection().trim() === (s.libelle ?? '')">
                 Renommer
               </button>
               <button type="button" class="bouton bouton-contour" (click)="deplacer()" [disabled]="enCours()">
                 <mat-icon>open_with</mat-icon> Déplacer
+              </button>
+              <button
+                type="button"
+                class="bouton bouton-contour"
+                (click)="reglerArrivee()"
+                [disabled]="enCours()"
+                [title]="s.azimutArrivee != null ? 'Vue d’arrivée réglée' : 'Vue d’arrivée calculée automatiquement'"
+              >
+                <mat-icon>{{ s.azimutArrivee != null ? 'visibility' : 'visibility_off' }}</mat-icon> Vue d’arrivée
               </button>
               <button type="button" class="bouton bouton-secondaire" (click)="suivre()">
                 <mat-icon>arrow_forward</mat-icon> Aller à {{ titrePiece(s.cibleId) }}
@@ -159,3 +189,14 @@
     }
   </section>
 </div>
+
+<!-- Aperçu exact de ce que verra l'acquéreur. -->
+@if (test()) {
+  <app-panorama-modal
+    [titre]="maison().titre"
+    [panoramas]="panoramas()"
+    [liens]="liens()"
+    [departId]="departId()"
+    (closed)="test.set(false)"
+  />
+}

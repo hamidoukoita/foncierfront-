@@ -1,7 +1,8 @@
 import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { LienPanorama, LienPanoramaRequest, MediaCible, MediaFoncier, TypeMedia } from '../models/media.models';
+import { Direction } from '../../shared/components/panorama-viewer/panorama-geometrie';
+import { LienPanorama, LienPanoramaRequest, MediaCible, MediaFoncier, TypeMedia, VisiteVirtuelle } from '../models/media.models';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -48,10 +49,27 @@ export class MediaService {
 
   // ---------- Visite virtuelle : points de passage entre panoramas d'une maison ----------
 
-  liens(bienId: number): Observable<LienPanorama[]> {
+  visite(bienId: number): Observable<VisiteVirtuelle> {
     return this.http
-      .get<ApiResponse<LienPanorama[]>>(`${this.API_BASE}/medias/bien/${bienId}/liens`)
-      .pipe(map((res) => (Array.isArray(res.data) ? res.data : [])));
+      .get<ApiResponse<VisiteVirtuelle>>(`${this.API_BASE}/medias/bien/${bienId}/visite`)
+      .pipe(map((res) => ({ panoramaDepartId: res.data?.panoramaDepartId ?? null, liens: res.data?.liens ?? [] })));
+  }
+
+  /** La visite commencera par ce panorama. */
+  definirDepart(bienId: number, panoramaId: number): Observable<VisiteVirtuelle> {
+    return this.http
+      .put<ApiResponse<VisiteVirtuelle>>(`${this.API_BASE}/medias/bien/${bienId}/visite/depart/${panoramaId}`, {})
+      .pipe(map((res) => res.data));
+  }
+
+  /** Vue regardée en arrivant par ce point ; null : retour au calcul automatique. */
+  definirVueArrivee(lienId: number, vue: Direction | null): Observable<LienPanorama> {
+    return this.http
+      .put<ApiResponse<LienPanorama>>(`${this.API_BASE}/medias/liens/${lienId}/vue-arrivee`, {
+        azimut: vue?.azimut ?? null,
+        elevation: vue?.elevation ?? null,
+      })
+      .pipe(map((res) => res.data));
   }
 
   /** Crée le point (et le retour si demandé) ; renvoie les points créés. */
