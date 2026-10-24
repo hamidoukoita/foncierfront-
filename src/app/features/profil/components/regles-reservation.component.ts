@@ -8,7 +8,7 @@ import { formaterDuree, formaterFcfa } from '../../../core/utils/format';
 import { DUREE_RESERVATION_PAR_DEFAUT_HEURES, PRIX_RESERVATION_PAR_DEFAUT } from '../../reservations/reservation-delai';
 import { ChoixReglesReservationComponent } from './choix-regles-reservation.component';
 
-/** Règles de réservation de la société : prix, durée et nombre de réservations par bien. */
+/** Règles de réservation de la société : prix, remboursement, durée et nombre de réservations par bien. */
 @Component({
   selector: 'app-regles-reservation',
   standalone: true,
@@ -25,6 +25,7 @@ import { ChoixReglesReservationComponent } from './choix-regles-reservation.comp
         [(delai)]="delai"
         [(reservationsMax)]="reservationsMax"
         [(prix)]="prix"
+        [(remboursement)]="remboursement"
         [delaiEnregistre]="delaiEnregistre()"
       />
 
@@ -66,22 +67,26 @@ export class ReglesReservationComponent {
   );
   private readonly maxEnregistre = computed(() => this.profil().reservationsMax ?? 1);
   private readonly prixEnregistre = computed(() => this.profil().prixReservation ?? PRIX_RESERVATION_PAR_DEFAUT);
+  private readonly remboursementEnregistre = computed(() => this.profil().pourcentageRemboursementAnnulation ?? 0);
 
   readonly delai = linkedSignal(() => this.delaiEnregistre());
   readonly reservationsMax = linkedSignal(() => this.maxEnregistre());
   readonly prix = linkedSignal(() => this.prixEnregistre());
+  readonly remboursement = linkedSignal(() => this.remboursementEnregistre());
 
   readonly modifie = computed(
     () =>
       this.delai() !== this.delaiEnregistre() ||
       this.reservationsMax() !== this.maxEnregistre() ||
-      this.prix() !== this.prixEnregistre(),
+      this.prix() !== this.prixEnregistre() ||
+      this.remboursement() !== this.remboursementEnregistre(),
   );
 
   reinitialiser(): void {
     this.delai.set(this.delaiEnregistre());
     this.reservationsMax.set(this.maxEnregistre());
     this.prix.set(this.prixEnregistre());
+    this.remboursement.set(this.remboursementEnregistre());
   }
 
   enregistrer(): void {
@@ -91,6 +96,7 @@ export class ReglesReservationComponent {
         delaiAttributionHeures: this.delai(),
         reservationsMax: this.reservationsMax(),
         prixReservation: this.prix(),
+        pourcentageRemboursementAnnulation: this.remboursement(),
       })
       .subscribe({
         next: () => {

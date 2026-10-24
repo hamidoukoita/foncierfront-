@@ -20,6 +20,8 @@ import { FoncierCardComponent } from '../../shared/components/foncier-card/fonci
 import { PanoramaModalComponent } from '../../shared/components/panorama-modal/panorama-modal.component';
 import { CarteActionComponent } from '../../shared/components/carte-action/carte-action.component';
 import { CouvertureDialogComponent } from '../../shared/components/couverture-dialog/couverture-dialog.component';
+import { ChampTitreFoncierComponent } from '../../shared/components/champ-titre-foncier/champ-titre-foncier.component';
+import { titreFoncierValide } from '../../core/utils/titre-foncier';
 
 
 type ProgrammeFilter = 'TOUS' | 'PUBLIES' | 'BROUILLONS';
@@ -30,6 +32,7 @@ type ProgrammeStatutForm = 'PUBLIE' | 'BROUILLON' | 'ARCHIVE';
   selector: 'app-programmes',
   standalone: true,
   imports: [
+    ChampTitreFoncierComponent,
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
@@ -141,7 +144,7 @@ export class ProgrammesComponent implements OnInit {
     latitude: this.fb.control<number | null>(null, [Validators.min(-90), Validators.max(90)]),
     longitude: this.fb.control<number | null>(null, [Validators.min(-180), Validators.max(180)]),
     superficieTotale: [0, [Validators.required, Validators.min(100)]],
-    titreFoncierRef: ['', [Validators.required, Validators.minLength(3)]],
+    titreFoncierRef: ['', [Validators.required, Validators.minLength(4), titreFoncierValide]],
     description: ['', [Validators.maxLength(500)]],
     eauSomapep: [false],
     electriciteEdm: [false],

@@ -18,36 +18,22 @@ import {
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { MatIcon } from '@angular/material/icon';
 import { ToastService } from '../../core/services/toast.service';
-import { messageErreurApi } from '../../core/utils/api-error';
-import { FichierProjet } from '../../core/models/societe.models';
-import { PanneauLateralComponent } from '../../shared/components/panneau-lateral/panneau-lateral.component';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { MotifDialogComponent } from '../../shared/components/motif-dialog/motif-dialog.component';
 import { ChampRechercheComponent } from '../../shared/components/champ-recherche/champ-recherche.component';
 import {
   FiltreOngletsComponent,
   OngletFiltre,
 } from '../../shared/components/filtre-onglets/filtre-onglets.component';
-import { ProjetDetailComponent } from './projet-detail/projet-detail.component';
+import { Router } from '@angular/router';
+import { AvancementDialogComponent } from './avancement-dialog/avancement-dialog.component';
+import { LIBELLES_STATUT_PROJET } from './projet-detail/projet-detail.component';
 import { MediaCible } from '../../core/models/media.models';
 import { ApercuMediasService, PanoramaAffichable } from '../../core/services/apercu-medias.service';
 import { MediaManagerComponent } from '../../shared/components/media-manager/media-manager.component';
 import { PanoramaModalComponent } from '../../shared/components/panorama-modal/panorama-modal.component';
 import { urlFichier } from '../../core/utils/url-fichier';
 
-type ConstructionFilter = 'TOUS' | 'EN_ETUDE' | 'ACCEPTER' | 'REFUSER';
+type ConstructionFilter = 'TOUS' | 'EN_ETUDE' | 'EN_DISCUSSION' | 'ACCEPTER' | 'REFUSER';
 type ViewMode = 'PROJETS' | 'MODELES';
-type Dialogue = 'acceptation' | 'refus' | null;
-
-const ETAPES = [
-  'Dossier reçu',
-  'Étude technique',
-  'Devis transmis',
-  'Validation acquéreur',
-  'Préparation chantier',
-  'Travaux en cours',
-  'Réception',
-] as const;
 
 @Component({
   selector: 'app-projets-construction',
@@ -58,12 +44,9 @@ const ETAPES = [
     ReactiveFormsModule,
     StatusBadgeComponent,
     MatIcon,
-    PanneauLateralComponent,
-    ConfirmDialogComponent,
-    MotifDialogComponent,
     ChampRechercheComponent,
     FiltreOngletsComponent,
-    ProjetDetailComponent,
+    AvancementDialogComponent,
     MediaManagerComponent,
     PanoramaModalComponent,
   ],
@@ -77,6 +60,7 @@ export class ProjetsConstructionComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
   readonly apercu = inject(ApercuMediasService);
 
   readonly viewMode = signal<ViewMode>('PROJETS');
@@ -90,21 +74,10 @@ export class ProjetsConstructionComponent implements OnInit {
   readonly modeles = signal<ModelMaison[]>([]);
 
   readonly isModelModalOpen = signal(false);
-  readonly isProgressModalOpen = signal(false);
-  /** Dossier ouvert dans le panneau latéral. */
-  readonly selectionId = signal<number | null>(null);
-  readonly selection = computed(() => this.projets().find((p) => p.id === this.selectionId()) ?? null);
-  readonly dialogue = signal<Dialogue>(null);
-  readonly suggestionsRefus = [
-    'Titre Foncier illisible ou non fourni',
-    'Terrain hors de notre zone d’intervention',
-    'Projet incompatible avec la superficie du terrain',
-  ];
   readonly isSaving = signal(false);
+  /** Projet dont on met à jour l'avancement depuis la liste. */
   readonly activeProject = signal<ProjetConstruction | null>(null);
   readonly activeModel = signal<ModelMaison | null>(null);
-  readonly compatibleModels = signal<ModelMaison[]>([]);
-  readonly etapesDisponibles = ETAPES;
 
   readonly selectedImageFile = signal<File | null>(null);
   readonly selectedPlanFile = signal<File | null>(null);
@@ -118,13 +91,6 @@ export class ProjetsConstructionComponent implements OnInit {
     nombreChambres: [null as number | null],
     nombreSallesBain: [null as number | null],
     typeTerrainCompatible: [''],
-  });
-
-  readonly progressForm = this.fb.nonNullable.group({
-    progression: [0, [Validators.min(0), Validators.max(100)]],
-    etapeAvancement: ['Dossier reçu'],
-    commentaireAvancement: [''],
-    modelMaisonId: ['' as string | number],
   });
 
   ngOnInit(): void {
@@ -231,6 +197,9 @@ export class ProjetsConstructionComponent implements OnInit {
   readonly countEnEtude = computed(
     () => this.projets().filter((p) => p.etatEtude === 'EN_ETUDE').length,
   );
+  readonly countEnDiscussion = computed(
+    () => this.projets().filter((p) => p.etatEtude === 'EN_DISCUSSION').length,
+  );
   readonly countAcceptes = computed(
     () => this.projets().filter((p) => p.etatEtude === 'ACCEPTER').length,
   );
@@ -241,6 +210,7 @@ export class ProjetsConstructionComponent implements OnInit {
   readonly ongletsProjets = computed<OngletFiltre[]>(() => [
     { valeur: 'TOUS', libelle: 'Tous', icone: 'apps', compte: this.countTous() },
     { valeur: 'EN_ETUDE', libelle: 'À étudier', icone: 'architecture', compte: this.countEnEtude() },
+    { valeur: 'EN_DISCUSSION', libelle: 'En discussion', icone: 'forum', compte: this.countEnDiscussion() },
     { valeur: 'ACCEPTER', libelle: 'Acceptés', icone: 'check_circle', compte: this.countAcceptes() },
     { valeur: 'REFUSER', libelle: 'Refusés', icone: 'cancel', compte: this.countRefuses() },
   ]);
@@ -399,120 +369,13 @@ export class ProjetsConstructionComponent implements OnInit {
   }
 
   ouvrirProjet(p: ProjetConstruction): void {
-    this.selectionId.set(p.id);
+    void this.router.navigate(['/societe/projets-construction', p.id]);
   }
 
-  fermerProjet(): void {
-    // Échap ferme d'abord le dialogue ouvert par-dessus le panneau.
-    if (!this.isSaving() && !this.dialogue() && !this.isProgressModalOpen()) this.selectionId.set(null);
-  }
-
-  fermerDialogue(): void {
-    if (!this.isSaving()) this.dialogue.set(null);
-  }
-
-  /** Les pièces sont privées : téléchargées avec le jeton puis ouvertes dans un nouvel onglet. */
-  ouvrirFichier(f: FichierProjet): void {
-    const projet = this.selection();
-    if (!projet) return;
-    const onglet = window.open('', '_blank');
-    this.societeService.telechargerFichierProjet(projet.id, f.id).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        if (onglet) onglet.location.href = url;
-        else window.location.assign(url);
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      },
-      error: (e) => {
-        onglet?.close();
-        this.toast.error('Pièce jointe', messageErreurApi(e, 'Ouverture impossible.'));
-      },
-    });
-  }
-
-  openProgressModal(p: ProjetConstruction): void {
-    this.activeProject.set(p);
-    this.progressForm.reset({
-      progression: p.progression ?? 0,
-      etapeAvancement: p.etapeAvancement ?? 'Dossier reçu',
-      commentaireAvancement: p.commentaireAvancement ?? '',
-      modelMaisonId: p.modeleMaisonId ?? '',
-    });
-    this.compatibleModels.set([]);
-    this.isProgressModalOpen.set(true);
-    this.societeService.getModelesMaisonCompatibles(p.surfaceTerrainM2, p.typeTerrain).subscribe({
-      next: (items) => this.compatibleModels.set(items.length ? items : this.modeles()),
-      error: () => this.compatibleModels.set(this.modeles()),
-    });
-  }
-
-  saveProgress(): void {
-    const project = this.activeProject();
-    if (!project) return;
-    const form = this.progressForm.getRawValue();
-    const progression = Math.min(100, Math.max(0, Number(form.progression) || 0));
-    this.isSaving.set(true);
-    this.societeService
-      .updateProjetAvancement(project.id, {
-        progression,
-        etapeAvancement: form.etapeAvancement.trim() || 'Avancement en cours',
-        commentaireAvancement: form.commentaireAvancement.trim() || undefined,
-      })
-      .subscribe({
-        next: () => {
-          const modelId = form.modelMaisonId ? Number(form.modelMaisonId) : null;
-          if (!modelId || modelId === project.modeleMaisonId) {
-            this.afterProjectUpdate('Avancement mis à jour.');
-            return;
-          }
-          this.societeService.changerModeleProjet(project.id, modelId).subscribe({
-            next: () => this.afterProjectUpdate('Avancement et modèle mis à jour.'),
-            error: (e) => this.handleSaveError(e),
-          });
-        },
-        error: (e) => this.handleSaveError(e),
-      });
-  }
-
-  accepterProjet(): void {
-    const p = this.selection();
-    if (!p) return;
-    this.isSaving.set(true);
-    this.societeService.validerProjetConstruction(p.id).subscribe({
-      next: () => {
-        this.toast.success('Projet accepté', `${p.prospectNom} est informé et peut suivre l’avancement.`);
-        this.afterProjectUpdate('Projet accepté.');
-      },
-      error: (e) => this.echecAction(e),
-    });
-  }
-
-  refuserProjet(motif: string): void {
-    const p = this.selection();
-    if (!p) return;
-    this.isSaving.set(true);
-    this.societeService.refuserProjetConstruction(p.id, motif).subscribe({
-      next: () => {
-        this.toast.success('Projet refusé', `${p.prospectNom} recevra le motif du refus.`);
-        this.afterProjectUpdate('Projet refusé.');
-      },
-      error: (e) => this.echecAction(e),
-    });
-  }
-
-  private echecAction(e: unknown): void {
-    this.isSaving.set(false);
-    this.dialogue.set(null);
-    this.toast.error('Action refusée', messageErreurApi(e, 'Le traitement du projet a échoué.'));
-  }
-
-  private afterProjectUpdate(message: string): void {
-    this.isSaving.set(false);
-    this.isProgressModalOpen.set(false);
-    this.dialogue.set(null);
-    this.successMessage.set(message);
+  avancementEnregistre(message: string): void {
+    this.activeProject.set(null);
+    this.toast.success('Avancement', message);
     this.loadProjects();
-    this.clearMessagesSoon();
   }
 
   formatPrice(v?: number): string {
@@ -532,14 +395,7 @@ export class ProjetsConstructionComponent implements OnInit {
   }
 
   statusLabel(e: EtatEtudeConstruction): string {
-    const map: Record<string, string> = {
-      EN_ETUDE: 'En étude',
-      ACCEPTER: 'Accepté',
-      REFUSER: 'Refusé',
-      DEVIS_TRANSMIS: 'Devis transmis',
-      EN_CHANTIER: 'En chantier',
-    };
-    return map[e] || e;
+    return LIBELLES_STATUT_PROJET[e] ?? e;
   }
 
   private handleSaveError(error: unknown): void {

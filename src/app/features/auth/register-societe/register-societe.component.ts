@@ -81,8 +81,8 @@ export class RegisterSocieteComponent {
     description: [''],
 
     // Étape 3 : Responsable promoteur
-    prenomResponsable: ['', [texteRequis, nomPersonne, Validators.maxLength(100)]],
-    nomResponsable: ['', [texteRequis, nomPersonne, Validators.maxLength(100)]],
+    prenomResponsable: ['', [texteRequis, nomPersonne, Validators.minLength(2), Validators.maxLength(50)]],
+    nomResponsable: ['', [texteRequis, nomPersonne, Validators.minLength(2), Validators.maxLength(50)]],
     telephoneResponsable: ['', [Validators.required, telephoneMali]],
     emailResponsable: ['', [Validators.email]],
     motDePasse: ['', [Validators.required, Validators.minLength(6)]],

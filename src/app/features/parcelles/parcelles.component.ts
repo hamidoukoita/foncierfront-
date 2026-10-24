@@ -17,13 +17,17 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { MatIcon } from '@angular/material/icon';
+import { ChampTitreFoncierComponent } from '../../shared/components/champ-titre-foncier/champ-titre-foncier.component';
+import { titreFoncierValide } from '../../core/utils/titre-foncier';
+import { MontantDirective } from '../../shared/directives/montant.directive';
 
 type ParcelleFilter = 'TOUTES' | 'DISPONIBLES' | 'RESERVEES' | 'VENDUES' | 'INDISPONIBLES';
 
 @Component({
   selector: 'app-parcelles',
   standalone: true,
-  imports: [
+  imports: [MontantDirective, 
+    ChampTitreFoncierComponent,
     MediaManagerComponent,
     CommonModule,
     ReactiveFormsModule,
@@ -66,7 +70,7 @@ export class ParcellesComponent implements OnInit {
 
   readonly parcelleForm = this.fb.nonNullable.group({
     designation: ['', [Validators.required, Validators.maxLength(100)]],
-    titreFoncier: ['', [Validators.required, Validators.maxLength(100)]],
+    titreFoncier: ['', [Validators.required, Validators.maxLength(100), titreFoncierValide]],
     superficieM2: [0, [Validators.required, Validators.min(1)]],
     dimensions: [''],
     prixFcfa: [0, [Validators.required, Validators.min(1)]],

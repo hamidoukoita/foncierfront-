@@ -49,7 +49,7 @@ export class StatusBadgeComponent {
       return 'bg-rose-50 text-brand-danger border border-rose-200/60';
     }
     // Bleu Marine var(--foncier-secondary) / Devis transmis / Chantier / Effectué
-    if (s.includes('devis') || s.includes('chantier') || s.includes('effectue')) {
+    if (s.includes('devis') || s.includes('chantier') || s.includes('effectue') || s.includes('discussion')) {
       return 'bg-slate-100 text-brand-secondary border border-slate-200';
     }
     // Noir Anthracite var(--foncier-litige) / Litige / Indisponible

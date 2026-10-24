@@ -105,7 +105,7 @@ export class DashboardComponent implements OnInit {
 
   readonly ventesConclues = computed(() => this.reservations().filter((r) => r.statut === 'VENDUE').length);
   readonly agentsActifs = computed(() => this.agents().filter(a => a.statut === 'ACTIF').length);
-  readonly projetsEnEtude = computed(() => this.projets().filter(p => p.etatEtude === 'EN_ETUDE').length);
+  readonly projetsEnEtude = computed(() => this.projets().filter(p => p.etatEtude === 'EN_ETUDE' || p.etatEtude === 'EN_DISCUSSION').length);
   readonly avancementMoyen = computed(() => {
     const l = this.programmes();
     return l.length ? Math.round(l.reduce((s, p) => s + (p.avancement ?? 0), 0) / l.length) : null;

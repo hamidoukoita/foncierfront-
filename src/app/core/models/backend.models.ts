@@ -1,3 +1,5 @@
+import type { DescriptionMaison, PropositionProjet } from './projet-echange.models';
+
 export type TypeBienBackend = 'LOT_PROGRAMME' | 'PARCELLE_INDIVIDUELLE' | 'MAISON_CLE_EN_MAIN' | 'BIEN_FONCIER';
 
 export interface BackendApiResponse<T> {
@@ -26,6 +28,8 @@ export interface SocietePromotriceBackend {
   reservationMultiple?: boolean;
   reservationsMax?: number;
   prixReservation?: number;
+  pourcentageRemboursementAnnulation?: number;
+  budgetMinimumConstruction?: number | null;
   /** Assistant de première connexion terminé ou passé. */
   parametrageInitialFait?: boolean;
   // Métadonnées d'interface
@@ -141,6 +145,8 @@ export interface ReservationBackend {
   referencePaiement?: string;
   datePaiement?: string;
   rembourse?: boolean;
+  pourcentageRemboursement?: number;
+  montantRembourse?: number;
   dateRemboursement?: string;
   suiteVente?: 'A_CHOISIR' | 'REMBOURSEMENT_EN_COURS' | 'REMBOURSEE' | 'REMPLACEE';
   dateLimiteChoix?: string;
@@ -184,6 +190,9 @@ export interface NotificationBackend {
   utilisateurNom?: string;
   utilisateurPrenom?: string;
   utilisateurTelephone?: string;
+  /** Élément concerné (ex. PROJET_CONSTRUCTION) et son identifiant. */
+  cibleType?: string | null;
+  cibleId?: number | null;
 }
 
 export interface ProjetConstructionBackend {
@@ -219,10 +228,8 @@ export interface ProjetConstructionBackend {
   maisonReferenceId?: number;
   maisonReferenceTitre?: string;
   maisonReferenceImageUrl?: string;
-  descriptionModelePersonnalise?: string;
-  nombreChambresSouhaitees?: number;
-  nombreSallesBainSouhaitees?: number;
-  surfaceConstruiteSouhaitee?: number;
+  maisonSouhaitee?: DescriptionMaison | null;
+  propositionRetenue?: PropositionProjet | null;
   fichiers?: FichierProjetBackend[];
 }
 

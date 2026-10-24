@@ -1,0 +1,170 @@
+@let champ = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary';
+@let libelle = 'mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500';
+
+<div class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs" (click)="fermer()">
+  <section
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="titre-proposition"
+    class="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-card"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
+      <div>
+        <h2 id="titre-proposition" class="text-base font-bold text-brand-secondary">Faire une proposition</h2>
+        <p class="mt-0.5 text-xs text-gray-500">
+          {{ projet().prospectNom }} la recevra dans son application et pourra l’accepter ou la décliner.
+        </p>
+      </div>
+      <button type="button" class="bouton bouton-discret bouton-sm" (click)="fermer()" aria-label="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="envoyer()" class="flex min-h-0 flex-1 flex-col">
+      <div class="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
+        <!-- Base -->
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <label for="prop-titre" [class]="libelle">Titre de la proposition *</label>
+            <input id="prop-titre" formControlName="titre" maxlength="150" [class]="champ" [class.!border-red-400]="invalide('titre')"
+              placeholder="Ex. Villa R+1 avec garage double" />
+          </div>
+          @if (optionsModeles().length) {
+            <div class="sm:col-span-2">
+              <p [class]="libelle">Partir d’un modèle du catalogue (facultatif)</p>
+              <app-choix-options formControlName="modelMaisonId" [options]="optionsModeles()" libelle="Modèle du catalogue" />
+            </div>
+          }
+        </div>
+
+        <!-- Maison -->
+        <fieldset class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <legend class="text-sm font-bold text-brand-secondary">La maison proposée</legend>
+            @if (projet().maisonSouhaitee) {
+              <button type="button" class="bouton bouton-discret bouton-sm" (click)="reprendreSouhaits()">
+                <mat-icon>restart_alt</mat-icon> Reprendre les souhaits de l’acquéreur
+              </button>
+            }
+          </div>
+          <div>
+            <p [class]="libelle">Niveaux</p>
+            <app-choix-options formControlName="nombreNiveaux" [options]="niveaux" libelle="Niveaux" />
+          </div>
+          <div>
+            <p [class]="libelle">Style</p>
+            <app-choix-options formControlName="style" [options]="styles" presentation="tuiles" libelle="Style" />
+          </div>
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label for="prop-chambres" [class]="libelle">Chambres</label>
+              <input id="prop-chambres" type="number" min="0" max="30" formControlName="nombreChambres" [class]="champ" [class.!border-red-400]="invalide('nombreChambres')" />
+            </div>
+            <div>
+              <label for="prop-suites" [class]="libelle">dont avec salle de bain</label>
+              <input id="prop-suites" type="number" min="0" max="30" formControlName="nombreSuites" [class]="champ" [class.!border-red-400]="invalide('nombreSuites')" />
+            </div>
+            <div>
+              <label for="prop-sdb" [class]="libelle">Salles de bain</label>
+              <input id="prop-sdb" type="number" min="0" max="30" formControlName="nombreSallesBain" [class]="champ" [class.!border-red-400]="invalide('nombreSallesBain')" />
+            </div>
+            <div>
+              <label for="prop-salons" [class]="libelle">Salons</label>
+              <input id="prop-salons" type="number" min="0" max="10" formControlName="nombreSalons" [class]="champ" [class.!border-red-400]="invalide('nombreSalons')" />
+            </div>
+            <div>
+              <label for="prop-garage" [class]="libelle">Garage (véhicules)</label>
+              <input id="prop-garage" type="number" min="0" max="10" formControlName="placesGarage" [class]="champ" [class.!border-red-400]="invalide('placesGarage')" />
+            </div>
+            <div>
+              <label for="prop-surface" [class]="libelle">Surface habitable (m²)</label>
+              <input id="prop-surface" type="number" min="1" formControlName="surfaceHabitable" [class]="champ" [class.!border-red-400]="invalide('surfaceHabitable')" />
+            </div>
+          </div>
+
+          <div>
+            <p [class]="libelle">Cuisine</p>
+            <app-choix-options formControlName="cuisine" [options]="cuisines" libelle="Cuisine" />
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            @for (option of [
+              { nom: 'salleAManger', libelle: 'Salle à manger' },
+              { nom: 'toilettesVisiteurs', libelle: 'Toilettes visiteurs' },
+              { nom: 'magasin', libelle: 'Magasin / débarras' }
+            ]; track option.nom) {
+              <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10 has-[:checked]:text-brand-primary">
+                <input type="checkbox" [formControlName]="option.nom" class="accent-[var(--foncier-primary)]" />
+                {{ option.libelle }}
+              </label>
+            }
+          </div>
+
+          <div>
+            <p [class]="libelle">Extérieurs et équipements</p>
+            <div class="flex flex-wrap gap-2">
+              @for (e of equipementsDisponibles; track e[0]) {
+                <button
+                  type="button"
+                  (click)="basculerEquipement(e[0])"
+                  [attr.aria-pressed]="aEquipement(e[0])"
+                  class="rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
+                  [class]="aEquipement(e[0]) ? 'border-brand-primary bg-brand-primary/10 text-brand-primary' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                >
+                  {{ e[1] }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div>
+            <label for="prop-precisions" [class]="libelle">Précisions sur la maison</label>
+            <textarea id="prop-precisions" rows="3" maxlength="3000" formControlName="precisions" [class]="champ"
+              placeholder="Ex. Chambre parentale de 16 m² au lieu de 20 m², salon ouvert sur la terrasse…"></textarea>
+          </div>
+        </fieldset>
+
+        <!-- Conditions -->
+        <fieldset class="space-y-4">
+          <legend class="text-sm font-bold text-brand-secondary">Conditions</legend>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="prop-prix" [class]="libelle">Prix estimé (FCFA)</label>
+              <input id="prop-prix" appMontant formControlName="prixEstime" [class]="champ" [class.!border-red-400]="invalide('prixEstime')" placeholder="32 000 000" />
+            </div>
+            <div>
+              <label for="prop-delai" [class]="libelle">Délai de construction (mois)</label>
+              <input id="prop-delai" type="number" min="1" max="120" formControlName="delaiMois" [class]="champ" [class.!border-red-400]="invalide('delaiMois')" placeholder="10" />
+            </div>
+          </div>
+          <div>
+            <label for="prop-commentaire" [class]="libelle">Message à l’acquéreur</label>
+            <textarea id="prop-commentaire" rows="3" maxlength="3000" formControlName="commentaire" [class]="champ"
+              placeholder="Expliquez ce qui change par rapport à sa demande et pourquoi."></textarea>
+          </div>
+          <div>
+            <label for="prop-plan" [class]="libelle">Plan (PDF ou image, facultatif)</label>
+            <input id="prop-plan" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" (change)="choisirPlan($event)"
+              class="w-full text-xs text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-bg file:px-3 file:py-2 file:text-xs file:font-bold file:text-brand-secondary" />
+            @if (erreurPlan(); as e) {
+              <p class="mt-1 text-xs font-semibold text-brand-danger">{{ e }}</p>
+            }
+          </div>
+        </fieldset>
+      </div>
+
+      <footer class="flex flex-wrap items-center gap-2 border-t border-gray-100 px-6 py-4">
+        @if (erreur(); as e) {
+          <p class="w-full text-xs font-semibold text-brand-danger" role="alert">{{ e }}</p>
+        }
+        <span class="flex-1"></span>
+        <button type="button" class="bouton bouton-contour" (click)="fermer()" [disabled]="enCours()">Annuler</button>
+        <button type="submit" class="bouton bouton-primaire" [disabled]="enCours()">
+          <mat-icon>send</mat-icon>
+          {{ enCours() ? 'Envoi…' : 'Envoyer la proposition' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
