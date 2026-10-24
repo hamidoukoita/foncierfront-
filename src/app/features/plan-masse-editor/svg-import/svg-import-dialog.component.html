@@ -106,7 +106,7 @@
                     @case ('TYPICAL_LOT') { Superficie d'un lot type (m²) }
                     @default { Largeur réelle du lotissement (m) }
                   }
-                  <input type="number" min="0" step="any" class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="calibValue()" (input)="onNumber($event, 'calib')" />
+                  <input type="number" min="0" step="any" class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="calibValue()" (input)="onNumber($event)" />
                 </label>
               }
               @if (scale(); as s) {
@@ -121,7 +121,7 @@
               <h3 class="text-xs font-extrabold text-[#1A2B4C]">3 · Nouveaux lots</h3>
               <div class="mt-2 grid grid-cols-2 gap-2">
                 <label class="text-[11px] font-bold text-gray-600">Prix au m² (FCFA)
-                  <input type="number" min="0" class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="prixM2() || ''" placeholder="ex. 15000" (input)="onNumber($event, 'prix')" />
+                  <input appMontant class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [montant]="prixM2() || null" placeholder="ex. 15 000" (montantChange)="prixM2.set($event ?? 0)" />
                 </label>
                 <label class="text-[11px] font-bold text-gray-600">Statut initial
                   <select class="mt-1 w-full rounded-lg border border-[#dfe3e8] px-2 py-2 text-xs" [value]="statut()" (change)="onStatutSelect($event)">

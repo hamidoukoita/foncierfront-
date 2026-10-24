@@ -49,8 +49,8 @@ export class UtilisateursRolesComponent implements OnInit {
   readonly isSubmittingAdmin = signal<boolean>(false);
 
   readonly adminForm = this.fb.nonNullable.group({
-    prenom: ['', [Validators.required, Validators.minLength(2)]],
-    nom: ['', [Validators.required, Validators.minLength(2)]],
+    prenom: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+    nom: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
     telephone: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
     motDePasse: ['', [Validators.required, Validators.minLength(6)]]
   });

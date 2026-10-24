@@ -6,12 +6,15 @@ import { MaisonsService } from '../../../core/services/maisons.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { messageErreurApi } from '../../../core/utils/api-error';
 import { EQUIPEMENTS_SUGGERES, STATUTS_MAISON } from '../maison-statut';
+import { ChampTitreFoncierComponent } from '../../../shared/components/champ-titre-foncier/champ-titre-foncier.component';
+import { titreFoncierValide } from '../../../core/utils/titre-foncier';
+import { MontantDirective } from '../../../shared/directives/montant.directive';
 
 /** Création / modification d'une maison clé en main. */
 @Component({
   selector: 'app-maison-form',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIcon],
+  imports: [MontantDirective, ReactiveFormsModule, MatIcon, ChampTitreFoncierComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './maison-form.component.html',
 })
@@ -38,7 +41,7 @@ export class MaisonFormComponent {
     nombreChambres: this.fb.control<number | null>(null, [Validators.min(0)]),
     nombreSallesBain: this.fb.control<number | null>(null, [Validators.min(0)]),
     nombreNiveaux: this.fb.control<number | null>(null, [Validators.min(0)]),
-    numeroTitreFoncier: this.fb.nonNullable.control('', [Validators.maxLength(100)]),
+    numeroTitreFoncier: this.fb.nonNullable.control('', [Validators.maxLength(100), titreFoncierValide]),
     adresse: this.fb.nonNullable.control('', [Validators.maxLength(255)]),
     latitude: this.fb.control<number | null>(null),
     longitude: this.fb.control<number | null>(null),

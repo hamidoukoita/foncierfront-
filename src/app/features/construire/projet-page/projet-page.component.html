@@ -1,0 +1,144 @@
+<div class="space-y-5 pb-6">
+  <a routerLink="/societe/projets-construction" class="bouton bouton-sm bouton-discret">
+    <mat-icon>arrow_back</mat-icon>
+    Projets de construction
+  </a>
+
+  @if (erreur(); as message) {
+    <section class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-5 py-4 shadow-card">
+      <p class="text-sm text-gray-600">{{ message }}</p>
+      <button type="button" class="bouton bouton-sm bouton-contour" (click)="charger()">
+        <mat-icon>refresh</mat-icon>
+        Réessayer
+      </button>
+    </section>
+  } @else if (projet(); as p) {
+    <!-- En-tête : acquéreur, dossier, décisions -->
+    <header class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-card lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex min-w-0 items-center gap-4">
+        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-secondary text-base font-extrabold text-white">
+          {{ (p.prospectNom || '?').slice(0, 2).toUpperCase() }}
+        </span>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="truncate text-2xl font-bold tracking-tight text-brand-secondary">{{ p.prospectNom }}</h1>
+            <app-status-badge [status]="p.etatEtude" [label]="libelleStatut()" />
+          </div>
+          <p class="mt-0.5 text-xs text-gray-600">
+            <span class="font-mono font-semibold">{{ p.numeroDossier || ('#' + p.id) }}</span>
+            · {{ p.modeleVilla }} · {{ p.surfaceTerrainM2 }} m²
+            @if (p.prospectTelephone) {
+              · <a [href]="'tel:' + p.prospectTelephone" class="font-mono font-semibold text-brand-primary hover:underline">{{ p.prospectTelephone }}</a>
+            }
+          </p>
+        </div>
+      </div>
+
+      @if (enCoursDeTraitement()) {
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" class="bouton bouton-danger" (click)="ouvrir('refus')">Refuser</button>
+          <button type="button" class="bouton bouton-contour" (click)="ouvrir('proposition')">
+            <mat-icon>edit_note</mat-icon>
+            Faire une proposition
+          </button>
+          <button
+            type="button"
+            (click)="ouvrir('acceptation')"
+            class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-brand-success px-3.5 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-emerald-700"
+          >
+            <mat-icon class="!h-4 !w-4 !text-[16px]">task_alt</mat-icon>
+            Accepter la demande
+          </button>
+        </div>
+      } @else if (p.etatEtude === 'ACCEPTER') {
+        <button type="button" class="bouton bouton-primaire" (click)="ouvrir('avancement')">
+          <mat-icon>trending_up</mat-icon>
+          Mettre à jour l’avancement
+        </button>
+      }
+    </header>
+
+    <!-- Dossier | Discussion -->
+    <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <section class="rounded-2xl bg-white p-5 shadow-card" [class.opacity-60]="chargement()">
+        <h2 class="mb-4 text-sm font-bold text-brand-secondary">Dossier de l’acquéreur</h2>
+        <app-projet-detail [projet]="p" (ouvrirFichier)="ouvrirFichier($event)" />
+      </section>
+
+      <section class="flex h-[calc(100vh-11rem)] min-h-[480px] flex-col overflow-hidden rounded-2xl border-2 border-brand-primary bg-orange-50/70 shadow-[0_12px_32px_-12px_rgba(230,126,34,0.45)] lg:sticky lg:top-4">
+        <div class="flex items-center gap-3 bg-gradient-to-br from-[#F29A43] via-brand-primary to-[#CC6F14] px-4 py-3.5 text-white">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20">
+            <mat-icon>forum</mat-icon>
+          </span>
+          <div class="min-w-0 flex-1">
+            <h2 class="truncate text-sm font-bold">Discussion avec {{ p.prospectNom }}</h2>
+            <p class="text-[11px] text-white/90" [class.font-bold]="propositionsEnAttente() > 0">
+              @if (propositionsEnAttente() > 0) {
+                {{ propositionsEnAttente() }} proposition(s) en attente de sa réponse
+              } @else if (enCoursDeTraitement()) {
+                Questions, précisions et propositions
+              } @else if (p.etatEtude === 'ACCEPTER') {
+                Restez en contact pendant les travaux
+              } @else {
+                La discussion est close
+              }
+            </p>
+          </div>
+          @if (propositionsEnAttente() > 0) {
+            <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-extrabold text-brand-primary">{{ propositionsEnAttente() }}</span>
+          }
+        </div>
+        <app-fil-projet
+          class="flex-1"
+          [elements]="fil()"
+          [chargement]="chargement()"
+          [peutEcrire]="p.etatEtude !== 'REFUSER'"
+          [envoi]="envoiMessage()"
+          (message)="envoyerMessage($event)"
+          (ouvrirFichier)="ouvrirFichier($event)"
+        />
+      </section>
+    </div>
+
+    @switch (dialogue()) {
+      @case ('proposition') {
+        <app-proposition-form
+          [projet]="p"
+          [modeles]="modeles()"
+          [enCours]="enCours()"
+          (valider)="proposer($event)"
+          (annule)="fermerDialogue()"
+        />
+      }
+      @case ('avancement') {
+        <app-avancement-dialog
+          [projet]="p"
+          [modeles]="modeles()"
+          (termine)="avancementEnregistre($event)"
+          (annule)="fermerDialogue()"
+        />
+      }
+    }
+
+    <app-confirm-dialog
+      [isOpen]="dialogue() === 'acceptation'"
+      title="Accepter la demande telle quelle ?"
+      [message]="'Vous vous engagez à réaliser la construction demandée par ' + p.prospectNom + '. Les propositions encore sans réponse seront retirées.'"
+      confirmText="Accepter la demande"
+      (confirmed)="accepter()"
+      (cancelled)="fermerDialogue()"
+    />
+
+    <app-motif-dialog
+      [isOpen]="dialogue() === 'refus'"
+      titre="Refuser le projet"
+      libelleConfirmation="Refuser le projet"
+      [suggestions]="suggestionsRefus"
+      [enCours]="enCours()"
+      (valider)="refuser($event)"
+      (annule)="fermerDialogue()"
+    />
+  } @else {
+    <section class="rounded-2xl bg-white px-5 py-12 text-center text-sm text-gray-400 shadow-card">Chargement du projet…</section>
+  }
+</div>

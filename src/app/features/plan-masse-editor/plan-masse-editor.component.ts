@@ -30,6 +30,7 @@ import {
   PlanMasseRequestBackend,
   PlanMasseElementBackend,
 } from '../../core/models/backend.models';
+import { MontantDirective } from '../../shared/directives/montant.directive';
 
 export interface GeometryPoint {
   x: number;
@@ -122,7 +123,7 @@ interface EditorSnapshot {
 @Component({
   selector: 'app-plan-masse-editor',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MediaManagerComponent, SvgImportDialogComponent],
+  imports: [MontantDirective, CommonModule, ReactiveFormsModule, RouterModule, MediaManagerComponent, SvgImportDialogComponent],
   templateUrl: './plan-masse-editor.component.html',
   styleUrl: './plan-masse-editor.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

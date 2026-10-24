@@ -44,14 +44,14 @@ import { chiffresTelephone, messageErreur, nomPersonne, telephoneMali, texteRequ
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label class="block">
                 <span class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">Prénom *</span>
-                <input type="text" formControlName="prenom" placeholder="Ex. Moussa" class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs text-gray-900 outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+                <input type="text" formControlName="prenom" maxlength="50" placeholder="Ex. Moussa" class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs text-gray-900 outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
                 @if (erreur('prenom', 'Le prénom'); as message) {
                   <span class="mt-1 block text-[10px] text-brand-danger">{{ message }}</span>
                 }
               </label>
               <label class="block">
                 <span class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">Nom *</span>
-                <input type="text" formControlName="nom" placeholder="Ex. DIARRA" class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs text-gray-900 outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15 uppercase" />
+                <input type="text" formControlName="nom" maxlength="50" placeholder="Ex. DIARRA" class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs text-gray-900 outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15 uppercase" />
                 @if (erreur('nom', 'Le nom'); as message) {
                   <span class="mt-1 block text-[10px] text-brand-danger">{{ message }}</span>
                 }
@@ -100,8 +100,8 @@ export class NouvelAgentDialogComponent {
   readonly enCours = signal(false);
 
   readonly form = this.fb.nonNullable.group({
-    prenom: ['', [texteRequis, nomPersonne, Validators.minLength(2)]],
-    nom: ['', [texteRequis, nomPersonne, Validators.minLength(2)]],
+    prenom: ['', [texteRequis, nomPersonne, Validators.minLength(2), Validators.maxLength(50)]],
+    nom: ['', [texteRequis, nomPersonne, Validators.minLength(2), Validators.maxLength(50)]],
     telephone: ['', [Validators.required, telephoneMali]],
     motDePasse: [MOT_DE_PASSE_TEMPORAIRE, [texteRequis, Validators.minLength(6)]],
   });

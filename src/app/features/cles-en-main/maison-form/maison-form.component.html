@@ -20,7 +20,7 @@
           }
         </label>
         <label class="block text-sm font-semibold text-gray-700">Prix (FCFA) <span class="text-red-500">*</span>
-          <input type="number" min="1" step="1" formControlName="prix" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+          <input appMontant formControlName="prix" placeholder="45 000 000" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
         </label>
         <label class="block text-sm font-semibold text-gray-700">Statut
           <select formControlName="statut" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15">
@@ -92,7 +92,8 @@
           <input type="number" step="0.000001" formControlName="longitude" placeholder="-8.002900" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
         </label>
         <label class="block text-sm font-semibold text-gray-700">N° du Titre Foncier
-          <input type="text" formControlName="numeroTitreFoncier" placeholder="Ex. TF 2210 / Bamako" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+          <app-champ-titre-foncier class="mt-2 block" formControlName="numeroTitreFoncier" placeholder="2210/Bamako"
+            [invalide]="form.controls.numeroTitreFoncier.touched && form.controls.numeroTitreFoncier.invalid" />
         </label>
         <label class="block text-sm font-semibold text-gray-700">Référence interne
           <input type="text" formControlName="reference" placeholder="Générée si vide" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />

@@ -202,6 +202,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'projets-construction/:id',
+        loadComponent: () =>
+          import('./features/construire/projet-page/projet-page.component').then(
+            (m) => m.ProjetPageComponent,
+          ),
+      },
+      {
         path: 'profil',
         loadComponent: () =>
           import('./features/profil/profil-societe.component').then(

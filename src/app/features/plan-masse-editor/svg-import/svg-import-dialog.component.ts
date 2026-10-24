@@ -15,6 +15,7 @@ import {
   parseSvgPlan,
   resolveScale,
 } from './svg-plan-parser';
+import { MontantDirective } from '../../../shared/directives/montant.directive';
 
 export interface ExistingLotRef {
   id: number;
@@ -61,7 +62,7 @@ function round1(n: number): number {
 @Component({
   selector: 'app-svg-import-dialog',
   standalone: true,
-  imports: [CommonModule],
+  imports: [MontantDirective, CommonModule],
   templateUrl: './svg-import-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -284,11 +285,9 @@ export class SvgImportDialogComponent {
     this.calibValue.set(defaults[kind]);
   }
 
-  onNumber(event: Event, target: 'calib' | 'prix'): void {
+  onNumber(event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
-    const safe = Number.isFinite(value) && value > 0 ? value : 0;
-    if (target === 'calib') this.calibValue.set(safe);
-    else this.prixM2.set(safe);
+    this.calibValue.set(Number.isFinite(value) && value > 0 ? value : 0);
   }
 
   // --- Aperçu -------------------------------------------------------------------

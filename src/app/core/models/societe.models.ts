@@ -1,3 +1,5 @@
+import type { DescriptionMaison, PropositionProjet } from './projet-echange.models';
+
 export type StatutProgramme = 'PUBLIE' | 'BROUILLON' | 'ARCHIVE';
 
 export interface Programme {
@@ -80,6 +82,10 @@ export interface Reservation {
   referencePaiement?: string;
   datePaiementIso?: string;
   rembourse: boolean;
+  /** Montant rendu à l'acquéreur (partiel après son annulation, total après une vente à un autre). */
+  montantRembourseFcfa?: number;
+  /** Part rendue si l'acquéreur annule (règle de la société au moment de la réservation). */
+  pourcentageRemboursement?: number;
   /** Bien vendu à un autre acquéreur : choix de l'acquéreur (remboursement ou report). */
   suiteVente?: SuiteVente;
   dateLimiteChoixIso?: string;
@@ -135,7 +141,13 @@ export interface AgentCollaborateur {
   statut: StatutAgent;
 }
 
-export type EtatEtudeConstruction = 'EN_ETUDE' | 'DEVIS_TRANSMIS' | 'EN_CHANTIER' | 'ACCEPTER' | 'REFUSER';
+export type EtatEtudeConstruction =
+  | 'EN_ETUDE'
+  | 'EN_DISCUSSION'
+  | 'DEVIS_TRANSMIS'
+  | 'EN_CHANTIER'
+  | 'ACCEPTER'
+  | 'REFUSER';
 export type StatutTerrain = 'TITRE_FONCIER' | 'PERMIS_OCCUPER';
 
 export interface ModelMaison {
@@ -189,10 +201,10 @@ export interface ProjetConstruction {
   /** Maison clé en main prise comme référence par l'acquéreur. */
   maisonReferenceTitre?: string;
   maisonReferenceImageUrl?: string;
-  descriptionModelePersonnalise?: string;
-  nombreChambresSouhaitees?: number;
-  nombreSallesBainSouhaitees?: number;
-  surfaceConstruiteSouhaitee?: number;
+  /** Questionnaire rempli par l'acquéreur (modèle personnalisé). */
+  maisonSouhaitee?: DescriptionMaison | null;
+  /** Proposition acceptée par l'acquéreur : termes de l'accord. */
+  propositionRetenue?: PropositionProjet | null;
   fichiers: FichierProjet[];
 }
 
@@ -246,6 +258,10 @@ export interface ProfilSociete {
   reservationsMax?: number;
   /** Montant payé par l'acquéreur pour réserver un lot ou une parcelle (FCFA). */
   prixReservation?: number;
+  /** Part du montant rendue si l'acquéreur annule sa réservation (0 à 100 %). */
+  pourcentageRemboursementAnnulation?: number;
+  /** Budget minimum d'un projet « Construire sur mon terrain » (null = pas de minimum). */
+  budgetMinimumConstruction?: number | null;
   /** Chemin du logo (/uploads/logos/…), affiché sur les publications côté acquéreurs. */
   logoUrl?: string | null;
   /** Assistant de première connexion terminé ou passé. */
@@ -271,4 +287,6 @@ export interface ReglesReservation {
   reservationsMax: number;
   /** Montant fixe payé pour réserver un lot ou une parcelle (FCFA). */
   prixReservation: number;
+  /** Part du montant rendue si l'acquéreur annule sa réservation (0 à 100 %). */
+  pourcentageRemboursementAnnulation: number;
 }

@@ -228,9 +228,11 @@
                 formControlName="superficieTotale"
             /></label>
             <label
-              >Titre foncier mère *<input
+              >Titre foncier mère *<app-champ-titre-foncier
+                class="mt-1 block"
                 formControlName="titreFoncierRef"
-                placeholder="Ex. TF 10842 / Kati"
+                placeholder="10842/Kati"
+                [invalide]="programmeForm.controls.titreFoncierRef.touched && programmeForm.controls.titreFoncierRef.invalid"
             /></label>
           </div>
           <label
@@ -370,7 +372,12 @@
               min="100"
               formControlName="superficieTotale"
           /></label>
-          <label>Titre foncier mère *<input formControlName="titreFoncierRef" /></label>
+          <label>Titre foncier mère *<app-champ-titre-foncier
+              class="mt-1 block"
+              formControlName="titreFoncierRef"
+              placeholder="10842/Kati"
+              [invalide]="programmeForm.controls.titreFoncierRef.touched && programmeForm.controls.titreFoncierRef.invalid"
+          /></label>
         </div>
         <label>Description<textarea rows="4" formControlName="description"></textarea></label>
         <div class="check-grid compact">

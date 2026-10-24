@@ -155,9 +155,12 @@
             }
           </label>
           <label class="block text-sm font-semibold text-gray-700">Numéro du titre foncier <span class="text-red-500">*</span>
-            <input type="text" formControlName="titreFoncier" placeholder="Ex. TF 1024 / Kati" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+            <app-champ-titre-foncier class="mt-2 block" formControlName="titreFoncier"
+              [invalide]="parcelleForm.controls.titreFoncier.touched && parcelleForm.controls.titreFoncier.invalid" />
             @if (parcelleForm.controls.titreFoncier.touched && parcelleForm.controls.titreFoncier.invalid) {
-              <span class="mt-1 block text-xs text-red-600">Le titre foncier est obligatoire.</span>
+              <span class="mt-1 block text-xs text-red-600">
+                {{ parcelleForm.controls.titreFoncier.hasError('titreFoncier') ? 'Saisissez la référence qui suit « TF- ».' : 'Le titre foncier est obligatoire.' }}
+              </span>
             }
           </label>
           <label class="block text-sm font-semibold text-gray-700">Superficie (m²) <span class="text-red-500">*</span>
@@ -167,7 +170,7 @@
             <input type="text" formControlName="dimensions" placeholder="Ex. 15 x 25" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
           </label>
           <label class="block text-sm font-semibold text-gray-700">Prix (FCFA) <span class="text-red-500">*</span>
-            <input type="number" min="1" step="1" formControlName="prixFcfa" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
+            <input appMontant formControlName="prixFcfa" placeholder="12 000 000" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15" />
           </label>
           <label class="block text-sm font-semibold text-gray-700">Statut
             <select formControlName="statut" class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15">

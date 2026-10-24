@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { environment } from '../../../../environments/environment';
@@ -6,9 +6,12 @@ import { FichierProjet, ProjetConstruction } from '../../../core/models/societe.
 import { formaterFcfa } from '../../../core/utils/format';
 import { InfoLigneComponent } from '../../../shared/components/info-ligne/info-ligne.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
+import { DescriptionMaisonComponent } from '../description-maison/description-maison.component';
+import { CartePropositionComponent } from '../fil-projet/carte-proposition.component';
 
 export const LIBELLES_STATUT_PROJET: Record<string, string> = {
   EN_ETUDE: 'En étude',
+  EN_DISCUSSION: 'En discussion',
   ACCEPTER: 'Accepté',
   REFUSER: 'Refusé',
 };
@@ -19,11 +22,18 @@ const TYPES_FICHIER: Record<FichierProjet['type'], { libelle: string; icone: str
   PHOTO: { libelle: 'Photo', icone: 'image' },
 };
 
-/** Dossier complet d'un projet de construction : acquéreur, terrain, maison, pièces, suivi. */
+/** Dossier complet d'un projet de construction : accord, acquéreur, terrain, maison souhaitée, pièces, suivi. */
 @Component({
   selector: 'app-projet-detail',
   standalone: true,
-  imports: [DatePipe, MatIcon, InfoLigneComponent, StatusBadgeComponent],
+  imports: [
+    DatePipe,
+    MatIcon,
+    InfoLigneComponent,
+    StatusBadgeComponent,
+    DescriptionMaisonComponent,
+    CartePropositionComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let p = projet();
@@ -31,7 +41,14 @@ const TYPES_FICHIER: Record<FichierProjet['type'], { libelle: string; icone: str
       <!-- Synthèse -->
       <section class="overflow-hidden rounded-2xl bg-brand-secondary text-white">
         @if (imageModele(); as img) {
-          <img [src]="url(img)" [alt]="p.modeleVilla" class="h-36 w-full object-cover" />
+          @if (imageEnErreur() !== img) {
+            <img [src]="url(img)" alt="" (error)="imageEnErreur.set(img)" class="h-40 w-full bg-white/5 object-cover" />
+          } @else {
+            <!-- Image introuvable : illustration neutre plutôt qu'un lien cassé. -->
+            <div class="flex h-28 w-full items-center justify-center bg-white/5" aria-hidden="true">
+              <mat-icon class="!h-12 !w-12 !text-[48px] text-white/25">{{ p.maisonReferenceTitre ? 'home_work' : 'cottage' }}</mat-icon>
+            </div>
+          }
         }
         <div class="p-5">
           <div class="flex items-start justify-between gap-3">
@@ -59,6 +76,13 @@ const TYPES_FICHIER: Record<FichierProjet['type'], { libelle: string; icone: str
           }
         </div>
       </section>
+
+      @if (p.propositionRetenue; as accord) {
+        <section>
+          <h3 class="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">Accord conclu</h3>
+          <app-carte-proposition [proposition]="accord" (ouvrirFichier)="ouvrirFichier.emit($event)" />
+        </section>
+      }
 
       @if (p.etatEtude === 'REFUSER' && p.motifRefus) {
         <section class="rounded-2xl border border-red-200 bg-red-50 p-4">
@@ -103,16 +127,8 @@ const TYPES_FICHIER: Record<FichierProjet['type'], { libelle: string; icone: str
         <h3 class="mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">Maison souhaitée</h3>
         <div class="rounded-2xl border border-gray-100 px-4">
           @if (p.modelePersonnalise) {
-            @if (p.descriptionModelePersonnalise) {
-              <p class="whitespace-pre-line border-b border-gray-100 py-3 text-sm leading-relaxed text-gray-700">{{ p.descriptionModelePersonnalise }}</p>
-            }
-            <div class="grid grid-cols-3 gap-2 py-3 text-center">
-              @for (c of caracteristiques(); track c.libelle) {
-                <div class="rounded-xl bg-brand-bg px-2 py-2.5">
-                  <p class="text-base font-extrabold text-brand-secondary">{{ c.valeur ?? '—' }}</p>
-                  <p class="text-[10px] font-semibold text-gray-500">{{ c.libelle }}</p>
-                </div>
-              }
+            <div class="py-3">
+              <app-description-maison [description]="p.maisonSouhaitee" />
             </div>
           } @else {
             <app-info-ligne
@@ -164,7 +180,7 @@ const TYPES_FICHIER: Record<FichierProjet['type'], { libelle: string; icone: str
 
       @if (p.description) {
         <section>
-          <h3 class="mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">Message de l’acquéreur</h3>
+          <h3 class="mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">Ce que l’acquéreur a ajouté</h3>
           <p class="whitespace-pre-line rounded-2xl bg-brand-bg p-4 text-sm leading-relaxed text-gray-700">{{ p.description }}</p>
         </section>
       }
@@ -189,15 +205,9 @@ export class ProjetDetailComponent {
     if (p.modelePersonnalise) return null;
     return p.maisonReferenceImageUrl ?? p.modeleMaisonImageUrl ?? null;
   });
+  /** Adresse d'image qui n'a pas pu être chargée (fichier supprimé, lien externe mort). */
+  readonly imageEnErreur = signal<string | null>(null);
   readonly budget = computed(() => formaterFcfa(this.projet().devisMontantFcfa ?? 0));
-  readonly caracteristiques = computed(() => {
-    const p = this.projet();
-    return [
-      { libelle: 'Chambres', valeur: p.nombreChambresSouhaitees },
-      { libelle: 'Salles de bain', valeur: p.nombreSallesBainSouhaitees },
-      { libelle: 'm² construits', valeur: p.surfaceConstruiteSouhaitee },
-    ];
-  });
 
   typeFichier(f: FichierProjet) {
     return TYPES_FICHIER[f.type];

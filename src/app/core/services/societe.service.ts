@@ -688,6 +688,8 @@ export class SocieteService {
       dureeReservationHeures: r.dureeReservationHeures,
       motifAnnulation: r.motifAnnulation ?? r.motifRefus,
       montantReservationFcfa: r.montantReservation ?? 0,
+      montantRembourseFcfa: r.montantRembourse ?? undefined,
+      pourcentageRemboursement: r.pourcentageRemboursement ?? 0,
       referencePaiement: r.referencePaiement,
       datePaiementIso: r.datePaiement,
       rembourse: r.rembourse ?? false,
@@ -825,7 +827,9 @@ export class SocieteService {
             type,
             nonLu: !n.lue,
             actionLabel: 'Consulter',
-            actionRoute: '/societe/reservations',
+            actionRoute: n.cibleType === 'PROJET_CONSTRUCTION' && n.cibleId
+              ? `/societe/projets-construction/${n.cibleId}`
+              : '/societe/reservations',
             iconEmoji: '🔔'
           };
         });
@@ -849,6 +853,14 @@ export class SocieteService {
         );
       })
     );
+  }
+
+  /** Ouvrir un élément (ex. un projet) vaut lecture de ses notifications. */
+  marquerNotificationsLuesPourCible(cibleType: string, cibleId: number): Observable<number> {
+    return this.http.patch<BackendApiResponse<number>>(
+      `${this.API_BASE}/notifications/cible/${cibleType}/${cibleId}/lire`,
+      {}
+    ).pipe(map(res => res.data ?? 0));
   }
 
   markAllNotificationsAsRead(): Observable<unknown> {
@@ -882,43 +894,14 @@ export class SocieteService {
     const societeId = this.getSocieteId();
     if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
     return this.http.get<BackendApiResponse<ProjetConstructionBackend[]>>(`${this.API_BASE}/projets-construction/societe/${societeId}`).pipe(
-      map(res => (Array.isArray(res.data) ? res.data : []).map(p => ({
-        id: p.id,
-        numeroDossier: p.numeroDossier,
-        modeleVilla: p.modelePersonnalise ? 'Modèle personnalisé' : (p.maisonReferenceTitre ?? p.modelMaisonLibeller ?? 'Modèle non sélectionné'),
-        modeleMaisonId: p.modelMaisonId,
-        modeleMaisonImageUrl: p.modelMaisonImageUrl,
-        modeleMaisonPlanUrl: p.modelMaisonPlanUrl,
-        croquisIcon: '🏠',
-        surfaceTerrainM2: p.superficieTerrain ?? 0,
-        prospectNom: p.acquereurNom ?? 'Acquéreur non renseigné',
-        prospectTelephone: p.acquereurTelephone ?? '',
-        localisationTerrain: p.localisationTerrain ?? '',
-        typeTerrain: p.typeTerrain,
-        statutTerrain: 'TITRE_FONCIER' as const,
-        titreFoncierNumero: p.numeroTitreFoncier,
-        chargeTechniqueNom: p.agentNom,
-        chargeTechniqueStatut: p.agentId ? 'Agent affecté' : undefined,
-        devisMontantFcfa: p.budgetEstime,
-        etatEtude: (p.statut as EtatEtudeConstruction) ?? 'EN_ETUDE',
-        progression: p.progression ?? 0,
-        etapeAvancement: p.etapeAvancement,
-        commentaireAvancement: p.commentaireAvancement,
-        dateDerniereMiseAJour: p.dateDerniereMiseAJour,
-        delaiInfo: '',
-        description: p.description,
-        motifRefus: p.motifRefus,
-        dateDemande: p.dateDemande,
-        modelePersonnalise: p.modelePersonnalise ?? (!p.modelMaisonId && !p.maisonReferenceId),
-        maisonReferenceTitre: p.maisonReferenceTitre,
-        maisonReferenceImageUrl: p.maisonReferenceImageUrl,
-        descriptionModelePersonnalise: p.descriptionModelePersonnalise,
-        nombreChambresSouhaitees: p.nombreChambresSouhaitees,
-        nombreSallesBainSouhaitees: p.nombreSallesBainSouhaitees,
-        surfaceConstruiteSouhaitee: p.surfaceConstruiteSouhaitee,
-        fichiers: p.fichiers ?? []
-      }))),
+      map(res => (Array.isArray(res.data) ? res.data : []).map(versProjetConstruction)),
       tap(mapped => this.projetsConstruction.set(mapped))
+    );
+  }
+
+  getProjetConstruction(id: number): Observable<ProjetConstruction> {
+    return this.http.get<BackendApiResponse<ProjetConstructionBackend>>(`${this.API_BASE}/projets-construction/${id}`).pipe(
+      map(res => versProjetConstruction(res.data))
     );
   }
 
@@ -1036,6 +1019,8 @@ export class SocieteService {
           reservationMultiple: s.reservationMultiple ?? false,
           reservationsMax: s.reservationsMax ?? 1,
           prixReservation: s.prixReservation,
+          pourcentageRemboursementAnnulation: s.pourcentageRemboursementAnnulation ?? 0,
+          budgetMinimumConstruction: s.budgetMinimumConstruction ?? null,
           logoUrl: s.logoUrl ?? null,
           parametrageInitialFait: s.parametrageInitialFait ?? false
         } satisfies ProfilSociete;
@@ -1087,6 +1072,23 @@ export class SocieteService {
     );
   }
 
+  /** Budget minimum des projets « Construire sur mon terrain » (null = pas de minimum). */
+  updateReglesConstruction(budgetMinimumConstruction: number | null): Observable<SocietePromotriceBackend> {
+    const societeId = this.getSocieteId();
+    if (!societeId) return throwError(() => new Error('Société promotrice introuvable dans la session.'));
+
+    return this.http.patch<BackendApiResponse<SocietePromotriceBackend>>(
+      `${this.API_BASE}/societes-promotrices/${societeId}/regles-construction`,
+      { budgetMinimumConstruction }
+    ).pipe(
+      map(res => res.data),
+      tap(s => this.profilSociete.update(p => ({
+        ...p,
+        budgetMinimumConstruction: s.budgetMinimumConstruction ?? null
+      })))
+    );
+  }
+
   /** Délai d'attribution et réservation multiple, communs à tous les biens de la société. */
   updateReglesReservation(regles: ReglesReservation): Observable<SocietePromotriceBackend> {
     const societeId = this.getSocieteId();
@@ -1102,7 +1104,8 @@ export class SocieteService {
         delaiAttributionHeures: s.delaiAttributionHeures,
         reservationMultiple: s.reservationMultiple ?? false,
         reservationsMax: s.reservationsMax ?? 1,
-        prixReservation: s.prixReservation
+        prixReservation: s.prixReservation,
+        pourcentageRemboursementAnnulation: s.pourcentageRemboursementAnnulation ?? 0
       })))
     );
   }
@@ -1180,5 +1183,42 @@ function versModeleMaison(m: ModelMaisonBackend): ModelMaison {
     surfaceTerrainMin: m.surfaceTerrainMin, surfaceTerrainMax: m.surfaceTerrainMax, surfaceConstruite: m.surfaceConstruite,
     nombreChambres: m.nombreChambres, nombreSallesBain: m.nombreSallesBain,
     typeTerrainCompatible: m.typeTerrainCompatible, societeId: m.societeId, societeNom: m.societeNom
+  };
+}
+
+function versProjetConstruction(p: ProjetConstructionBackend): ProjetConstruction {
+  return {
+    id: p.id,
+    numeroDossier: p.numeroDossier,
+    modeleVilla: p.modelePersonnalise ? 'Modèle personnalisé' : (p.maisonReferenceTitre ?? p.modelMaisonLibeller ?? 'Modèle non sélectionné'),
+    modeleMaisonId: p.modelMaisonId,
+    modeleMaisonImageUrl: p.modelMaisonImageUrl,
+    modeleMaisonPlanUrl: p.modelMaisonPlanUrl,
+    croquisIcon: '🏠',
+    surfaceTerrainM2: p.superficieTerrain ?? 0,
+    prospectNom: p.acquereurNom ?? 'Acquéreur non renseigné',
+    prospectTelephone: p.acquereurTelephone ?? '',
+    localisationTerrain: p.localisationTerrain ?? '',
+    typeTerrain: p.typeTerrain,
+    statutTerrain: 'TITRE_FONCIER' as const,
+    titreFoncierNumero: p.numeroTitreFoncier,
+    chargeTechniqueNom: p.agentNom,
+    chargeTechniqueStatut: p.agentId ? 'Agent affecté' : undefined,
+    devisMontantFcfa: p.budgetEstime,
+    etatEtude: (p.statut as EtatEtudeConstruction) ?? 'EN_ETUDE',
+    progression: p.progression ?? 0,
+    etapeAvancement: p.etapeAvancement,
+    commentaireAvancement: p.commentaireAvancement,
+    dateDerniereMiseAJour: p.dateDerniereMiseAJour,
+    delaiInfo: '',
+    description: p.description,
+    motifRefus: p.motifRefus,
+    dateDemande: p.dateDemande,
+    modelePersonnalise: p.modelePersonnalise ?? (!p.modelMaisonId && !p.maisonReferenceId),
+    maisonReferenceTitre: p.maisonReferenceTitre,
+    maisonReferenceImageUrl: p.maisonReferenceImageUrl,
+    maisonSouhaitee: p.maisonSouhaitee,
+    propositionRetenue: p.propositionRetenue,
+    fichiers: p.fichiers ?? []
   };
 }
