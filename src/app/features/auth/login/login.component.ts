@@ -6,7 +6,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRippleModule } from '@angular/material/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { LogoComponent } from '../../../shared/components/logo/logo.component';
@@ -23,7 +22,6 @@ import { LogoComponent } from '../../../shared/components/logo/logo.component';
     MatButtonModule,
     MatIconButton,
     MatIconModule,
-    MatCheckboxModule,
     MatRippleModule,
     LogoComponent,
   ],
@@ -41,7 +39,6 @@ export class LoginComponent {
   readonly loginForm = this.fb.nonNullable.group({
     telephone: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
     motDePasse: ['', [Validators.required, Validators.minLength(4)]],
-    rememberMe: [true]
   });
 
   readonly isLoading = this.authService.isLoading;

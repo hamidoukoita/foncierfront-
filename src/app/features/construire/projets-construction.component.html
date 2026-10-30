@@ -92,7 +92,7 @@
                       <div>
                         <p class="font-bold text-gray-900 text-xs font-mono">{{ p.numeroDossier || ('#' + p.id) }}</p>
                         <p class="text-[11px] text-gray-600">{{ p.prospectNom }}</p>
-                        <p class="text-[10px] text-gray-400 font-mono">{{ p.prospectTelephone || '—' }}</p>
+                        <p class="text-[10px] text-gray-400 font-mono">{{ (p.prospectTelephone | telephone) || '—' }}</p>
                       </div>
                     </div>
                   </td>

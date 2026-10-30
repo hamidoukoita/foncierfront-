@@ -31,6 +31,7 @@ import { ApercuMediasService, PanoramaAffichable } from '../../core/services/ape
 import { MediaManagerComponent } from '../../shared/components/media-manager/media-manager.component';
 import { PanoramaModalComponent } from '../../shared/components/panorama-modal/panorama-modal.component';
 import { urlFichier } from '../../core/utils/url-fichier';
+import { TelephonePipe } from '../../shared/pipes/telephone.pipe';
 
 type ConstructionFilter = 'TOUS' | 'EN_ETUDE' | 'EN_DISCUSSION' | 'ACCEPTER' | 'REFUSER';
 type ViewMode = 'PROJETS' | 'MODELES';
@@ -38,7 +39,7 @@ type ViewMode = 'PROJETS' | 'MODELES';
 @Component({
   selector: 'app-projets-construction',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

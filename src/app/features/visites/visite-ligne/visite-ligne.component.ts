@@ -4,6 +4,7 @@ import { VisiteRendezVous } from '../../../core/models/societe.models';
 import { initiales } from '../../../core/utils/format';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { LIBELLES_STATUT_VISITE, MODALITES_VISITE } from '../visite-detail/visite-detail.component';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 /**
  * Colonnes du planning (lignes et en-tête) : largeurs fixes pour le créneau et la colonne statut/action,
@@ -16,7 +17,7 @@ export const GRILLE_VISITE =
 @Component({
   selector: 'app-visite-ligne',
   standalone: true,
-  imports: [MatIcon, StatusBadgeComponent],
+  imports: [TelephonePipe, MatIcon, StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -40,7 +41,7 @@ export const GRILLE_VISITE =
         <!-- Acquéreur et modalité -->
         <div class="min-w-0">
           <p class="truncate text-sm font-bold text-brand-secondary">{{ v.prospectNom }}</p>
-          <p class="truncate font-mono text-[11px] text-gray-500">{{ v.prospectTelephone }}</p>
+          <p class="truncate font-mono text-[11px] text-gray-500">{{ v.prospectTelephone | telephone }}</p>
           <span
             class="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
             [class]="v.typeVisite === 'CHANTIER' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-slate-100 text-brand-secondary'"

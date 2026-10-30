@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { AuthUser } from '../../../core/models/auth.models';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 /** Personne physique qui engage la société : l'agent promoteur responsable connecté. */
 @Component({
   selector: 'app-responsable-legal',
   standalone: true,
-  imports: [MatIcon],
+  imports: [TelephonePipe, MatIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="bg-white rounded-2xl p-6 border border-gray-100/90 shadow-card">
@@ -26,7 +27,7 @@ import { AuthUser } from '../../../core/models/auth.models';
       @if (user()?.telephone) {
         <div class="mt-4 flex items-center gap-2 text-xs text-gray-700">
           <mat-icon class="!text-base !w-5 !h-5 text-gray-400">call</mat-icon>
-          <span class="font-mono">+223 {{ user()?.telephone }}</span>
+          <span class="font-mono">{{ user()?.telephone | telephone: true }}</span>
         </div>
       }
     </section>

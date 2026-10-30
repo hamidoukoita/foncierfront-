@@ -5,6 +5,7 @@ import { initiales } from '../../../core/utils/format';
 import { InfoLigneComponent } from '../../../shared/components/info-ligne/info-ligne.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { dateVisite } from '../visite-agenda';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 export const LIBELLES_STATUT_VISITE: Record<VisiteRendezVous['statut'], string> = {
   EN_ATTENTE: 'À confirmer',
@@ -22,7 +23,7 @@ export const MODALITES_VISITE: Record<VisiteRendezVous['typeVisite'], { libelle:
 @Component({
   selector: 'app-visite-detail',
   standalone: true,
-  imports: [MatIcon, InfoLigneComponent, StatusBadgeComponent],
+  imports: [TelephonePipe, MatIcon, InfoLigneComponent, StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block space-y-5' },
   template: `
@@ -48,7 +49,7 @@ export const MODALITES_VISITE: Record<VisiteRendezVous['typeVisite'], { libelle:
       <div class="divide-y divide-gray-100 rounded-2xl border border-gray-100 px-4">
         <app-info-ligne icone="person" libelle="Acquéreur" [valeur]="v.prospectNom" />
         <app-info-ligne icone="call" libelle="Téléphone">
-          <a [href]="'tel:' + v.prospectTelephone" class="text-brand-primary hover:underline">{{ v.prospectTelephone }}</a>
+          <a [href]="'tel:' + v.prospectTelephone" class="text-brand-primary hover:underline">{{ v.prospectTelephone | telephone }}</a>
         </app-info-ligne>
       </div>
     </section>

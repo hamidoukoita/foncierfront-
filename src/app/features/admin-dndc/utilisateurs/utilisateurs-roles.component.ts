@@ -10,13 +10,14 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRippleModule } from '@angular/material/core';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 type UserFilter = 'TOUS' | 'PROSPECTS' | 'PROMOTEURS' | 'AGENTS' | 'ADMINS';
 
 @Component({
   selector: 'app-utilisateurs-roles',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     CommonModule, 
     FormsModule, 
     ReactiveFormsModule,

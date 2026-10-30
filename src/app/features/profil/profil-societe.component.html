@@ -12,20 +12,22 @@
     <div class="lg:col-span-7 space-y-6">
       <app-identite-form [profil]="profil()" />
       <app-regles-reservation [profil]="profil()" />
-      <app-regles-construction [profil]="profil()" />
     </div>
 
     <div class="lg:col-span-5 space-y-6">
       <section class="bg-white rounded-2xl p-6 border border-gray-100/90 shadow-card space-y-4">
         <div>
           <h2 class="text-sm font-bold text-brand-secondary">Logo</h2>
-          <p class="text-xs text-gray-500 mt-0.5">Affiché sur vos cités, parcelles et maisons dans l’application des acquéreurs.</p>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Affiché sur vos cités, parcelles et maisons dans l’application des acquéreurs.
+          </p>
         </div>
         <app-logo-societe [logoUrl]="profil().logoUrl" [nomSociete]="profil().raisonSociale" />
       </section>
       <app-references-legales [profil]="profil()" />
       <app-responsable-legal [user]="utilisateur()" />
       <app-dossier-kyc [documents]="documents()" [chargement]="chargementKyc()" />
+      <app-regles-construction [profil]="profil()" />
     </div>
   </div>
 </div>

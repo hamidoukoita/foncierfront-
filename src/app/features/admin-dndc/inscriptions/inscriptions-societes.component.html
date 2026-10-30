@@ -91,7 +91,7 @@
                 Agrément : {{ soc.numeroAgrement || 'En cours d’attribution' }}
               </p>
               <p class="text-secondary font-monospace text-truncate mb-0" style="font-size: 11px;">
-                Tél : {{ soc.telephone }}
+                Tél : {{ soc.telephone | telephone }}
               </p>
             </div>
           </div>
@@ -217,7 +217,7 @@
             </div>
             <div class="small text-secondary font-monospace d-flex align-items-center gap-1.5">
               <mat-icon style="font-size: 16px; width: 16px; height: 16px;">phone</mat-icon>
-              <span>{{ s.telephone }} • {{ s.adresse || 'Bamako' }}</span>
+              <span>{{ s.telephone | telephone }} • {{ s.adresse || 'Bamako' }}</span>
             </div>
           </div>
 

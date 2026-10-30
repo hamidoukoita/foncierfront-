@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, HostListener, input, linkedSignal, output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { AgentCollaborateur } from '../../../core/models/societe.models';
+import { TelephonePipe } from '../../pipes/telephone.pipe';
 
 /** Choix d'un agent actif pour prendre en charge un dossier (réservation, visite…). */
 @Component({
   selector: 'app-attribution-agent-dialog',
   standalone: true,
-  imports: [MatIcon],
+  imports: [TelephonePipe, MatIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen()) {
@@ -41,7 +42,7 @@ import { AgentCollaborateur } from '../../../core/models/societe.models';
                       <span class="ml-1 rounded-full bg-gray-100 px-2 py-px text-[10px] font-bold text-gray-500">actuel</span>
                     }
                   </span>
-                  <span class="block truncate text-[11px] text-gray-500">{{ agent.fonctionDeleguee || 'Agent commercial' }} · {{ agent.telephone }}</span>
+                  <span class="block truncate text-[11px] text-gray-500">{{ agent.fonctionDeleguee || 'Agent commercial' }} · {{ agent.telephone | telephone }}</span>
                 </span>
                 <span class="shrink-0 text-right text-[10px] font-semibold leading-tight text-gray-500">
                   {{ agent.reservationsCount }} rés.<br />{{ agent.rdvVisitesCount }} RDV

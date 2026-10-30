@@ -7,12 +7,13 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { DecompteReservation } from '../reservation-delai';
 import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
 import { LIBELLES_STATUT, TON_STATUT } from '../reservation-statut';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 /** Une réservation dans la liste : bien, acquéreur, paiement, agent ou décompte, statut et action. */
 @Component({
   selector: 'app-reservation-ligne',
   standalone: true,
-  imports: [MatIcon, StatusBadgeComponent, DelaiChipComponent],
+  imports: [TelephonePipe, MatIcon, StatusBadgeComponent, DelaiChipComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -42,7 +43,7 @@ import { LIBELLES_STATUT, TON_STATUT } from '../reservation-statut';
         <div class="min-w-0">
           <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Acquéreur</p>
           <p class="truncate text-xs font-semibold text-gray-800">{{ r.prospectNom }}</p>
-          <p class="truncate font-mono text-[11px] text-gray-500">{{ r.prospectTelephone }}</p>
+          <p class="truncate font-mono text-[11px] text-gray-500">{{ r.prospectTelephone | telephone }}</p>
         </div>
 
         <!-- Paiement -->
