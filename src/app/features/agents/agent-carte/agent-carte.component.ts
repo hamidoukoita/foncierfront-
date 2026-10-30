@@ -3,12 +3,13 @@ import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { AgentCollaborateur } from '../../../core/models/societe.models';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 /** Carte d'un collaborateur : identité, contact, charge de travail et accès. */
 @Component({
   selector: 'app-agent-carte',
   standalone: true,
-  imports: [RouterLink, MatIcon, StatusBadgeComponent],
+  imports: [TelephonePipe, RouterLink, MatIcon, StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block h-full' },
   template: `
@@ -43,7 +44,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
       >
         <mat-icon class="!h-[18px] !w-[18px] !text-[18px] text-brand-primary">call</mat-icon>
         <span class="min-w-0">
-          <span class="block font-mono text-xs font-semibold text-gray-800">{{ telephone() }}</span>
+          <span class="block font-mono text-xs font-semibold text-gray-800">{{ (ag.telephone | telephone: true) || '—' }}</span>
           <span class="block text-[10px] text-gray-400">Identifiant de connexion</span>
         </span>
       </a>
@@ -113,10 +114,4 @@ export class AgentCarteComponent {
 
   readonly total = computed(() => this.agent().rdvVisitesCount + this.agent().reservationsCount);
   readonly charge = computed(() => (this.chargeMax() ? (this.total() / this.chargeMax()) * 100 : 0));
-
-  readonly telephone = computed(() => {
-    const brut = (this.agent().telephone ?? '').replace(/\s+/g, '');
-    if (!brut) return '—';
-    return brut.startsWith('+') ? brut : `+223 ${brut}`;
-  });
 }

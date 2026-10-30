@@ -25,7 +25,7 @@
             <app-status-badge [status]="s.agent.statut" />
           </div>
           <p class="mt-0.5 text-xs text-gray-600">
-            <a [href]="'tel:' + s.agent.telephone" class="font-mono font-semibold text-brand-primary hover:underline">{{ s.agent.telephone }}</a>
+            <a [href]="'tel:' + s.agent.telephone" class="font-mono font-semibold text-brand-primary hover:underline">{{ s.agent.telephone | telephone: true }}</a>
             @if (s.agent.dateAffectation) {
               · Dans l’équipe depuis le {{ s.agent.dateAffectation | date: 'dd/MM/yyyy' }}
             }

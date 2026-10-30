@@ -28,7 +28,7 @@
             <span class="font-mono font-semibold">{{ p.numeroDossier || ('#' + p.id) }}</span>
             · {{ p.modeleVilla }} · {{ p.surfaceTerrainM2 }} m²
             @if (p.prospectTelephone) {
-              · <a [href]="'tel:' + p.prospectTelephone" class="font-mono font-semibold text-brand-primary hover:underline">{{ p.prospectTelephone }}</a>
+              · <a [href]="'tel:' + p.prospectTelephone" class="font-mono font-semibold text-brand-primary hover:underline">{{ p.prospectTelephone | telephone }}</a>
             }
           </p>
         </div>

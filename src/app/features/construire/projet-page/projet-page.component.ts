@@ -26,6 +26,7 @@ import { AvancementDialogComponent } from '../avancement-dialog/avancement-dialo
 import { FilProjetComponent } from '../fil-projet/fil-projet.component';
 import { LIBELLES_STATUT_PROJET, ProjetDetailComponent } from '../projet-detail/projet-detail.component';
 import { PropositionFormComponent, PropositionSaisie } from '../proposition-form/proposition-form.component';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 type Dialogue = 'acceptation' | 'refus' | 'proposition' | 'avancement' | null;
 
@@ -39,7 +40,7 @@ const RAFRAICHISSEMENT_MS = 30_000;
 @Component({
   selector: 'app-projet-page',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     RouterLink,
     MatIcon,
     StatusBadgeComponent,

@@ -81,7 +81,7 @@
                 {{ currentUser()?.prenom }} {{ currentUser()?.nom }}
               </p>
               <p class="text-muted small mb-1 text-truncate" style="font-size: 11px;">
-                {{ currentUser()?.email || currentUser()?.telephone }}
+                {{ currentUser()?.email || (currentUser()?.telephone | telephone) }}
               </p>
               <span class="badge bg-light text-dark border px-2 py-0.5 rounded text-uppercase" style="font-size: 9px; letter-spacing: 0.05em; border-color: #E2DDD5;">
                 {{

@@ -11,11 +11,12 @@ import { SocieteQuickViewModalComponent } from '../../../shared/components/socie
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRippleModule } from '@angular/material/core';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 @Component({
   selector: 'app-super-dashboard',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     CommonModule,
     FormsModule,
     RouterLink,

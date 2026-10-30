@@ -15,6 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatRippleModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 type InscriptionFilter = 'EN_ATTENTE' | 'VALIDEES' | 'REFUSEES';
 
@@ -35,7 +36,7 @@ const LIBELLES_DOCUMENT_KYC: Record<TypeDocumentKyc, string> = {
 @Component({
   selector: 'app-inscriptions-societes',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     CommonModule, 
     FormsModule, 
     PaginationComponent,

@@ -8,6 +8,7 @@ import { DecompteReservation } from '../reservation-delai';
 import { DelaiChipComponent } from '../delai-chip/delai-chip.component';
 import { LIBELLES_STATUT, TON_STATUT } from '../reservation-statut';
 import { libelleSuiteVente } from '../suite-vente';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 interface EtapeSuivi {
   libelle: string;
@@ -27,7 +28,7 @@ function dateHeure(iso?: string): string {
 @Component({
   selector: 'app-reservation-detail',
   standalone: true,
-  imports: [MatIcon, InfoLigneComponent, StatusBadgeComponent, DelaiChipComponent],
+  imports: [TelephonePipe, MatIcon, InfoLigneComponent, StatusBadgeComponent, DelaiChipComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block space-y-5' },
   template: `
@@ -86,7 +87,7 @@ function dateHeure(iso?: string): string {
       <div class="divide-y divide-gray-100 rounded-2xl border border-gray-100 px-4">
         <app-info-ligne icone="person" libelle="Nom" [valeur]="r.prospectNom" />
         <app-info-ligne icone="call" libelle="Téléphone">
-          <a [href]="'tel:' + r.prospectTelephone" class="text-brand-primary hover:underline">{{ r.prospectTelephone }}</a>
+          <a [href]="'tel:' + r.prospectTelephone" class="text-brand-primary hover:underline">{{ r.prospectTelephone | telephone }}</a>
         </app-info-ligne>
         <app-info-ligne icone="event" libelle="Réservé le" [valeur]="r.dateReservation" />
       </div>

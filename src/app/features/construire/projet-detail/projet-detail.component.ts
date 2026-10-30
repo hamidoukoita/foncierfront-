@@ -8,6 +8,7 @@ import { InfoLigneComponent } from '../../../shared/components/info-ligne/info-l
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { DescriptionMaisonComponent } from '../description-maison/description-maison.component';
 import { CartePropositionComponent } from '../fil-projet/carte-proposition.component';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 export const LIBELLES_STATUT_PROJET: Record<string, string> = {
   EN_ETUDE: 'En étude',
@@ -26,7 +27,7 @@ const TYPES_FICHIER: Record<FichierProjet['type'], { libelle: string; icone: str
 @Component({
   selector: 'app-projet-detail',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     DatePipe,
     MatIcon,
     InfoLigneComponent,
@@ -98,7 +99,7 @@ const TYPES_FICHIER: Record<FichierProjet['type'], { libelle: string; icone: str
           <app-info-ligne icone="person" libelle="Nom" [valeur]="p.prospectNom" />
           @if (p.prospectTelephone) {
             <app-info-ligne icone="call" libelle="Téléphone">
-              <a [href]="'tel:' + p.prospectTelephone" class="text-brand-primary hover:underline">{{ p.prospectTelephone }}</a>
+              <a [href]="'tel:' + p.prospectTelephone" class="text-brand-primary hover:underline">{{ p.prospectTelephone | telephone }}</a>
             </app-info-ligne>
           }
         </div>

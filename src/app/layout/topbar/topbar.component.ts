@@ -21,12 +21,13 @@ import { PastilleCompteurComponent } from '../../shared/components/pastille-comp
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRippleModule } from '@angular/material/core';
+import { TelephonePipe } from '../../shared/pipes/telephone.pipe';
 
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     CommonModule, 
     RouterLink, 
     RouterLinkActive,

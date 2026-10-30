@@ -11,6 +11,7 @@ import { FiltreOngletsComponent, OngletFiltre } from '../../../shared/components
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { AgentHistoriqueComponent, ListeHistorique } from './agent-historique.component';
 import { IndicateurTuileComponent } from './indicateur-tuile.component';
+import { TelephonePipe } from '../../../shared/pipes/telephone.pipe';
 
 const PERIODES: OngletFiltre[] = [
   { valeur: 'MOIS', libelle: '30 jours', icone: 'calendar_view_month' },
@@ -25,7 +26,7 @@ const PERIODES: OngletFiltre[] = [
 @Component({
   selector: 'app-agent-detail',
   standalone: true,
-  imports: [
+  imports: [TelephonePipe, 
     DatePipe,
     RouterLink,
     MatIcon,
